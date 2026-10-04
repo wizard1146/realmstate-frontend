@@ -4,10 +4,11 @@ import { api, command, auth } from './api.js';
 import { loadColloquium, loadHall, loadHeirs, loadMarket, loadState, loadWars, loadRelations, raceOf, store, say, refreshMe, refreshMeSoon, loadStateMembers, loadRankings, loadReports, addLocalNews, addChat, clearPrivate, setTarget, unitNames, CHANNELS } from './store.js';
 import { describe, outcomeTone, fmt, names } from './words.js';
 import * as commands from './commands.js';
+import { have as havePrices } from './prices.js';
 
 /**
  * Run a command. `estimate` (gold, before modifiers) is quoted next to the real cost from the
- * outcome. `quote` (exact gold, from core/prices.js) replaces it: the outcome's own cost is the
+ * outcome, only from an old server that sends no exact prices. `quote` (exact gold, from core/prices.js) replaces it: the outcome's own cost is the
  * cross-check, and the line says so only if the two differ.
  */
 async function run(cmd, { estimate, quote, button } = {}) {
@@ -17,7 +18,7 @@ async function run(cmd, { estimate, quote, button } = {}) {
     let est = '';
     if (quote != null && Number.isFinite(quote)) {
       if (out.gold != null && out.gold !== quote) est = ` (Quoted ${fmt(quote)} gold; prices changed before the order landed.)`;
-    } else if (estimate != null && Number.isFinite(estimate)) est = ` (Estimated ≈${fmt(estimate)} before modifiers.)`;
+    } else if (estimate != null && Number.isFinite(estimate) && !havePrices()) est = ` (Estimated ≈${fmt(estimate)} before modifiers.)`;
     say(describe(out) + est, outcomeTone(out));
     refreshMeSoon();
     return out;

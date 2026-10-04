@@ -3,6 +3,7 @@
 import { store, subscribe, start, say, playable } from './core/store.js';
 import * as live from './core/live.js';
 import * as actions from './core/actions.js';
+import { connected, configProblem, startConnect, finishConnect, API } from './core/api.js';
 import { esc } from './core/words.js';
 
 const $ = (id) => document.getElementById(id);
@@ -39,7 +40,9 @@ function renderGate() {
   const signedIn = !!store.me;
   const house = !!store.house;
   $('gate').hidden = house || store.me === undefined;
-  $('login').hidden = signedIn;
+  $('login').hidden = signedIn || connected;
+  $('connect').hidden = signedIn || !connected;
+  $('connect-game').textContent = API;
   $('create').hidden = !signedIn || house;
   if (signedIn && !house && store.rules && !$('c-race').options.length) {
     const opts = (list) => playable(list).map((d) => `<option value="${esc(d.identity)}">${esc(d.name)}</option>`).join('');
@@ -47,7 +50,7 @@ function renderGate() {
     $('c-pers').innerHTML = opts(store.rules.personalities);
   }
   if (!house && store.me !== undefined) {
-    const f = signedIn ? $('c-name') : $('login-email');
+    const f = signedIn ? $('c-name') : connected ? $('connect').querySelector('button') : $('login-email');
     if (!$('gate').contains(document.activeElement)) f.focus();
   }
 }
@@ -58,6 +61,7 @@ $('login').addEventListener('submit', async (ev) => {
   await actions.signIn($('login-email').value);
   if (b) b.disabled = false;
 });
+$('connect').addEventListener('submit', (ev) => { ev.preventDefault(); startConnect(); });
 $('create').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   const f = ev.target;
@@ -80,6 +84,12 @@ subscribe((c) => {
 
 // For checking in a browser console (and the headless test): the store and socket.
 window.realmstate = { store, live };
+
+// Back from the game's site with its answer to connecting?
+const answer = finishConnect();
+if (answer?.error) say(answer.error, 'bad');
+else if (answer?.ok) say('Connected. This page now plays for you.', 'good');
+if (configProblem) say(configProblem, 'bad');
 
 (function boot() {
   start().catch((e) => {

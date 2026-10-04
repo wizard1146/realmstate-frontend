@@ -5,13 +5,15 @@
 //   PORT  listen port (default 3400)
 //   GAME  game server (default http://127.0.0.1:3300), started with REALM_DEV_LOGIN=1
 //
-// The page's own files (/, /app.js, /shell.css, /favicon.svg, /core/, /views/) are served from this
-// folder; every other path (the API, /auth/*, the /live WebSocket) goes to the game, so the page
-// is same-origin with the API and the session cookie just works.
+// Any file in this folder is served (not dev/ or hidden files); every other path (the API, /auth/*,
+// the /live WebSocket) goes to the game, so the page is same-origin with the API and the session
+// cookie just works. To try connect mode instead, open /?game=http://localhost:3300: the page then
+// talks to the game directly, from another address, with a token.
 
 import http from 'node:http';
 import net from 'node:net';
 import { readFile } from 'node:fs/promises';
+import { existsSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -35,10 +37,17 @@ async function serveFile(res, path) {
   }
 }
 
+/** A file of the page's own: it exists here, outside dev/ and hidden paths. */
+function isPageFile(path) {
+  if (/(^|\/)\./.test(path) || path.startsWith('/dev/')) return false;
+  const file = normalize(join(root, path));
+  return file.startsWith(root) && existsSync(file) && statSync(file).isFile();
+}
+
 const server = http.createServer((req, res) => {
   const path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   if (path === '/' || path === '/index.html') return serveFile(res, 'index.html');
-  if (/^\/(app\.js|shell\.css|favicon\.svg)$/.test(path) || /^\/(core|views)\//.test(path)) return serveFile(res, path.slice(1));
+  if (isPageFile(path)) return serveFile(res, path.slice(1));
   const up = http.request({ host: game.hostname, port: game.port, method: req.method, path: req.url, headers: { ...req.headers, host: game.host } }, (r) => {
     res.writeHead(r.statusCode, r.headers);
     r.pipe(res);

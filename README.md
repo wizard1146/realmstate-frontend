@@ -26,11 +26,25 @@ which game it talks to.
 
 `npm run check` syntax-checks every file.
 
+## Playing a game on another address
+
+`config.js` names the game. Empty (the default) means this page's own address, as above. Any other
+address switches on **connect mode**: the page offers *Connect to Realmstate*, sends the player to the
+game's own site to sign in and allow it, and gets back a token it sends with every request (never a
+cookie). Live updates use one-use tickets; *Logout* ends the connection. This is the same way any
+other front end connects (see the wiki's [API for Tools](https://wizard1146.github.io/realmstate-wiki/api.html#Connecting)).
+
+To try it locally, open `http://localhost:3400/?game=http://localhost:3300`: the page and the game
+are then on different addresses. The choice lasts for that tab; `?game=` with nothing after it goes back.
+
+To host it, put these files on any static host and set `GAME` in `config.js` to the game's address.
+
 ## Layout
 
 | Path | What |
 |---|---|
-| `index.html`, `app.js`, `shell.css` | The page: sign-in, founding a house, then the War Room |
+| `index.html`, `app.js`, `shell.css` | The page: sign-in or connecting, founding a house, then the War Room |
+| `config.js` | Which game the page plays |
 | `core/` | The store, the API and `/live` clients, commands, exact prices, wording |
 | `views/room/` | The War Room: panes, detail views, the font and palette labs |
 | `dev/` | The dev server and the check script |

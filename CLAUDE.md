@@ -10,7 +10,8 @@ the game: realms > states > houses, addresses `realm:state:house`. Never "kingdo
 
 ## Rules
 - Plain ES modules, HTML and CSS. No build step, no framework, no runtime dependencies.
-- Use only the public API (as the wiki's API for Tools page documents it). If the page needs
+- Use only the public API (as the wiki's API for Tools page documents it), and keep both sign-in
+  modes working: same address (cookie, through dev/serve.mjs) and connect mode (token, `?game=`). If the page needs
   something the API doesn't send, add it to the server, not a guess here.
 - Read numbers the server derives (prices after modifiers, trait slots, flags) from the API; never
   recompute them from base rules. An estimate is marked ≈ and only for an old server.

@@ -10,10 +10,31 @@ let dropped = false;
 /** How many times the socket has opened this page load (for checking that view switches don't reconnect). */
 export let opens = 0;
 
+const OPENING = {}; // ws while the address (and, in connect mode, its ticket) is being fetched
+
 export function connect() {
   if (ws || !store.house) return;
   setLive('connecting');
-  const sock = new WebSocket(liveUrl());
+  ws = OPENING;
+  liveUrl().then((u) => {
+    if (ws === OPENING) open(u);
+  }, () => {
+    if (ws !== OPENING) return;
+    ws = null; dropped = true;
+    retry();
+  });
+}
+
+function retry() {
+  setLive('off');
+  if (!store.house) return;
+  const wait = Math.min(30000, 1000 * 2 ** tries++); // 1s, 2s, 4s ... 30s
+  clearTimeout(timer);
+  timer = setTimeout(connect, wait);
+}
+
+function open(u) {
+  const sock = new WebSocket(u);
   ws = sock;
   sock.onopen = () => {
     tries = 0; opens++;
@@ -32,11 +53,7 @@ export function connect() {
   sock.onclose = () => {
     if (ws !== sock) return;
     ws = null; dropped = true;
-    setLive('off');
-    if (!store.house) return;
-    const wait = Math.min(30000, 1000 * 2 ** tries++); // 1s, 2s, 4s ... 30s
-    clearTimeout(timer);
-    timer = setTimeout(connect, wait);
+    retry();
   };
 }
 
@@ -44,8 +61,8 @@ export function close() {
   clearTimeout(timer);
   const sock = ws;
   ws = null; tries = 0; dropped = false;
-  if (sock) { sock.onclose = null; sock.close(); }
+  if (sock && sock !== OPENING) { sock.onclose = null; sock.close(); }
   setLive('off');
 }
 
-export const isOpen = () => !!ws && ws.readyState === WebSocket.OPEN;
+export const isOpen = () => !!ws && ws !== OPENING && ws.readyState === WebSocket.OPEN;

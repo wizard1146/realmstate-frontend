@@ -2,6 +2,7 @@
 // Reads the shared store and calls shared actions; owns only its DOM.
 import { store, subscribe, say, setTarget, raceOf, isProtected, nextTickAt, showTicks, setClock, isUtc, slotUsed } from '../../core/store.js';
 import * as act from '../../core/actions.js';
+import { API } from '../../core/api.js';
 import { fmt, esc, addr, UNIT_ORDER, isUpgrade, when, newsLine, empty, SOLDIER, fullTime, zoneLabel, tickLine } from '../../core/words.js';
 import { mountFontLab, clear as clearFonts, rowHover } from './fontlab.js';
 import { mountPaletteLab, clear as clearPalette, clearGlyphs } from './palettelab.js';
@@ -251,8 +252,10 @@ export function mount(root) {
     $('name').textContent = h.name;
     $('addr').textContent = `[${addr(h)}]`;
     $('ident').textContent = `${race.name || h.race} · ${h.personality}`;
-    $('email').textContent = store.me ? store.me.email : '';
-    $('logout').title = store.me ? `Signed in as ${store.me.email}` : '';
+    // A connected page isn't told the email: name the game instead.
+    const who = store.me ? (store.me.email || `connected to ${API.replace(/^https?:\/\//, '')}`) : '';
+    $('email').textContent = who;
+    $('logout').title = store.me ? (store.me.email ? `Signed in as ${store.me.email}` : `End this page's connection to ${API}`) : '';
     const prot = isProtected(h);
     const pk = `${prot}:${h.protected_until}`;
     if ($('prot').dataset.k !== pk) {
