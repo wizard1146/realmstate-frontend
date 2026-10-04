@@ -10,7 +10,7 @@ import { fmt, esc, when } from '../../core/words.js';
 import { tabState } from './tabs.js';
 
 /** RES pane and detail tabs. */
-export const RES_TAB = tabState('realmstate.room.res', ['holdings', 'market'], { holdings: 'HOLDINGS', market: 'MARKET' });
+export const RES_TAB = tabState('realmstate.room.res', ['holdings', 'buildings', 'market'], { holdings: 'HOLDINGS', buildings: 'BUILDINGS', market: 'MARKET' });
 
 const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
 const MAX_Q = 1000000000;

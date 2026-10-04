@@ -126,10 +126,12 @@ const TEMPLATE = (view) => `
       <span class="seg" role="tablist" aria-label="RES sections" id="r-res-tabs">${tabButtons(mkt.RES_TAB, 'r-res')}</span><button type="button" class="xp" data-expand="res" title="Open RES in detail (Shift+Alt+2, or Enter on the pane)" aria-label="Open RES detail view"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1 4.5V1h3.5M7.5 1H11v3.5M11 7.5V11H7.5M4.5 11H1V7.5"/></svg></button></h2>
     <div class="pane-b">
      <div ${panelAttrs(mkt.RES_TAB, 'r-res', 'holdings')}>
+      <h3 class="sub first">STOCK</h3>
+      <table class="tbl" id="r-res"></table>
+     </div>
+     <div ${panelAttrs(mkt.RES_TAB, 'r-res', 'buildings')}>
       <h3 class="sub first">UNDER WAY</h3>
       <div class="uw-box" id="r-uw-res"></div>
-      <h3 class="sub">STOCK</h3>
-      <table class="tbl" id="r-res"></table>
       <h3 class="sub">BUILDINGS <span class="dim" id="r-eff"></span></h3>
       <table class="tbl" id="r-bld"></table>
      </div>
@@ -619,8 +621,9 @@ export function mount(root) {
     run: () => { MIL_TAB.set(t); showPane('mil'); detail.open('mil'); },
   }));
 
-  // New views, by command: /market, /members, /leadership, /vigils, /war, /workshop.
+  // New views, by command: /buildings, /market, /members, /leadership, /vigils, /war, /workshop.
   const unregNew = [
+    ['buildings', 'open RES in detail on BUILDINGS: land, construction, buildings and razing', () => { mkt.RES_TAB.set('buildings'); showPane('res'); detail.open('res'); }],
     ['market', 'open RES in detail on MARKET: books, orders, buy and sell', () => { mkt.RES_TAB.set('market'); showPane('res'); detail.open('res'); }],
     ...STATE_TAB.list.map((t) => [t, `open STATE in detail on ${STATE_TAB.labels[t]}`, () => { STATE_TAB.set(t); showPane('roster'); detail.open('roster'); }]),
     ['workshop', 'open MIL in detail on FORCES: medics, upgrades, chariots, refining', () => { MIL_TAB.set('forces'); showPane('mil'); detail.open('mil'); requestAnimationFrame(() => document.querySelector('#d-mk-t input')?.focus()); }],

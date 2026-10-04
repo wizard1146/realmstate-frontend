@@ -26,7 +26,7 @@ import { stateDetail } from './statedetail.js';
 
 export const PANES = ['act', 'res', 'mil', 'news', 'chat', 'roster', 'rank', 'sci'];
 const META = {
-  act: ['ACT', 'orders in full'], res: ['RES', 'holdings in full'], mil: ['MIL', 'forces, generals, Hall of Deeds'],
+  act: ['ACT', 'orders in full'], res: ['RES', 'holdings, buildings and market in full'], mil: ['MIL', 'forces, generals, Hall of Deeds'],
   news: ['NEWS', 'full wire'], chat: ['CHAT', 'world, realm and state channels'], roster: ['STATE', 'members, leadership, treasury'], rank: ['RANK', 'houses and states'], sci: ['SCI', 'books, sciences, academics, Colloquium'],
 };
 const has = (c, ...k) => !c || k.some((x) => c.has(x));
@@ -46,11 +46,13 @@ const res = {
     const go = (row) => ctx.graph.open(row.dataset.graph, row.cells[0].textContent, row);
     on(b, 'click', (ev) => { const r = ev.target.closest('tr[data-graph]'); if (r) go(r); });
     on(b, 'keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('tr[data-graph]')) { ev.preventDefault(); go(ev.target); } });
-    b.innerHTML = `<div class="acttabs seg2" role="tablist" aria-label="RES sections" id="d-res-tabs">${tabButtons(mkt.RES_TAB, 'd-res')}<span class="dim small">land, stock and buildings · buy and sell materials</span></div>
+    b.innerHTML = `<div class="acttabs seg2" role="tablist" aria-label="RES sections" id="d-res-tabs">${tabButtons(mkt.RES_TAB, 'd-res')}<span class="dim small">stock · land and buildings · buy and sell materials</span></div>
     <div ${panelAttrs(mkt.RES_TAB, 'd-res', 'holdings')}><div class="dgrid">
+      <section class="wide"><h3 class="sub">RESOURCES</h3><div id="d-res"></div></section>
+    </div></div>
+    <div ${panelAttrs(mkt.RES_TAB, 'd-res', 'buildings')}><div class="dgrid">
       <section class="wide"><h3 class="sub">UNDER WAY <span class="dim">land and construction</span></h3><div id="d-uw"></div></section>
       <section><h3 class="sub">LAND</h3><div class="land big" id="d-landbar" aria-hidden="true"></div><div id="d-land"></div></section>
-      <section><h3 class="sub">RESOURCES</h3><div id="d-res"></div></section>
       <section class="wide"><h3 class="sub">BUILDINGS <span class="dim" id="d-eff"></span></h3><div id="d-bld"></div></section>
       <section><h3 class="sub">RAZE <span class="dim">tear buildings down to barren land</span></h3><div id="d-rz-box">${razeHTML()}</div></section>
     </div></div>
