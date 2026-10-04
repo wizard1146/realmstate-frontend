@@ -1,0 +1,68 @@
+/* Realmstate shell: the sign-in gate and the message line, around the War Room.
+   Colours and type come from tokens the War Room defines on :root[data-view="room"]:
+   --bg --panel --field --ink --muted --line --accent --on-accent --bad --good --focus --font --radius.
+   The War Room's own styles live in views/room/room.css. */
+
+:root {
+  /* Neutral fallbacks; each view overrides these. */
+  --bg: #eef0f2; --panel: #ffffff; --field: #ffffff; --ink: #1d2229; --muted: #5c6670; --line: #c9cfd6;
+  --accent: #3b5b7a; --on-accent: #ffffff; --bad: #a23a2a; --good: #2f6b3f; --focus: #3b5b7a;
+  --font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --radius: 8px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111418; --panel: #1a1f25; --field: #0f1317; --ink: #e3e7eb; --muted: #97a1ab; --line: #2e363f;
+    --accent: #8fb3d6; --on-accent: #0d1115; --bad: #e58a72; --good: #8fc5a1; --focus: #8fb3d6;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: var(--font); -webkit-text-size-adjust: 100%; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.noscript { padding: 16px; }
+
+.skip { position: absolute; left: -999px; top: 4px; z-index: 100; background: var(--accent); color: var(--on-accent); padding: 4px 10px; }
+.skip:focus { left: 8px; }
+
+/* ---------- the message line (role=status); each view places it ---------- */
+.status { margin: 0; overflow-wrap: anywhere; }
+.status.bad { color: var(--bad); }
+
+/* ---------- the view switch ---------- */
+
+/* ---------- the gate: sign in, found a house ---------- */
+.gate {
+  width: min(27rem, calc(100% - 32px)); margin: 10vh auto 24px; padding: 1.2rem 1.3rem 1.1rem;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.gate-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+.gate h1 { margin: 0; font-size: 1.4rem; letter-spacing: 0.12em; color: var(--accent); font-weight: 700; text-transform: uppercase; }
+.gate .lede { margin: 0 0 0.9rem; color: var(--muted); }
+.gate form { display: flex; flex-direction: column; gap: 0.35rem; }
+.gate label, .gate legend { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+.gate input, .gate select, .gate button {
+  font: inherit; color: inherit; min-height: 2.3rem; min-width: 0;
+  background: var(--field); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.3rem 0.55rem;
+}
+.gate input, .gate select { width: 100%; }
+.gate button { cursor: pointer; padding: 0.3rem 0.9rem; }
+.gate button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+.gate button.ghost { background: transparent; }
+.gate button:disabled { opacity: 0.55; cursor: progress; }
+.gate .row { display: flex; gap: 0.45rem; align-items: center; }
+.gate .row input { flex: 1; }
+.gate .row.end { justify-content: flex-end; margin-top: 0.7rem; }
+.gate .hint { color: var(--muted); font-size: 0.85rem; margin: 0.3rem 0 0; }
+.gate .grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.6rem; margin-top: 0.4rem; }
+.gate .grid2 > div { display: flex; flex-direction: column; gap: 0.35rem; }
+.gate .where { border: 0; padding: 0; margin: 0.5rem 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.gate .where legend { padding: 0; margin-bottom: 0.35rem; }
+.gate .where input { width: 5.5rem; text-align: right; }
+.gate .where .hint { flex-basis: 100%; }
+@media (max-width: 400px) { .gate .grid2 { grid-template-columns: minmax(0, 1fr); } }

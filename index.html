@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en" data-view="room">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Realmstate · War Room</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="shell.css">
+<link rel="stylesheet" href="views/room/room.css">
+</head>
+<body>
+<a class="skip" href="#view">Skip to the game</a>
+
+<p id="status" class="status" role="status" aria-live="polite"></p>
+
+<!-- Sign in / found a house. -->
+<section class="gate" id="gate" hidden aria-labelledby="gate-title">
+  <header class="gate-head">
+    <h1 id="gate-title">Realmstate</h1>
+  </header>
+  <form id="login" hidden>
+    <p class="lede">Thirteen realms. Ninety-one states. One house is yours.</p>
+    <label for="login-email">Email</label>
+    <div class="row">
+      <input id="login-email" name="email" type="email" required placeholder="you@example.com" autocomplete="email">
+      <button class="primary">Sign in</button>
+    </div>
+    <p class="hint">Development sign-in: the email alone signs you in.</p>
+  </form>
+  <form id="create" hidden>
+    <p class="lede">You hold no house this age. Found one: it takes a seat in a state.</p>
+    <label for="c-name">House name</label>
+    <input id="c-name" name="name" maxlength="40" required autocomplete="off">
+    <div class="grid2">
+      <div><label for="c-race">Race</label><select id="c-race" name="race"></select></div>
+      <div><label for="c-pers">Personality</label><select id="c-pers" name="personality"></select></div>
+    </div>
+    <fieldset class="where">
+      <legend>Where (realm : state)</legend>
+      <input id="c-realm" name="realm" type="number" min="1" value="1" aria-label="Realm" class="num">
+      <span aria-hidden="true">:</span>
+      <input id="c-state" name="state" type="number" min="1" value="1" aria-label="State" class="num">
+      <p class="hint">Clear both to be placed wherever there is most room.</p>
+    </fieldset>
+    <div class="row end"><button id="create-out" type="button" class="ghost">Sign out</button><button class="primary">Found house</button></div>
+  </form>
+</section>
+
+<div id="view"></div>
+
+<noscript><p class="noscript">Realmstate needs JavaScript.</p></noscript>
+<script type="module" src="app.js"></script>
+</body>
+</html>

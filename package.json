@@ -1,0 +1,10 @@
+{
+  "name": "realmstate-frontend",
+  "private": true,
+  "description": "Realmstate's War Room: the official player front end. Plain ES modules, no build step.",
+  "type": "module",
+  "scripts": {
+    "dev": "node dev/serve.mjs",
+    "check": "node dev/check.mjs"
+  }
+}
