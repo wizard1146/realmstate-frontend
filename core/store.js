@@ -2,7 +2,7 @@
 // Views read `store` and re-render when subscribe() calls them with the keys that changed.
 // All fetching lives here (and in actions.js); views never call fetch.
 import { api } from './api.js';
-import { names, newsLine, setClockUtc, clock } from './words.js';
+import { names, newsLine, setClockUtc, clock, setMyHouse } from './words.js';
 
 export const store = {
   rules: null,
@@ -86,6 +86,10 @@ export const raceName = (id) => raceOf(id)?.name || id;
  * Whether a race uses a unit slot: elite++ (9) only with the elite_plus_plus flag, or if the house
  * holds some anyway. An old server sends no flags: every slot shows.
  */
+/** Unit slot i's [offense, defense] as your house fights now (race bonuses, mirroring), else the race's. */
+export const unitPoints = (race, i) => store.house?.unit_points?.[i] || [race?.units?.[i]?.off || 0, race?.units?.[i]?.def || 0];
+/** Unit slots your race can train: elites only if it may. */
+export const trainableSlots = (race, all) => all.filter((i) => !(race?.race?.no_elite_training && i === 3));
 export const slotUsed = (race, i) => i !== 9 || !Array.isArray(race?.flags) || race.flags.includes('elite_plus_plus') || !!(store.house?.units?.[9] || store.house?.away?.[9]);
 export const persName = (id) => store.rules?.personalities.find((r) => r.identity === id)?.name || id;
 /** Your race's unit list (8 slots: soldiers, offense, defense, elite, thieves, then the upgraded three). */
@@ -102,6 +106,7 @@ export async function refreshMe() {
   const prevId = store.house ? store.house.id : null;
   store.me = me;
   store.house = (me && me.house) || null;
+  setMyHouse(store.house ? store.house.id : null);
   if (store.house) {
     names.units = unitNames().map((u) => u.name);
     if (store.house.ticks_now > store.tick) { store.tick = store.house.ticks_now; notify('age'); }

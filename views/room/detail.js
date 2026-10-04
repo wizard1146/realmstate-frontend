@@ -1,7 +1,7 @@
 // Detail views: one large modal over the war room per pane, where the detail lives (the panes
 // stay dense). A <dialog> opened with showModal(): focus stays inside, Esc closes, focus goes
 // back where it was. Shift+Alt+1–8 opens one; Alt+1–8 switches while open.
-import { store, raceOf, showTicks, say, slotUsed } from '../../core/store.js';
+import { store, raceOf, showTicks, say, slotUsed, unitPoints } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import * as price from '../../core/prices.js';
 import * as pend from '../../core/pending.js';
@@ -17,6 +17,7 @@ import { battleCard, isBattle } from './battle.js';
 import { sciDetail } from './scidetail.js';
 import { tabButtons, panelAttrs, wireTabs } from './tabs.js';
 import { MIL_TAB } from './generals.js';
+import { renderRace, wireRace } from './racebox.js';
 import { generalsDetail } from './gendetail.js';
 import { hallDetail } from './hall.js';
 import * as mk from './milacts.js';
@@ -117,6 +118,7 @@ const mil = {
       <section class="wide"><h3 class="sub">UNITS <span class="dim">soldiers are drafted from peasants; train turns them into units</span></h3><div id="d-units"></div></section>
       <section><h3 class="sub">DRAFT <span class="dim">the share of your population kept under arms</span></h3><div id="d-draft"></div></section>
       <section><h3 class="sub">FORCES</h3><div id="d-forces"></div></section>
+      <section class="wide" id="d-race-sec" hidden><h3 class="sub">YOUR RACE <span class="dim">what your race does that needs you</span></h3><div class="race-box" id="d-race"></div></section>
       <section class="wide"><h3 class="sub">WORKSHOP <span class="dim">train medics, upgrade troops, build chariots, refine materials</span></h3><div id="d-mk-box">${mk.detailHTML()}</div></section>
     </div></div>
     <div ${panelAttrs(MIL_TAB, 'd-mil', 'generals')}></div>
@@ -124,6 +126,7 @@ const mil = {
     b.querySelector('#d-draft').innerHTML = draftHTML('d-dr', true);
     mil.draft = wireDraft(b.querySelector('#d-draft'), on, 'd-dr', true);
     mil.make = mk.wireDetail(b.querySelector('#d-mk-box'), on, say);
+    wireRace(b.querySelector('#d-race'), on, 'd-rc');
     mil.gen = generalsDetail(b.querySelector('#d-mil-sec-generals'), on);
     mil.hall = hallDetail(b.querySelector('#d-mil-sec-hall'), on);
     wireTabs(b.querySelector('#d-mil-tabs'), b, on, MIL_TAB);
@@ -138,6 +141,7 @@ const mil = {
     const h = store.house;
     const race = raceOf(h.race) || { units: [] };
     b.querySelector('#d-uw').innerHTML = uw.html(['train', 'medics', 'army'], { full: true });
+    renderRace(b.querySelector('#d-race'), 'd-rc', false, b.querySelector('#d-race-sec'));
     mil.draft?.update();
     const training = Array(10).fill(0);
     pend.list(['train']).forEach((x) => { training[x.slot] += x.count; });
@@ -145,7 +149,7 @@ const mil = {
     pend.list(['army']).forEach((x) => (x.units || []).forEach((n, i) => { awayArmies[i] += n; }));
     const each = (i) => (price.have() ? `${fmt(price.trainCost(i, 1))} / ${fmt(price.trainCost(i, 1, true))}` : `≈${fmt(race.units[i].gold)}`);
     b.querySelector('#d-units').innerHTML = table('<th class="num">#</th><th>UNIT</th><th class="num">OFF</th><th class="num">DEF</th><th class="num">HOME</th><th class="num">AWAY</th><th class="num">TRAINING</th><th class="num">TOTAL</th><th class="num">OFF HOME</th><th class="num">DEF HOME</th><th class="num"><abbr title="Gold each: from soldiers / direct from peasants">GOLD EA S / D</abbr></th>',
-      UNIT_ORDER.map((i) => [race.units[i], i]).filter(([u, i]) => u && slotUsed(race, i)).map(([u, i]) => `<tr class="${isUpgrade(i) ? 'upg' : ''}${i === SOLDIER ? ' sold' : ''}"><td class="num dim">${i}</td><td class="name">${isUpgrade(i) ? '<span class="sub-mark" aria-hidden="true">↳ </span>' : ''}${esc(u.name)}</td><td class="num dim">${u.off}</td><td class="num dim">${u.def}</td>${td(h.units[i])}${td(h.away[i])}${td(training[i])}${td(h.units[i] + h.away[i] + training[i])}${td(u.off * h.units[i])}${td(u.def * h.units[i])}<td class="num dim">${TRAINABLE.includes(i) ? each(i) : i === SOLDIER ? 'drafted' : 'upgrade'}</td></tr>`).join(''), 'wide-tbl');
+      UNIT_ORDER.map((i) => [race.units[i], i]).filter(([u, i]) => u && slotUsed(race, i)).map(([u, i]) => `<tr class="${isUpgrade(i) ? 'upg' : ''}${i === SOLDIER ? ' sold' : ''}"><td class="num dim">${i}</td><td class="name">${isUpgrade(i) ? '<span class="sub-mark" aria-hidden="true">↳ </span>' : ''}${esc(u.name)}</td><td class="num dim">${unitPoints(race, i)[0]}</td><td class="num dim">${unitPoints(race, i)[1]}</td>${td(h.units[i])}${td(h.away[i])}${td(training[i])}${td(h.units[i] + h.away[i] + training[i])}${td(unitPoints(race, i)[0] * h.units[i])}${td(unitPoints(race, i)[1] * h.units[i])}<td class="num dim">${TRAINABLE.includes(i) ? each(i) : i === SOLDIER ? 'drafted' : 'upgrade'}</td></tr>`).join(''), 'wide-tbl');
     const offHome = race.units.reduce((a, u, i) => a + u.off * h.units[i], 0);
     const defHome = race.units.reduce((a, u, i) => a + u.def * h.units[i], 0);
     const offAll = race.units.reduce((a, u, i) => a + u.off * (h.units[i] + h.away[i]), 0);

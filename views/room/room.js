@@ -1,8 +1,9 @@
 // War room view: every pane on one dense screen. Moss, bone and iron; monospace; no motion.
 // Reads the shared store and calls shared actions; owns only its DOM.
-import { store, subscribe, say, setTarget, raceOf, isProtected, nextTickAt, showTicks, setClock, isUtc, slotUsed } from '../../core/store.js';
+import { store, subscribe, say, setTarget, raceOf, isProtected, nextTickAt, showTicks, setClock, isUtc, slotUsed, unitPoints } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { API } from '../../core/api.js';
+import { renderRace, wireRace } from './racebox.js';
 import { fmt, esc, addr, UNIT_ORDER, isUpgrade, when, newsLine, empty, SOLDIER, fullTime, zoneLabel, tickLine } from '../../core/words.js';
 import { mountFontLab, clear as clearFonts, rowHover } from './fontlab.js';
 import { mountPaletteLab, clear as clearPalette, clearGlyphs } from './palettelab.js';
@@ -151,6 +152,7 @@ const TEMPLATE = (view) => `
       <h3 class="sub">UNITS</h3>
       <table class="tbl" id="r-mil"></table>
       <table class="tbl" id="r-mil-extra"></table>
+      <div class="race-box" id="r-race"></div>
      </div>
      <div ${panelAttrs(MIL_TAB, 'r-mil', 'generals')}></div>
      <div ${panelAttrs(MIL_TAB, 'r-mil', 'hall')}></div>
@@ -312,14 +314,15 @@ export function mount(root) {
     $('land-line').textContent = `${fmt(built)} built · ${fmt(cons)} building · ${fmt(h.barren)} barren · ${fmt(h.incoming_land)} incoming / ${fmt(h.land)} acres`;
 
     $('mil').innerHTML = '<tr><th>UNIT</th><th class="num"><abbr title="Offense / defense per unit">O/D</abbr></th><th class="num">HOME</th><th class="num">AWAY</th></tr>'
-      + UNIT_ORDER.map((i) => [race.units[i], i]).filter(([u, i]) => u && slotUsed(race, i)).map(([u, i]) => `<tr class="${isUpgrade(i) ? 'upg' : ''}${i === SOLDIER ? ' sold' : ''}"><td class="name">${isUpgrade(i) ? '<span class="sub-mark" aria-hidden="true">↳ </span>' : ''}${esc(u.name)}</td><td class="num dim">${u.off}/${u.def}</td><td class="num${h.units[i] ? '' : ' zero'}">${fmt(h.units[i])}</td><td class="num${h.away[i] ? '' : ' zero'}">${fmt(h.away[i])}</td></tr>`).join('');
-    const offHome = race.units.reduce((a, u, i) => a + u.off * h.units[i], 0);
+      + UNIT_ORDER.map((i) => [race.units[i], i]).filter(([u, i]) => u && slotUsed(race, i)).map(([u, i]) => `<tr class="${isUpgrade(i) ? 'upg' : ''}${i === SOLDIER ? ' sold' : ''}"><td class="name">${isUpgrade(i) ? '<span class="sub-mark" aria-hidden="true">↳ </span>' : ''}${esc(u.name)}</td><td class="num dim">${unitPoints(race, i).join('/')}</td><td class="num${h.units[i] ? '' : ' zero'}">${fmt(h.units[i])}</td><td class="num${h.away[i] ? '' : ' zero'}">${fmt(h.away[i])}</td></tr>`).join('');
+    const offHome = race.units.reduce((a, u, i) => a + unitPoints(race, i)[0] * h.units[i], 0);
     const defHome = race.units.reduce((a, u, i) => a + u.def * h.units[i], 0);
     draft.update();
     make.update();
     const extra = [['In training', h.training], ['Medics home/away', `${fmt(h.medics)}/${fmt(h.medics_away)}`], ['Horses home/away', `${fmt(h.horses)}/${fmt(h.horses_away)}`],
       ['Chariots home/away', `${fmt(h.chariots)}/${fmt(h.chariots_away)}`], ['Generals', h.generals.length], ['Raw offense home', offHome], ['Raw defense home', defHome], ['Nerve', `${h.nerve_bp / 100}%`]];
     $('mil-extra').innerHTML = '<tr><th>LINE</th><th class="num">VALUE</th></tr>' + extra.map(([k, v]) => `<tr><td>${esc(k)}</td><td class="num">${typeof v === 'number' ? fmt(v) : esc(v)}</td></tr>`).join('');
+    renderRace($('race'), 'r-rc', true);
 
     root.querySelectorAll('#r-a-troops input').forEach((inp) => { const n = h.units[Number(inp.dataset.slot)]; inp.max = n; inp.title = `${fmt(n)} at home`; });
     $('uw-res').innerHTML = uw.html(['explore', 'build'], { limit: 4, more: 'res' });
@@ -422,6 +425,7 @@ export function mount(root) {
     $('a-gen-line').textContent = generalLine($('a-gen').value);
   }
   wireTabs($('mil-tabs'), $('p-mil'), on, MIL_TAB, renderGen);
+  wireRace($('race'), on, 'r-rc');
   on($('p-mil'), 'click', (ev) => { const b = ev.target.closest('[data-defend]'); if (b) act.setDefender(b.dataset.defend, { button: b }); });
 
   // ---------- state roster ----------
@@ -536,8 +540,8 @@ export function mount(root) {
     units[8] = x.mercs;
     const typed = $('a-target').value.trim();
     const t = store.target && typed === addr(store.target) ? store.target : typed;
-    const out = await act.attack({ target: t, kind: $('a-kind').value, units, general: $('a-gen').value, medics: x.medics, horses: x.horses, chariots: x.chariots }, { button: ev.submitter });
-    if (out) root.querySelectorAll('#r-a-troops input, #r-a-extra input').forEach((inp) => { inp.value = 0; });
+    const out = await act.attack({ target: t, kind: $('a-kind').value, units, general: $('a-gen').value, medics: x.medics, horses: x.horses, chariots: x.chariots, upgradedMercenaries: x.upmercs, doubleStrike: x.double }, { button: ev.submitter });
+    if (out) root.querySelectorAll('#r-a-troops input, #r-a-extra input').forEach((inp) => { if (inp.type === 'checkbox') inp.checked = false; else inp.value = 0; });
     costs();
   });
   for (const id of ['x-acres', 'b-bld', 'b-n', 't-unit', 't-n', 't-src', 'a-kind']) on($(id), 'input', costs);

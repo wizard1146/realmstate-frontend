@@ -5,6 +5,7 @@ import * as live from './core/live.js';
 import * as actions from './core/actions.js';
 import { connected, configProblem, startConnect, finishConnect, API } from './core/api.js';
 import { esc } from './core/words.js';
+import { WIKI } from './core/wiki.js';
 
 const $ = (id) => document.getElementById(id);
 const root = $('view');
@@ -48,6 +49,7 @@ function renderGate() {
     const opts = (list) => playable(list).map((d) => `<option value="${esc(d.identity)}">${esc(d.name)}</option>`).join('');
     $('c-race').innerHTML = opts(store.rules.races);
     $('c-pers').innerHTML = opts(store.rules.personalities);
+    raceLink();
   }
   if (!house && store.me !== undefined) {
     const f = signedIn ? $('c-name') : connected ? $('connect').querySelector('button') : $('login-email');
@@ -71,6 +73,9 @@ $('create').addEventListener('submit', async (ev) => {
   }, { button: ev.submitter });
 });
 $('create-out').addEventListener('click', () => actions.signOut());
+// The chosen race's wiki page: its units, bonuses and special rules.
+function raceLink() { $('c-race-wiki').href = `${WIKI}race-${encodeURIComponent($('c-race').value)}.html`; }
+$('c-race').addEventListener('change', raceLink);
 
 // ---------- wiring ----------
 subscribe((c) => {

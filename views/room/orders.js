@@ -2,7 +2,7 @@
 // a construction grid that builds many at once, train, attack). Prices come from core/prices.js;
 // if the server sends none (an old build), quotes fall back to ≈ estimates and MAX is off.
 import { fillPicker, generalLine } from './generals.js';
-import { store, say, setTarget, raceOf, slotUsed } from '../../core/store.js';
+import { store, say, setTarget, raceOf, slotUsed, unitPoints, trainableSlots } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import * as price from '../../core/prices.js';
 import { fmt, esc, addr, names, when, UNIT_ORDER, TRAINABLE, THIEF, SOLDIER } from '../../core/words.js';
@@ -41,9 +41,9 @@ export function trainNote(direct, slot) {
     : `From soldiers (${fmt(h.units[SOLDIER])} at home): base price and time, ${P.train_fail_bp / 100}% fail back to soldiers, ${P.train_death_bp / 100}% die${upg}.`;
 }
 /** Train options: the four trainable units (soldiers are drafted, never trained). */
-export const trainOptions = (race, withGold = true) => TRAINABLE.map((i) => {
+export const trainOptions = (race, withGold = true) => trainableSlots(race, TRAINABLE).map((i) => {
   const u = race.units[i] || { name: `slot ${i}`, off: 0, def: 0, gold: 0 };
-  return `<option value="${i}">${esc(u.name)} ${u.off}/${u.def}${withGold ? ` · ${fmt(u.gold)}g` : ''}</option>`;
+  return `<option value="${i}">${esc(u.name)} ${unitPoints(race, i).join('/')}${withGold ? ` · ${fmt(u.gold)}g` : ''}</option>`;
 }).join('');
 /** Slots that can attack (offense above 0, thieves never), in reading order. */
 export const attackSlots = (race) => UNIT_ORDER.filter((i) => i !== THIEF && (race.units[i]?.off || 0) > 0 && slotUsed(race, i));
@@ -395,8 +395,8 @@ export function actDetail(body, on, { goto, tab, report }) {
       troopInputs().forEach((inp) => { inp.value = String(store.house.units[Number(inp.dataset.slot)]); });
       attack();
     } else if (ev.target.closest('#d-a-none')) {
-      troopInputs().forEach((inp) => { inp.value = '0'; });
-      body.querySelectorAll('#d-a-extra input').forEach((inp) => { inp.value = '0'; });
+      troopInputs().forEach((inp) => { if (inp.type === 'checkbox') inp.checked = false; else inp.value = '0'; });
+      body.querySelectorAll('#d-a-extra input').forEach((inp) => { if (inp.type === 'checkbox') inp.checked = false; else inp.value = '0'; });
       attack();
     } else if (ev.target.closest('#d-a-pick')) goto('rank');
   });
@@ -407,8 +407,8 @@ export function actDetail(body, on, { goto, tab, report }) {
     units[8] = x.mercs;
     const typed = $('d-a-target').value.trim();
     const t = store.target && typed === addr(store.target) ? store.target : typed;
-    const out = await act.attack({ target: t, kind: $('d-a-kind').value, units, general: $('d-a-gen').value, medics: x.medics, horses: x.horses, chariots: x.chariots }, { button: ev.submitter });
-    if (out) body.querySelectorAll('#d-a-troops input, #d-a-extra input').forEach((inp) => { inp.value = '0'; });
+    const out = await act.attack({ target: t, kind: $('d-a-kind').value, units, general: $('d-a-gen').value, medics: x.medics, horses: x.horses, chariots: x.chariots, upgradedMercenaries: x.upmercs, doubleStrike: x.double }, { button: ev.submitter });
+    if (out) body.querySelectorAll('#d-a-troops input, #d-a-extra input').forEach((inp) => { if (inp.type === 'checkbox') inp.checked = false; else inp.value = '0'; });
     attack();
   });
   if (store.target) $('d-a-target').value = addr(store.target);

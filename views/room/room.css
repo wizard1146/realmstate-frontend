@@ -744,3 +744,11 @@
   & .ticket.mkt .btn.primary { grid-column: 3; grid-row: 1 / span 2; align-self: center; }
   & .ticket.make .args .btn.max, & .ticket.mkt .args .btn.max { flex: none; }
 }
+
+/* Your race's own mechanics (racebox.js): one line each, in the MIL pane and detail. */
+:root[data-view="room"] {
+  & .race-box:empty { display: none; }
+  & .race-box { margin-top: 6px; }
+  & .race-row { margin: 3px 0; font-size: calc(12px * var(--room-scale)); line-height: 1.5; }
+  & .race-row input.w4 { width: 5em; }
+}

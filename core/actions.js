@@ -165,7 +165,7 @@ export async function resolveAddress(text) {
  * units: troops to send by slot (10 slots: soldiers 0, offense 1, elite 3, the upgrades 5, 7, 9
  * fight; slot 8 hires that many mercenaries for this attack). medics, horses, chariots: from home.
  */
-export async function attack({ target, kind, units, general, medics = 0, horses = 0, chariots = 0 }, opts = {}) {
+export async function attack({ target, kind, units, general, medics = 0, horses = 0, chariots = 0, upgradedMercenaries = 0, doubleStrike = false }, opts = {}) {
   let h = target;
   if (typeof target === 'string') {
     try { h = await resolveAddress(target); } catch (e) { say(e.message, 'bad'); return null; }
@@ -180,11 +180,20 @@ export async function attack({ target, kind, units, general, medics = 0, horses 
   setTarget(h);
   const cmd = { type: 'attack', attacker: me(), target: h.id, units: sent, kind };
   if (general != null && general !== '') cmd.general = Number(general);
-  for (const [k, v] of [['medics', medics], ['horses', horses], ['chariots', chariots]]) if (Number(v) > 0) cmd[k] = Math.floor(Number(v));
+  for (const [k, v] of [['medics', medics], ['horses', horses], ['chariots', chariots], ['upgraded_mercenaries', upgradedMercenaries]]) if (Number(v) > 0) cmd[k] = Math.floor(Number(v));
+  if (doubleStrike) cmd.double_strike = true;
   const out = await run(cmd, opts);
   if (out) loadRankings();
   return out;
 }
+
+// ---------- race mechanics ----------
+/** A mirroring race: fight with the unit stats of `of` (a house id among your latest attackers), or your own (null). */
+export const mirror = (of, opts = {}) => run({ type: 'mirror', house: me(), of: of == null || of === '' ? null : Number(of) }, opts);
+/** Make the second strike kept with your last attack. */
+export const secondStrike = (opts = {}) => run({ type: 'second_strike', house: me() }, opts);
+/** Take back `acres` that house `from`'s army is still carrying home. */
+export const retakeLand = (from, acres, opts = {}) => run({ type: 'retake_land', house: me(), from: Number(from), acres: Number(acres) }, opts);
 
 /** A house from a house object or an address string; says why not and returns null. */
 async function houseOf(target) {
