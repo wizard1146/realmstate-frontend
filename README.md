@@ -37,7 +37,9 @@ other front end connects (see the wiki's [API for Tools](https://wizard1146.gith
 To try it locally, open `http://localhost:3400/?game=http://localhost:3300`: the page and the game
 are then on different addresses. The choice lasts for that tab; `?game=` with nothing after it goes back.
 
-To host it, put these files on any static host and set `GAME` in `config.js` to the game's address.
+To host it, put these files on any static host (GitHub Pages serves this repo as it is). Away from
+this computer, `config.js` points it at a game server on the player's own computer
+(`http://localhost:3300`); `?game=https://...` points it anywhere else, such as a Cloudflare tunnel.
 
 ## Layout
 
