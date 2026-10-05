@@ -1,5 +1,6 @@
 // SCI detail, second half: academics (recruit, records) and the state's Colloquium (projects,
 // tiers, knowledge and decay; contribute; the leader picks the project).
+import { nameRoll } from '../../core/names.js';
 import { store } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc } from '../../core/words.js';
@@ -24,7 +25,7 @@ export function academicsBuild() {
   const attrs = store.rules.attributes || [];
   return `<section class="wide"><h3 class="sub">ACADEMICS <span class="dim" id="d-ac-line"></span></h3><div id="d-ac-waver"></div><div id="d-ac-list"></div>
       <form id="d-ac-form" class="dform">
-        <label for="d-ac-name">Recruit</label><input id="d-ac-name" class="w-name" maxlength="40" placeholder="name" autocomplete="off">
+        <label for="d-ac-name">Recruit</label><span class="field"><input id="d-ac-name" class="w-name" maxlength="40" placeholder="name" autocomplete="off"><button type="button" class="btn mini" id="d-ac-roll" title="Suggest another name" aria-label="Suggest another name">&#8635;</button></span>
         <label for="d-ac-cat">Books from</label><select id="d-ac-cat">${catOpts()}</select>
         <span class="lbl">Attributes</span><fieldset class="ac-attrs" id="d-ac-attrs"><legend class="vh">Attributes</legend>${attrs.map((a) => `<label class="check"><input type="checkbox" value="${esc(a.attribute)}"> ${esc(a.name)} <span class="dim small">${esc(ATTR[a.attribute] || '')}</span></label>`).join('')}</fieldset>
         <span></span><button class="btn primary">RECRUIT</button>
@@ -46,10 +47,11 @@ export function colloqBuild() {
 export function colloqWire(b, on) {
   const $ = (id) => b.querySelector(`#d-${id}`);
   const chosen = () => [...b.querySelectorAll('#d-ac-attrs input:checked')].map((x) => x.value);
+  const acName = nameRoll($('ac-name'), $('ac-roll'), 'academic');
   on($('ac-form'), 'input', () => colloqUpdate(b));
   on($('ac-form'), 'submit', (ev) => {
     ev.preventDefault();
-    act.recruitAcademic($('ac-name').value.trim(), $('ac-cat').value, chosen(), { button: ev.submitter }).then((o) => { if (o) $('ac-name').value = ''; });
+    act.recruitAcademic($('ac-name').value.trim(), $('ac-cat').value, chosen(), { button: ev.submitter }).then((o) => { if (o) { $('ac-name').value = ''; acName?.refresh(); } });
   });
   on($('co-form'), 'input', () => colloqUpdate(b));
   on($('co-form'), 'click', (ev) => { if (ev.target.closest('[data-max]')) fillMax($('co-n'), S.sci().books[S.CATS.indexOf($('co-cat').value)], `no ${$('co-cat').value} books`); });

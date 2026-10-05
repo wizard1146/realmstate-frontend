@@ -37,7 +37,7 @@
   <form id="create" hidden>
     <p class="lede">You hold no house this age. Found one: it takes a seat in a state.</p>
     <label for="c-name">House name</label>
-    <input id="c-name" name="name" maxlength="40" required autocomplete="off">
+    <div class="row"><input id="c-name" name="name" maxlength="40" required autocomplete="off"><button type="button" id="c-name-roll" title="Suggest another name" aria-label="Suggest another name">&#8635;</button></div>
     <div class="grid2">
       <div><label for="c-race">Race</label><select id="c-race" name="race"></select><a class="hint" id="c-race-wiki" target="_blank" rel="noopener">What this race does &#8599;</a></div>
       <div><label for="c-pers">Personality</label><select id="c-pers" name="personality"></select></div>

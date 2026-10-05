@@ -1,6 +1,7 @@
 // MIL detail › GENERALS: every general with its traits (spelled out), record and whereabouts; the
 // main-general switch; LIST (opens the Hall tab with it chosen) and HEIR; the raise form with its
 // exact cost; and the heirs list.
+import { nameRoll } from '../../core/names.js';
 import { store } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc, when } from '../../core/words.js';
@@ -19,7 +20,7 @@ export function generalsDetail(b, on) {
       <p class="dim small">The main general (DEF) commands the home defense; one sent with an army stops commanding it. A general that just changed house is settling in for ${fmt(p.settling_ticks)} ticks (${pctBp(p.settling_penalty_bp)} offense and defense). A failed attack kills its general ${fmt(p.general_death_bp / 100)}% of the time.</p></section>
     <section class="wide"><h3 class="sub">RAISE A GENERAL <span class="dim">retire ${fmt(p.general_elites)} elites, pay ${fmt(p.general_cost)} ${esc(p.general_material)} per trait</span></h3>
       <form id="d-gn-form" class="dform">
-        <label for="d-gn-name">Name</label><input id="d-gn-name" class="w-name" maxlength="40" placeholder="name" autocomplete="off" required>
+        <label for="d-gn-name">Name</label><span class="field"><input id="d-gn-name" class="w-name" maxlength="40" placeholder="name" autocomplete="off" required><button type="button" class="btn mini" id="d-gn-roll" title="Suggest another name" aria-label="Suggest another name">&#8635;</button></span>
         <span class="lbl" id="d-gn-tl">Traits</span><fieldset class="ac-attrs" id="d-gn-traits" aria-labelledby="d-gn-tl"><legend class="vh">Traits</legend>${G.traits().map((t) => `<label class="check"><input type="checkbox" value="${esc(t.trait)}"> ${esc(t.name)} <span class="dim small">${esc(G.traitDoes(t.trait))}</span></label>`).join('')}</fieldset>
         <span></span><button class="btn primary">RAISE</button>
         <p class="span small" id="d-gn-q" aria-live="polite"></p>
@@ -29,6 +30,7 @@ export function generalsDetail(b, on) {
   </div>`;
   const $ = (id) => b.querySelector(`#d-gn-${id}`);
   const boxes = () => [...b.querySelectorAll('#d-gn-traits input')];
+  const genName = nameRoll($('name'), $('roll'), 'general');
 
   function quote() {
     const pick = G.mayPick(), slots = G.traitSlots();
@@ -79,7 +81,7 @@ export function generalsDetail(b, on) {
     ev.preventDefault();
     const traits = G.mayPick() ? boxes().filter((x) => x.checked).map((x) => x.value) : [];
     const out = await act.recruitGeneral($('name').value, traits, { button: ev.submitter });
-    if (out) { $('name').value = ''; boxes().forEach((x) => { x.checked = false; }); quote(); }
+    if (out) { $('name').value = ''; boxes().forEach((x) => { x.checked = false; }); quote(); genName.refresh(); }
   });
   on(b, 'click', (ev) => {
     const d = ev.target.closest('[data-defend]');

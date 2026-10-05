@@ -6,6 +6,7 @@ import * as actions from './core/actions.js';
 import { connected, configProblem, startConnect, finishConnect, API } from './core/api.js';
 import { esc } from './core/words.js';
 import { WIKI } from './core/wiki.js';
+import { nameRoll } from './core/names.js';
 
 const $ = (id) => document.getElementById(id);
 const root = $('view');
@@ -50,6 +51,7 @@ function renderGate() {
     $('c-race').innerHTML = opts(store.rules.races);
     $('c-pers').innerHTML = opts(store.rules.personalities);
     raceLink();
+    houseName ||= nameRoll($('c-name'), $('c-name-roll'), 'house', () => $('c-race').value);
   }
   if (!house && store.me !== undefined) {
     const f = signedIn ? $('c-name') : connected ? $('connect').querySelector('button') : $('login-email');
@@ -75,7 +77,9 @@ $('create').addEventListener('submit', async (ev) => {
 $('create-out').addEventListener('click', () => actions.signOut());
 // The chosen race's wiki page: its units, bonuses and special rules.
 function raceLink() { $('c-race-wiki').href = `${WIKI}race-${encodeURIComponent($('c-race').value)}.html`; }
-$('c-race').addEventListener('change', raceLink);
+// A suggested house name in the race's own style (a new one when the race changes).
+let houseName = null;
+$('c-race').addEventListener('change', () => { raceLink(); houseName?.refresh(); });
 
 // ---------- wiring ----------
 subscribe((c) => {
