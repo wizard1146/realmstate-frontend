@@ -1,9 +1,14 @@
-# Realmstate War Room
+# Realmstate Lab
 
-The official player front end for Realmstate. Read `README.md` first.
+The prototype repository for the front end's five views (Straightline, War Room, War Ring, Atlas, Map). Read
+`PLAN.md` first: what each view is for, the shared skeleton, the order of work, and how work goes back to the
+front end. `README.md` still describes the front end this began as.
 
-Identity: **wizard1146** (`yellowhat1146@gmail.com`), SSH host alias `github-wizard1146`.
-Remote: `git@github-wizard1146:wizard1146/realmstate-frontend.git` (branch `main`). Local git config is set.
+Identity: **wizard1146** (`yellowhat1146@gmail.com`). Local git config is set. No GitHub remote yet.
+The `frontend` remote is `../realmstate-frontend`, fetch only: the lab never pushes there. Take its newer work with
+`git fetch frontend && git merge frontend/main`.
+
+Build on the War Room's panels (`views/room/`) rather than forking them; adapt their look through `.room-scope`.
 
 The game (engine, server, rules) is `../realmstate`; the wiki is `../realmstate-wiki`. Naming follows
 the game: realms > states > houses, addresses `realm:state:house`. Never "kingdoms" or "provinces".
