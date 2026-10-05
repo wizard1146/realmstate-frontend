@@ -1,0 +1,93 @@
+/* Straightline: Utopia's original layout. A menu of pages down the side, one page at a time, one column.
+   Calm and readable for a new player: cream page, deep blue menu and header, gold highlights, generous type.
+   Every rule is nested under :root[data-view="line"]; the pages are War Room panels in .room-scope, given this
+   look through room.css's variables (as the Map does). */
+
+:root[data-view="line"] {
+  --l-bg: #f3efe6; --l-page: #fffdf8; --l-ink: #26241f; --l-muted: #6c675d; --l-line: #ddd5c4; --l-rule: #ebe5d8;
+  --l-nav: #23324a; --l-nav-ink: #e9e4d8; --l-nav-muted: #9fadc2; --l-gold: #b8892e; --l-blue: #2f5d8a; --l-blue-ink: #ffffff;
+  --l-good: #2f6b3a; --l-bad: #a33a25; --l-self: #f6ecd3;
+  /* Shell tokens (sign-in, message line). */
+  --bg: var(--l-bg); --panel: var(--l-page); --field: #ffffff; --ink: var(--l-ink); --muted: var(--l-muted); --line: var(--l-line);
+  --accent: var(--l-blue); --on-accent: var(--l-blue-ink); --bad: var(--l-bad); --good: var(--l-good); --focus: var(--l-gold); --radius: 6px;
+  --font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-view="line"] {
+    --l-bg: #14171c; --l-page: #1b1f26; --l-ink: #e6e2d8; --l-muted: #a39d90; --l-line: #343a45; --l-rule: #2a2f38;
+    --l-nav: #10161f; --l-nav-ink: #e6e2d8; --l-nav-muted: #8592a6; --l-gold: #d9ad55; --l-blue: #6f9fd0; --l-blue-ink: #0f141a;
+    --l-good: #8fc59a; --l-bad: #ec8a70; --l-self: #33301f;
+    color-scheme: dark;
+  }
+}
+
+:root[data-view="line"] {
+  & body { background: var(--l-bg); color: var(--l-ink); font: var(--font); }
+  & .line { min-height: 100dvh; display: flex; flex-direction: column; }
+
+  /* Header and the resource line, as in Utopia: always there, always the same place. */
+  & .line-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; padding: 8px 18px; background: var(--l-nav); color: var(--l-nav-ink); }
+  & .line-top .brand { font-weight: 700; letter-spacing: .06em; color: var(--l-gold); }
+  & .line-top .brand .banner { color: var(--l-nav-muted); font-weight: 600; }
+  & .line-top .dim { color: var(--l-nav-muted); }
+  & .line-top .tick { font-variant-numeric: tabular-nums; }
+  & .line-top .end { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+  & .line-top .btn { background: transparent; color: var(--l-nav-ink); border: 1px solid color-mix(in srgb, var(--l-nav-ink) 40%, transparent); border-radius: 6px; padding: 3px 10px; cursor: pointer; font: inherit; }
+  & .vswitch { color: var(--l-nav-muted); }
+  & .vswitch select { background: var(--l-nav); color: var(--l-nav-ink); border-color: color-mix(in srgb, var(--l-nav-ink) 40%, transparent); }
+  & .vswitch kbd { color: var(--l-nav-muted); border-color: color-mix(in srgb, var(--l-nav-ink) 30%, transparent); }
+  & .line-res { display: flex; flex-wrap: wrap; gap: 4px 26px; margin: 0; padding: 8px 18px; background: var(--l-page); border-bottom: 1px solid var(--l-line); }
+  & .line-res div { display: flex; gap: 6px; align-items: baseline; }
+  & .line-res dt { color: var(--l-muted); font-size: .85em; }
+  & .line-res dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* The menu and the page. */
+  & .line-body { flex: 1; display: grid; grid-template-columns: 210px minmax(0, 1fr); min-height: 0; }
+  & .line-menu { background: var(--l-nav); color: var(--l-nav-ink); padding: 10px 0 24px; overflow-y: auto; }
+  & .line-menu h2 { margin: 14px 18px 4px; font-size: .74rem; letter-spacing: .12em; text-transform: uppercase; color: var(--l-nav-muted); font-weight: 600; }
+  & .line-menu ul { list-style: none; margin: 0; padding: 0; }
+  & .line-menu a { display: block; padding: 6px 18px; color: inherit; text-decoration: none; border-left: 3px solid transparent; }
+  & .line-menu a:hover { background: color-mix(in srgb, var(--l-nav-ink) 8%, transparent); }
+  & .line-menu a[aria-current] { border-left-color: var(--l-gold); background: color-mix(in srgb, var(--l-gold) 16%, transparent); color: #fff; font-weight: 600; }
+  & .line-main { overflow-y: auto; padding: 18px 26px 40px; }
+  & .line-main > .room { max-width: 1100px; }
+  & .line-page-h h1 { margin: 0; font-size: 1.5rem; font-weight: 600; letter-spacing: .01em; }
+  & .line-page-h p { margin: 2px 0 14px; }
+  & .line-protect { margin: 0 0 14px; padding: 8px 12px; border: 1px solid var(--l-gold); background: var(--l-self); border-radius: 6px; }
+  & .line-page:focus { outline: none; }
+
+  /* The side menu picks a pane's section, so the pane's own section tabs are hidden here. */
+  & .line-page > .acttabs { display: none; }
+
+  @media (max-width: 760px) {
+    & .line-body { grid-template-columns: 1fr; }
+    & .line-menu { display: flex; overflow-x: auto; padding: 4px 8px; gap: 4px; }
+    & .line-menu h2 { display: none; }
+    & .line-menu ul { display: contents; }
+    & .line-menu a { white-space: nowrap; border-left: 0; border-bottom: 3px solid transparent; padding: 6px 10px; }
+    & .line-menu a[aria-current] { border-bottom-color: var(--l-gold); }
+    & .line-main { padding: 14px 12px 30px; }
+  }
+}
+
+/* The War Room's panels in Straightline's look: room.css's variables take Straightline's values. */
+:root[data-view="line"] .room-scope {
+  --bone-bg: var(--l-bg); --pane: var(--l-page); --pane-2: color-mix(in srgb, var(--l-line) 30%, var(--l-page));
+  --room-ink: var(--l-ink); --room-muted: var(--l-muted); --room-line: var(--l-line); --rule: var(--l-rule);
+  --head: var(--l-page); --head-ink: var(--l-blue); --key: var(--l-gold);
+  --moss: var(--l-blue); --moss-ink: var(--l-blue-ink); --rust: var(--l-bad); --up: var(--l-good); --down: var(--l-bad);
+  --self: var(--l-self); --tgt: color-mix(in srgb, var(--l-bad) 14%, var(--l-page)); --focus: var(--l-gold);
+  --ch-world: var(--l-blue); --ch-realm: var(--l-gold); --ch-state: var(--l-good);
+  --room-mono: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --room-label: var(--room-mono);
+  --room-scale: calc(14.5 / 13);
+  color-scheme: inherit;
+}
+:root[data-view="line"] .room-scope {
+  & .btn, & input, & select, & .room input, & .room select, & .seg button { border-radius: 6px; }
+  & .btn { border-color: var(--l-line); }
+  & .sub { font-size: .8rem; letter-spacing: .1em; text-transform: uppercase; border-bottom-color: var(--l-line); color: var(--l-muted); }
+  & .tbl td { border-bottom-style: solid; }
+  & .dgrid { gap: 22px 28px; }
+}

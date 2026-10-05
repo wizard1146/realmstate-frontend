@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-view="room">
+<html lang="en" data-view="line">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -8,10 +8,12 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <script>
   // The remembered view, before anything paints (core/viewswitch.js keeps the same key).
-  try { if (localStorage.getItem('realmstate.view') === 'map') document.documentElement.dataset.view = 'map'; } catch (e) { /* storage off */ }
+  try { const v = localStorage.getItem('realmstate.view'); if (['line', 'room', 'ring', 'atlas', 'map'].includes(v)) document.documentElement.dataset.view = v; } catch (e) { /* storage off */ }
 </script>
 <link rel="stylesheet" href="shell.css">
 <link rel="stylesheet" href="views/map/map.css">
+<link rel="stylesheet" href="views/line/line.css">
+<link rel="stylesheet" href="views/world/world.css">
 <link rel="stylesheet" href="views/room/room.css">
 </head>
 <body>

@@ -8,13 +8,16 @@ import { connected, configProblem, startConnect, finishConnect, API } from './co
 import { esc } from './core/words.js';
 import { WIKI } from './core/wiki.js';
 import { nameRoll } from './core/names.js';
-import { VIEWS, savedView, saveView, otherView } from './core/viewswitch.js';
+import { VIEWS, savedView, saveView, nextView } from './core/viewswitch.js';
 
 const $ = (id) => document.getElementById(id);
 const root = $('view');
 
 const loaders = {
+  line: () => import('./views/line/line.js'),
   room: () => import('./views/room/room.js'),
+  ring: () => import('./views/world/world.js').then((m) => ({ mount: (root) => m.mount(root, 'ring') })),
+  atlas: () => import('./views/world/world.js').then((m) => ({ mount: (root) => m.mount(root, 'atlas') })),
   map: () => import('./views/map/map.js'),
 };
 let viewName = savedView();
@@ -50,20 +53,19 @@ async function setView(name, { focus = false } = {}) {
   saveView(name);
   applyViewName();
   await mountView();
-  if (focus) root.querySelector(`[data-switch-view="${name}"]`)?.focus();
+  if (focus) root.querySelector('[data-switch-select]')?.focus();
 }
-document.addEventListener('click', (ev) => {
-  const b = ev.target.closest('[data-switch-view]');
-  if (b) setView(b.dataset.switchView, { focus: true });
+document.addEventListener('change', (ev) => {
+  if (ev.target.matches?.('[data-switch-select]')) setView(ev.target.value, { focus: true });
 });
-// V switches views, unless typing or a dialog is open.
+// V: the next view (Shift+V: the previous one), unless typing or a dialog is open.
 document.addEventListener('keydown', (ev) => {
   if (ev.key !== 'v' && ev.key !== 'V') return;
   if (ev.ctrlKey || ev.metaKey || ev.altKey || document.querySelector('dialog[open]')) return;
   const t = ev.target;
   if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
   ev.preventDefault();
-  setView(otherView(viewName), { focus: true });
+  setView(nextView(viewName, ev.shiftKey), { focus: true });
 });
 
 // ---------- the message line ----------

@@ -89,9 +89,8 @@
   & .gate h1 { font-variant-caps: all-small-caps; text-transform: none; letter-spacing: 0.16em; font-size: 1.6rem; }
   & .gate label, & .gate legend { font-variant-caps: all-small-caps; letter-spacing: 0.07em; font-size: 0.95rem; }
 
-  & .vswitch button { min-height: 1.9rem; font-variant-caps: all-small-caps; letter-spacing: 0.07em; font-weight: 600; padding: 0.1rem 0.65rem; }
-  & .vswitch button:first-child { border-radius: 999px 0 0 999px; }
-  & .vswitch button:nth-child(2) { border-radius: 0 999px 999px 0; }
+  & .vswitch { font-variant-caps: all-small-caps; letter-spacing: 0.07em; font-weight: 600; color: var(--map-muted); }
+  & .vswitch select { border-radius: 999px; padding: 0.1rem 0.7rem; background: var(--panel-solid); color: var(--brass); font-weight: 600; letter-spacing: 0.04em; }
 
   & button, & input, & select { font: inherit; color: inherit; }
   & .mapview button {

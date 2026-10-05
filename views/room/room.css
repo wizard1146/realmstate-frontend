@@ -112,9 +112,9 @@
   & .bar { display: flex; flex-wrap: wrap; align-items: center; background: var(--head); color: var(--head-ink); border-bottom: 1px solid var(--room-line); }
   & .bar > * { padding: 5px 10px; border-right: 1px solid color-mix(in srgb, var(--head-ink) 18%, transparent); white-space: nowrap; }
   & .bar .cell.sw { padding: 3px 8px; }
-  & .vswitch button { border-radius: 0 !important; min-height: 22px; padding: 0 8px; letter-spacing: .04em; text-transform: uppercase; font-size: calc(12px * var(--room-scale)); }
-  & .bar .vswitch button { border-color: color-mix(in srgb, var(--head-ink) 40%, transparent); color: var(--head-ink); }
-  & .bar .vswitch button[aria-pressed="true"] { background: var(--key); border-color: var(--key); color: var(--head); font-weight: 700; }
+  & .vswitch select { border-radius: 0; min-height: 22px; padding: 0 4px; letter-spacing: .04em; text-transform: uppercase; font-size: calc(12px * var(--room-scale)); font-family: var(--room-label); }
+  & .bar .vswitch { color: var(--head-ink); }
+  & .bar .vswitch select { background: var(--head); border-color: color-mix(in srgb, var(--head-ink) 40%, transparent); color: var(--key); font-weight: 700; }
   & .bar .vswitch kbd { border-color: color-mix(in srgb, var(--head-ink) 40%, transparent); color: color-mix(in srgb, var(--head-ink) 70%, transparent); border-radius: 0; }
   & .bar .dim { color: color-mix(in srgb, var(--head-ink) 60%, transparent); }
   & .bar .brand { font-weight: 700; letter-spacing: .08em; color: var(--key); }
@@ -293,7 +293,7 @@
 
 /* Label face: headers, pane titles, field labels, buttons. Numbers always stay in the data face. */
 :is(:root[data-view="room"], .room-scope) {
-  & .bar, & .pane-h, & .tabs button, & .seg button, & .vswitch button, & .btn, & .strip dt, & .sub,
+  & .bar, & .pane-h, & .tabs button, & .seg button, & .vswitch, & .btn, & .strip dt, & .sub,
   & th, & label, & legend, & .gate h1, & .fontlab .lab { font-family: var(--room-label); }
   & .num, & input, & select, & .bar b { font-family: var(--room-mono); }
   & abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cursor: help; }

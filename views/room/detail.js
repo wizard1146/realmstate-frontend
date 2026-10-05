@@ -263,8 +263,62 @@ const rank = {
 };
 
 /**
- * Mounts the detail dialog into the war room. `on` registers listeners for unmount; `syncDraft`
- * copies the chat draft into the compact pane. Returns { open(pane), close(), isOpen(), update(changes), tick() }.
+ * Runs one pane at a time in `body`, with no dialog around it: the War Room's dialog uses it, and so can a page
+ * (Straightline). `frame` holds the graph overlay. `onShow(name)` runs after a pane is drawn (to retitle).
+ * Returns { show(name, { focus, tab }), update(changes), tick(), current(), clear() }.
+ */
+export function paneRunner(body, frame, { onShow = () => {} } = {}) {
+  let cur = null;
+  let paneAc = null;
+  let actInst = null;
+  let sciInst = null;
+  let actOpts = {};
+  const graph = mountGraph(frame);
+  const ctx = { goto: (p) => show(p, { focus: true }), dialog: frame, graph };
+  const impl = {
+    res, mil, news, chat, roster, rank,
+    sci: {
+      build(b, pon) { sciInst = sciDetail(b, pon); },
+      update(b, c) { if (!c || c.has('house') || c.has('colloquium') || c.has('ticks') || c.has('rules') || c.has('heirs')) sciInst?.update(); },
+    },
+    act: {
+      build(b, pon) { actInst = actDetail(b, pon, { goto: ctx.goto, ...actOpts }); actOpts = {}; },
+      update(b, c) { actInst?.update(c); },
+      focus() { actInst?.focus(); },
+    },
+  };
+  /** Draws a pane. opts.tab (ACT only): 'orders'|'attacks'|'intrigue'|'rites'; opts.report: an intel report index. */
+  function show(name, { focus = false, ...opts } = {}) {
+    graph.close();
+    cur = name;
+    paneAc?.abort();
+    paneAc = new AbortController();
+    const pon = (t, type, fn, o = {}) => t.addEventListener(type, fn, { signal: paneAc.signal, ...o });
+    actOpts = name === 'act' ? opts : {};
+    body.replaceChildren();
+    body.scrollTop = 0;
+    actInst = null;
+    impl[name].build(body, pon, ctx);
+    impl[name].update(body, null);
+    onShow(name);
+    if (focus) (impl[name].focus ? impl[name].focus(body) : body.focus());
+  }
+  return {
+    show,
+    current: () => cur,
+    update(c) {
+      if (!cur || !store.house) return;
+      impl[cur].update(body, c);
+      if (!c || c.has('ticks')) graph.update();
+    },
+    tick() { if (cur) uw.tick(body); },
+    clear() { paneAc?.abort(); cur = null; actInst = null; body.replaceChildren(); },
+  };
+}
+
+/**
+ * Mounts the detail dialog into the war room. `on` registers listeners for unmount.
+ * Returns { open(pane), close(), isOpen(), current(), update(changes), tick() }.
  */
 export function mountDetail(root, on) {
   const dlg = document.createElement('dialog');
@@ -281,67 +335,34 @@ export function mountDetail(root, on) {
     <div class="dlg-b" id="r-dlg-b" tabindex="-1"></div>`;
   root.querySelector('.room').append(dlg);
   const body = dlg.querySelector('#r-dlg-b');
-  let cur = null;
-  let paneAc = null;
   let returnTo = null;
-  let actInst = null;
-  let sciInst = null;
-  let actOpts = {};
-  const graph = mountGraph(dlg);
-  const ctx = { goto: (p) => show(p, true), dialog: dlg, graph };
-  const impl = {
-    res, mil, news, chat, roster, rank,
-    sci: {
-      build(b, pon) { sciInst = sciDetail(b, pon); },
-      update(b, c) { if (!c || c.has('house') || c.has('colloquium') || c.has('ticks') || c.has('rules') || c.has('heirs')) sciInst?.update(); },
+  const msg = () => { const m = dlg.querySelector('#r-dlg-msg'); m.textContent = store.msg.text; m.className = `dlg-msg status ${store.msg.tone || ''}`; };
+  const panes = paneRunner(body, dlg, {
+    onShow(name) {
+      const [t, sub] = META[name];
+      dlg.querySelector('.key').textContent = String(PANES.indexOf(name) + 1);
+      dlg.querySelector('h2 .t').textContent = t;
+      dlg.querySelector('h2 .dim').textContent = sub;
+      dlg.querySelectorAll('[data-goto]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.goto === name)));
+      dlg.dataset.pane = name;
+      msg();
     },
-    act: {
-      build(b, pon) { actInst = actDetail(b, pon, { goto: ctx.goto, ...actOpts }); actOpts = {}; },
-      update(b, c) { actInst?.update(c); },
-      focus() { actInst?.focus(); },
-    },
-  };
+  });
 
-  function show(name, focus) {
-    graph.close();
-    cur = name;
-    paneAc?.abort();
-    paneAc = new AbortController();
-    const pon = (t, type, fn, o = {}) => t.addEventListener(type, fn, { signal: paneAc.signal, ...o });
-    const [t, sub] = META[name];
-    dlg.querySelector('.key').textContent = String(PANES.indexOf(name) + 1);
-    dlg.querySelector('h2 .t').textContent = t;
-    dlg.querySelector('h2 .dim').textContent = sub;
-    dlg.querySelectorAll('[data-goto]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.goto === name)));
-    dlg.dataset.pane = name;
-    body.replaceChildren();
-    body.scrollTop = 0;
-    actInst = null;
-    impl[name].build(body, pon, ctx);
-    impl[name].update(body, null);
-    const m = dlg.querySelector('#r-dlg-msg');
-    m.textContent = store.msg.text;
-    m.className = `dlg-msg status ${store.msg.tone || ''}`;
-    if (focus) (impl[name].focus ? impl[name].focus(body) : body.focus());
-  }
   /** Opens a pane's detail. opts (ACT only): { tab: 'orders'|'intrigue'|'rites', report: index }. */
   function open(name, opts = {}) {
-    actOpts = name === 'act' ? opts : {};
     if (!dlg.open) {
       // Back to where you were; if nothing had focus, to the pane itself.
       const a = document.activeElement;
       returnTo = a && a !== document.body ? a : root.querySelector(`#r-p-${name}`);
       dlg.showModal();
     }
-    show(name, true);
+    panes.show(name, { focus: true, ...opts });
   }
   function close() { if (dlg.open) dlg.close(); }
 
   on(dlg, 'close', () => {
-    paneAc?.abort();
-    cur = null;
-    actInst = null;
-    body.replaceChildren();
+    panes.clear();
     const back = returnTo && returnTo.isConnected ? returnTo : null;
     returnTo = null;
     back?.focus();
@@ -350,23 +371,22 @@ export function mountDetail(root, on) {
     if (ev.target === dlg) return close(); // the backdrop
     if (ev.target.closest('[data-close]')) return close();
     const g = ev.target.closest('[data-goto]');
-    if (g) show(g.dataset.goto, true);
+    if (g) panes.show(g.dataset.goto, { focus: true });
     const x = ev.target.closest('[data-expand]');
-    if (x && x.dataset.expand) show(x.dataset.expand, true);
+    if (x && x.dataset.expand) panes.show(x.dataset.expand, { focus: true });
   });
 
   return {
     open,
     close,
     isOpen: () => dlg.open,
-    current: () => cur,
+    current: () => panes.current(),
     update(c) {
-      if (!cur || !store.house) return;
+      if (!panes.current() || !store.house) return;
       // The page's message line is behind the modal (and inert), so the dialog keeps its own.
-      if (!c || c.has('msg')) { const m = dlg.querySelector('#r-dlg-msg'); m.textContent = store.msg.text; m.className = `dlg-msg status ${store.msg.tone || ''}`; }
-      impl[cur].update(body, c);
-      if (!c || c.has('ticks')) graph.update();
+      if (!c || c.has('msg')) msg();
+      panes.update(c);
     },
-    tick() { if (cur) uw.tick(body); },
+    tick() { panes.tick(); },
   };
 }
