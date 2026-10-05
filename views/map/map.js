@@ -27,7 +27,7 @@ const TEMPLATE = (view) => `
 
 <header class="hud" id="m-hud">
   <div class="crest">
-    <span class="brand">Realmstate</span>
+    <span class="brand"><span class="banner">Hegemoney//</span>Realmstate</span>
     <span class="who" id="m-who"></span>
   </div>
   <div class="tick">
