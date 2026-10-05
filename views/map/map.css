@@ -175,6 +175,7 @@
   & .crest { display: flex; align-items: baseline; gap: 0.6rem; min-width: 0; }
   & .brand { font-variant-caps: all-small-caps; letter-spacing: 0.16em; font-weight: 700; color: var(--brass); }
   & .brand .banner { color: var(--map-muted); font-weight: 600; }   /* the suite's name, quieter than the game's */
+  @media (max-width: 1499px) { & .brand .banner { display: none; } }   /* keeps the HUD on one line */
   & .who { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   & .who .addr { color: var(--map-muted); font-weight: 400; font-variant-numeric: tabular-nums; margin-left: 0.35rem; }
   & .tick { white-space: nowrap; font-size: 0.92rem; }
@@ -345,6 +346,55 @@
     & .dock { left: 12px; transform: none; }
     & .mapctl button.word { padding: 0 0.35rem; }
   }
+}
+
+/* ---------- War Room parts in map style ----------
+   The Map shows War Room parts as they are (the chat box, every pane's detail view) inside .room-scope, where
+   room.css styles them through its colour and font variables. Here those variables take the map's values, so
+   the same parts come out slate and brass, in the map's sans; then a few shapes the variables don't cover.
+   The map's own variables switch for dark mode, so these follow. */
+:root[data-view="map"] .room-scope {
+  --bone-bg: var(--sea);
+  --pane: var(--panel-solid);
+  --pane-2: color-mix(in srgb, var(--panel-line) 35%, var(--panel-solid));
+  --room-ink: var(--map-ink);
+  --room-muted: var(--map-muted);
+  --room-line: var(--panel-line);
+  --rule: color-mix(in srgb, var(--panel-line) 70%, transparent);
+  --head: var(--panel-solid);          /* header bars: light, as the map's sheets are */
+  --head-ink: var(--brass);
+  --key: var(--brass);                 /* highlights, active tabs, pane keys */
+  --moss: var(--brass);                /* primary buttons (EXEC, SEND) */
+  --moss-ink: var(--on-brass);
+  --rust: var(--war);
+  --up: var(--ok);
+  --down: var(--war);
+  --self: var(--brass-soft);
+  --tgt: color-mix(in srgb, var(--war) 16%, var(--panel-solid));
+  --focus: var(--brass);
+  --ch-world: var(--mate);             /* chat channels: the map's own colours */
+  --ch-realm: var(--brass);
+  --ch-state: var(--ok);
+  --room-mono: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;   /* tabular figures still line up */
+  --room-label: var(--room-mono);
+  --room-scale: calc(14 / 13);
+  color-scheme: inherit;
+}
+@media (max-width: 719px) { :root[data-view="map"] .room-scope { --room-scale: 1; } }   /* phones: the War Room's own size */
+:root[data-view="map"] .room-scope {
+  & .dlg { border: 0; border-radius: var(--r); box-shadow: var(--shadow); }
+  @media (max-width: 719px) { & .dlg { border-radius: 0; box-shadow: none; } }   /* full screen on phones, as in the War Room */
+  & .dlg::backdrop { background: color-mix(in srgb, var(--sea) 55%, transparent); backdrop-filter: blur(2px); }
+  & .dlg-h { border-bottom: 1px solid var(--panel-line); padding: 8px 10px 8px 14px; }
+  & .dlg-h h2 { font-variant-caps: all-small-caps; letter-spacing: .1em; font-size: 1.12rem; }
+  & .dlg-h h2 .key, & .pane-h .key { border-radius: 4px; }
+  & .btn, & input, & select, & .seg button, & .room input, & .room select { border-radius: 6px; }
+  & .btn { border-color: var(--panel-line); }
+  & .btn.primary { box-shadow: 0 1px 2px rgba(28, 40, 54, .18); }
+  & .seg { gap: 2px; }
+  & .seg button { border-color: var(--panel-line); }
+  & .sub, & th { font-variant-caps: all-small-caps; letter-spacing: .08em; }
+  & .tbl td { border-bottom-style: solid; }
 }
 
 @keyframes map-breathe { 0% { opacity: 0.95; transform: scale(0.7); } 100% { opacity: 0; transform: scale(3.2); } }
