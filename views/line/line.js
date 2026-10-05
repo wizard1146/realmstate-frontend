@@ -64,6 +64,7 @@ const page = (id) => PAGES.find((p) => p[0] === id) || PAGES[0];
 const TEMPLATE = (view) => `
 <div class="line">
 <header class="line-top">
+  <button type="button" class="burger" id="l-burger" aria-expanded="false" aria-controls="l-side" aria-label="Menu"><span aria-hidden="true"></span></button>
   <span class="brand"><span class="banner">Hegemoney:&nbsp;</span>Realmstate</span>
   <span class="who"><b id="l-name"></b> <span id="l-addr" class="dim"></span> <span id="l-ident" class="dim"></span></span>
   <span class="tick">Tick <b id="l-tick">–</b> · next <b id="l-next">–</b></span>
@@ -74,10 +75,11 @@ const TEMPLATE = (view) => `
 </header>
 <dl class="line-res" id="l-res" aria-label="Your house at a glance"></dl>
 <div class="line-body">
-  <div class="line-side">
+  <div class="line-side" id="l-side">
     <nav class="line-menu" id="l-menu" aria-label="Pages">
       ${MENU.map(([g, items]) => `<h2>${esc(g)}</h2><ul>${items.map(([id, label, , , what]) =>
         `<li><a href="#${id}" data-page="${id}" title="${esc(what)}">${esc(label)}</a></li>`).join('')}</ul>`).join('')}
+      <ul><li><a href="#" class="out" data-out>Sign out</a></li></ul>
     </nav>
     <span class="l-sword" id="l-sword" aria-hidden="true"></span>
     <span class="l-shield" id="l-shield" aria-hidden="true"></span>
@@ -91,6 +93,7 @@ const TEMPLATE = (view) => `
     </div>
   </main>
 </div>
+<div class="line-scrim" id="l-scrim" hidden></div>
 <div class="toasts" id="l-toasts" role="status" aria-live="polite" aria-label="New news"></div>
 </div>`;
 
@@ -170,6 +173,7 @@ export function mount(root) {
   });
   on(window, 'hashchange', () => { const id = location.hash.slice(1); if (id && id !== current && PAGES.some((p) => p[0] === id)) select(id); });
   on($('out'), 'click', () => act.signOut());
+  on(root.querySelector('[data-out]'), 'click', (ev) => { ev.preventDefault(); act.signOut(); });
   mountLook(root, on);
 
   // News as it arrives: a small card bottom right, with a link to the News page (not while you're on it).
@@ -217,6 +221,22 @@ export function mount(root) {
     shield.style.top = `${mid - side.getBoundingClientRect().top}px`;
   }
   const place = () => { placeSword(); placeShield(); };
+
+  // Phones: the menu is a drawer behind the ☰ button. Picking a page, the scrim or Esc closes it.
+  const burger = $('burger'), scrim = $('scrim');
+  const phone = () => matchMedia('(max-width: 760px)').matches;
+  function drawer(open) {
+    side.classList.toggle('open', open);
+    scrim.hidden = !open;
+    burger.setAttribute('aria-expanded', String(open));
+    document.documentElement.classList.toggle('line-drawer', open);
+    if (open) requestAnimationFrame(() => { place(); (menu.querySelector('[aria-current]') || menu.querySelector('a'))?.focus(); });
+  }
+  on(burger, 'click', () => drawer(!side.classList.contains('open')));
+  on(scrim, 'click', () => { drawer(false); burger.focus(); });
+  on(document, 'keydown', (ev) => { if (ev.key === 'Escape' && side.classList.contains('open')) { drawer(false); burger.focus(); } });
+  on(menu, 'click', (ev) => { if (phone() && ev.target.closest('a')) drawer(false); });
+  on(window, 'resize', () => { if (!phone() && side.classList.contains('open')) drawer(false); });
   on(menu, 'scroll', place, { passive: true });
   on(window, 'resize', place);
   on(sword, 'pointerdown', (ev) => {
@@ -255,6 +275,7 @@ export function mount(root) {
       panes.clear();
       part?.destroy(); top?.destroy();
       clearLook();
+      document.documentElement.classList.remove('line-drawer');
       if (location.hash) history.replaceState(null, '', location.pathname + location.search);
       root.replaceChildren();
     },

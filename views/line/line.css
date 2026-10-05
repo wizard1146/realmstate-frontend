@@ -211,18 +211,51 @@
   & .look-panel .dim { color: var(--l-muted); }
   & .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
+  /* Phones: the page scrolls as a whole (the header and resources scroll away), the menu strip sticks to the top,
+     the header is one line, the resources one sideways-scrolling row, and the leaf loses most of its margins. */
   @media (max-width: 760px) {
-    & .line-body { grid-template-columns: 1fr; }
-    & .line-side { border-right: 0; border-bottom: 2px solid var(--l-gold); }
-    & .l-sword, & .l-shield { display: none; }
-    & .line-menu { display: flex; overflow-x: auto; padding: 4px 8px; gap: 4px; }
-    & .line-menu h2 { display: none; }
-    & .line-menu ul { display: contents; }
-    & .line-menu a { white-space: nowrap; border-left: 0; border-bottom: 3px solid transparent; padding: 6px 10px; }
-    & .line-menu a[aria-current] { border-bottom-color: var(--l-gold); }
-    & .line-main { padding: 12px 8px 30px; }
-    & .line-main > .room { padding: 20px 16px 24px; }
+    & .line { height: auto; min-height: 100dvh; }
+    & .line-body { display: block; }
+    & .line-top { gap: 4px 10px; padding: 6px 10px; }
+    & .line-top .brand .banner, & #l-ident, & .line-top .tick, & .vswitch-l, & .vswitch kbd { display: none; }
+    & .line-top .who { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    & .line-top .end { margin-left: 0; gap: 6px; }
+    & .line-top .btn { padding: 2px 8px; min-height: 2rem; }
+    & .line-top #l-out { display: none; }   /* on phones, Sign out is the last item in the menu drawer */
+    & .line-side .line-menu .out { display: block; }
+    & .line-res { flex-wrap: nowrap; overflow-x: auto; gap: 18px; padding: 6px 10px; scrollbar-width: none; }
+    & .line-res::-webkit-scrollbar { display: none; }
+    & .line-res div { flex: none; }
+    /* The menu: a drawer from the left behind the ☰ button, with the desktop menu's groups, sword and shield. */
+    & .line-top .burger { display: inline-grid; place-items: center; width: 2.2rem; height: 2.1rem; padding: 0; background: transparent; border: 1px solid color-mix(in srgb, var(--l-nav-ink) 40%, transparent); border-radius: 6px; cursor: pointer; }
+    & .burger span, & .burger span::before, & .burger span::after { display: block; width: 18px; height: 2px; background: var(--l-nav-ink); border-radius: 1px; position: relative; content: ""; }
+    & .burger span::before { position: absolute; top: -6px; } & .burger span::after { position: absolute; top: 6px; }
+    & .burger[aria-expanded="true"] { background: var(--l-gold); border-color: var(--l-gold); }
+    & .burger[aria-expanded="true"] span, & .burger[aria-expanded="true"] span::before, & .burger[aria-expanded="true"] span::after { background: var(--l-nav); }
+    & .line-top { position: sticky; top: 0; z-index: 25; }
+    & .line-side { position: fixed; top: 0; left: 0; bottom: 0; width: min(290px, 84vw); z-index: 60; transform: translateX(-102%); transition: transform .22s ease-out;
+      border-right: 2px solid var(--l-gold); box-shadow: 6px 0 24px rgba(0, 0, 0, .3); }
+    & .line-side.open { transform: none; }
+    & .line-side:not(.open) .l-shield { display: none; }   /* it sits outside the drawer's edge */
+    & .line-scrim { position: fixed; inset: 0; z-index: 55; background: rgba(10, 8, 4, .45); }
+    & .line-scrim[hidden] { display: none; }
+    &.line-drawer body { overflow: hidden; }
+    @media (prefers-reduced-motion: reduce) { & .line-side { transition: none; } }
+    & .line-main { overflow: visible; padding: 8px 0 30px; }
+    & .line-main > .room { padding: 18px 12px 22px; min-width: 0; width: auto; border-left: 0; border-right: 0; box-shadow: none; outline-offset: -5px; }
+    & .line-main > .room::before { inset: 2px; }
+    & .line-page-h h1 { font-size: 1.45rem; }
+    & .look-panel { top: 46px; }
+    & .toasts { right: 8px; left: 8px; bottom: 8px; width: auto; }
+    /* The train grid: name, gold, home, count; off/def and training go (Military's tables have them). */
+    & .traingrid th:nth-child(2), & .traingrid td:nth-child(2), & .traingrid th:nth-child(5), & .traingrid td:nth-child(5) { display: none; }
+    & .traingrid input[type=number] { width: 6.5ch; }
+    & .traingrid .tg-tot { margin-left: 0; flex-basis: 100%; }
   }
+  @media (max-width: 420px) { & .line-top .brand { display: none; } }   /* the house's name needs the room */
+  & .line-menu .out { display: none; }
+  & .burger { display: none; }
+
 }
 
 /* The War Room's panels in Straightline's look: room.css's variables take Straightline's values. */
