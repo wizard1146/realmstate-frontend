@@ -36,6 +36,18 @@ function holder(treasury) {
   return { gold: h.gold, mat: (m) => h.materials[m] || 0, who: 'you' };
 }
 
+// ---------- spoilage ----------
+/** What each material would lose to spoilage at the next tick ({} when nothing, or no spoilage). */
+export const spoils = (h = store.house) => h?.spoilage?.next || {};
+/** One line on spoilage for a holdings view: the free allowance and what spoils next tick. */
+export function spoilNote(h = store.house) {
+  const s = h?.spoilage;
+  if (!s) return '';
+  const next = Object.entries(s.next);
+  return `<p class="small ${next.length ? 'short' : 'dim'}">Spoilage: ${fmt(s.free)} of each material keep free (goods in sell orders count). `
+    + (next.length ? `Next tick loses ${next.map(([m, n]) => `${fmt(n)} ${esc(m)}`).join(', ')}: sell or use the excess.` : 'Nothing spoils next tick.') + '</p>';
+}
+
 // ---------- the order form ----------
 /** p: id prefix; full: the detail's version (with the treasury switch). */
 export function formHTML(p, full = false) {
@@ -191,6 +203,13 @@ function hitSize(side, m, price, quantity) {
   const q = Math.min(quantity, can, MAX_Q);
   return { q, why: q ? '' : side === 'sell' ? `you have no ${m}` : 'not enough gold' };
 }
+/** A made material's output this tick per realm, with its season (and depletion, if any). */
+function outputNow(m) {
+  const o = m.output_now?.[0];
+  if (!o) return `${fmt(m.output_per_tick)}/tick`;
+  const dep = o.depletion_bp < 10000 ? ` · deposit ${o.depletion_bp / 100}%` : '';
+  return `<span title="Base ${fmt(m.output_per_tick)} a tick per realm; this tick's season is ${o.season_bp / 100}%${dep ? `, and the worked deposit gives ${o.depletion_bp / 100}%` : ''}">${fmt(o.per_tick)}/tick now (season ${o.season_bp / 100}%${dep})</span>`;
+}
 export function depthHTML() {
   if (!store.market) return '<p class="dim">Loading the market…</p>';
   const lvl = (rows, cls, side, m) => rows.length ? rows.map((r) => {
@@ -200,7 +219,7 @@ export function depthHTML() {
     const tip = q ? `${side === 'buy' ? 'Buy' : 'Sell'} ${fmt(q)} ${m} at ${fmt(r.price)} now: fills at the next clearing, at this price or better` : `Can't: ${why}`;
     return `<tr><td class="num ${cls}">${fmt(r.price)}</td><td class="num">${fmt(r.quantity)}</td><td><button type="button" class="btn mini" data-hit-mat="${esc(m)}" data-side="${side}" data-price="${r.price}" data-qty="${r.quantity}"${q ? '' : ' disabled'} title="${esc(tip)}" aria-label="${esc(tip)}">${label}</button></td></tr>`;
   }).join('') : '<tr><td colspan="3" class="dim">none</td></tr>';
-  return `<div class="dgrid">${store.market.map((m) => `<section><h4 class="sub">${esc(m.name || cap(m.material))} <span class="dim">${m.realms.length ? `realms ${m.realms.join(', ')} · ${fmt(m.output_per_tick)}/tick` : 'refined'} · last ${m.last.volume ? `${fmt(m.last.price)} ×${fmt(m.last.volume)} at T${m.last.tick}` : 'none'}</span></h4>
+  return `<div class="dgrid">${store.market.map((m) => `<section><h4 class="sub">${esc(m.name || cap(m.material))} <span class="dim">${m.realms.length ? `realms ${m.realms.join(', ')} · ${outputNow(m)}` : 'refined'} · last ${m.last.volume ? `${fmt(m.last.price)} ×${fmt(m.last.volume)} at T${m.last.tick}` : 'none'}</span></h4>
     <p class="dim small">${esc(m.description)}</p>
     <div class="dgrid"><div><table class="tbl book"><tr><th class="num">BID</th><th class="num">QTY</th><th></th></tr>${lvl(m.bids, 'bid', 'sell', m.material)}</table></div>
     <div><table class="tbl book"><tr><th class="num">ASK</th><th class="num">QTY</th><th></th></tr>${lvl(m.asks, 'ask', 'buy', m.material)}</table></div></div></section>`).join('')}</div>`;

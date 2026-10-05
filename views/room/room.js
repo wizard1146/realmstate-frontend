@@ -298,10 +298,11 @@ export function mount(root) {
     $('waver').hidden = !wl;
     if ($('waver').innerHTML !== wl) $('waver').innerHTML = wl;
 
+    const spoil = mkt.spoils(h);
     const res = [['Gold', h.gold], ['Food', h.food], ['Peasants', h.peasants], ['Horses', h.horses], ['Chariots', h.chariots],
-      ...Object.entries(h.materials).map(([m, n]) => [m[0].toUpperCase() + m.slice(1), n])];
-    $('res').innerHTML = '<tr><th>ITEM</th><th class="num">HELD</th></tr>' + res.map(([k, v]) =>
-      `<tr><td>${esc(k)}</td><td class="num${v ? '' : ' zero'}">${fmt(v)}</td></tr>`).join('');
+      ...Object.entries(h.materials).map(([m, n]) => [m[0].toUpperCase() + m.slice(1), n, spoil[m]])];
+    $('res').innerHTML = '<tr><th>ITEM</th><th class="num">HELD</th></tr>' + res.map(([k, v, lost]) =>
+      `<tr><td>${esc(k)}</td><td class="num${v ? '' : ' zero'}">${fmt(v)}${lost ? ` <span class="down small" title="Spoils ${fmt(lost)} at the next tick: beyond the free ${fmt(h.spoilage.free)}">−${fmt(lost)}</span>` : ''}</td></tr>`).join('');
     $('eff').textContent = `eff ${Math.round(h.efficiency_bp / 100)}% · ${fmt(h.build_cost)}g base each`;
     const rows = store.rules.buildings.map((b) => [b, h.buildings[b.building] || 0, h.constructing[b.building] || 0]).filter(([, n, c]) => n || c);
     $('bld').innerHTML = '<tr><th>BUILDING</th><th class="num">UP</th><th class="num">+BLD</th></tr>' + rows.map(([b, n, c]) =>
