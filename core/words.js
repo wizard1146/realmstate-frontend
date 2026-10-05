@@ -150,6 +150,7 @@ export function newsLine(n) {
     case 'blockade_lifted': return ['The blockade on our state has lifted.', 'good'];
     case 'tax_changed': return [`${where(n.by)} set the state's tax to ${n.rate_bp / 100}%.`, ''];
     case 'state_renamed': return [`${where(n.by)} renamed our state from ${n.from} to ${n.to}.`, ''];
+    case 'admin_action': return [`The game's staff ${n.what}${n.note ? `: ${n.note}` : ''}.`, ''];
     case 'troops_recovered': return [`${fmt((n.units || []).reduce((a, b) => a + b, 0))} of our battle dead rose again and came home.`, 'good'];
     case 'afflicted': return [`${n.by ? where(n.by) : 'A veiled army'} afflicted us with ${n.name} until tick ${n.until_tick}.`, 'bad'];
     case 'second_strike': {
