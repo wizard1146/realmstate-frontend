@@ -260,6 +260,8 @@ export const donate = (material, amount, opts = {}) => run({ type: 'donate', hou
 export const setTax = (rateBp, opts = {}) => run({ type: 'set_tax', house: me(), rate_bp: Math.round(Number(rateBp)) }, opts).then(stateAfter);
 /** Leader only: rename the state (1-40 characters, at most once every state_rename_ticks). */
 export const renameState = (name, opts = {}) => run({ type: 'rename_state', house: me(), name: String(name) }, opts).then(stateAfter);
+/** Aid to a house of your state: gold, food, soldiers, horses, aether, explorable or material:<id>. */
+export const sendAid = (to, what, amount, opts = {}) => run({ type: 'send_aid', house: me(), to: Number(to), what, amount: Math.floor(Number(amount)) }, opts).then((o) => { if (o) stateAfter(o); return o; });
 /** Leader only: treasury gold (material null) or a material to a house of the state. */
 export const grant = (to, material, amount, opts = {}) => run({ type: 'grant', house: me(), to: Number(to), material: material || null, amount: Number(amount) }, opts).then(stateAfter);
 /** Leader only: open a state vigil. */

@@ -3,6 +3,7 @@
 // refusal (e.g. why war can't be declared) goes to the message line.
 import { store, say, loadWars, loadRelations, loadState } from '../../core/store.js';
 import * as act from '../../core/actions.js';
+import { api } from '../../core/api.js';
 import { fmt, esc, addr, empty } from '../../core/words.js';
 import { tabState, tabButtons, panelAttrs, wireTabs } from './tabs.js';
 import { isLeader, leaderId } from './market.js';
@@ -83,7 +84,7 @@ function membersHTML() {
   return table('<th class="num">SEAT</th><th>HOUSE</th><th>RACE</th><th class="num">LAND</th><th class="num">MIGHT</th><th class="num">RENOWN</th><th class="num">VOTES</th><th>FLAGS</th><th></th>',
     s.members.length ? s.members.map((m) => `<tr class="${m.id === h.id ? 'self' : ''}"><td class="num dim">${m.seat}</td><td class="name">${esc(m.name)}</td><td>${esc(m.race)}</td>${td(m.land)}${td(m.might)}${td(m.renown)}${td(votes.get(m.id) || 0)}`
       + `<td>${leaderId() === m.id ? '<span class="flag l" title="Leader">LEAD</span> ' : ''}${m.protected ? '<span class="flag p" title="Under protection">P</span>' : ''}${m.id === h.id ? ' <span class="dim">you</span>' : ''}</td>`
-      + `<td><button type="button" class="btn mini" data-vote-for="${m.id}" aria-label="Vote for ${esc(m.name)} to lead">VOTE</button><button type="button" class="btn mini" data-grant-to="${m.id}"${L ? '' : ` disabled title="${esc(leaderWhy())}"`} aria-label="Grant to ${esc(m.name)}">GRANT</button></td></tr>`).join('')
+      + `<td><button type="button" class="btn mini" data-vote-for="${m.id}" aria-label="Vote for ${esc(m.name)} to lead">VOTE</button><button type="button" class="btn mini" data-grant-to="${m.id}"${L ? '' : ` disabled title="${esc(leaderWhy())}"`} aria-label="Grant to ${esc(m.name)}">GRANT</button>${m.id === h.id ? '' : `<button type="button" class="btn mini" data-aid-to="${m.id}" aria-label="Send aid to ${esc(m.name)}">AID</button>`}</td></tr>`).join('')
       : `<tr><td colspan="9" class="dim">${esc(empty.members)}</td></tr>`, 'wide-tbl');
 }
 
@@ -184,7 +185,16 @@ const meter = (f, T) => {
 
 export function stateDetail(b, on) {
   b.innerHTML = `<div class="acttabs seg2" role="tablist" aria-label="STATE sections" id="d-st-tabs">${tabButtons(STATE_TAB, 'd-st')}<span class="dim small">houses · votes, treasury, tax and grants · vigils · war and relations</span></div>
-    <div ${panelAttrs(STATE_TAB, 'd-st', 'members')}><p class="small" id="d-st-mline"></p><div id="d-st-members"></div></div>
+    <div ${panelAttrs(STATE_TAB, 'd-st', 'members')}><p class="small" id="d-st-mline"></p><div id="d-st-members"></div>
+      <section id="d-st-aidsec"><h3 class="sub">SEND AID <span class="dim" id="d-st-abal"></span></h3>
+        <form id="d-st-aid" class="dform" novalidate>
+          <label for="d-st-at">To</label><select id="d-st-at"></select>
+          <label for="d-st-aw">What</label><select id="d-st-aw"></select>
+          <label for="d-st-an">Amount</label><span class="field"><input id="d-st-an" type="number" min="1" value="1000" inputmode="numeric"><button type="button" class="btn mini" data-max="aid" aria-label="Send all you have of this">MAX</button></span>
+          <p class="small span" id="d-st-aq"></p>
+          <span class="btns span"><button class="btn primary">SEND</button></span>
+          <p class="dim small span">Aid arrives a few ticks later and some is lost on the way. A house that has received more than it gave pays a tax on what it receives; giving builds credit, and both fade with time.</p>
+        </form></section></div>
     <div ${panelAttrs(STATE_TAB, 'd-st', 'leadership')}>${leadershipHTML()}</div>
     <div ${panelAttrs(STATE_TAB, 'd-st', 'vigils')}>${vigilsHTML()}</div>
     <div ${panelAttrs(STATE_TAB, 'd-st', 'war')}>${warHTML()}</div>`;
@@ -202,6 +212,19 @@ export function stateDetail(b, on) {
     // members
     $('mline').textContent = `${s.name ? `${s.name} · ` : ''}State ${s.realm}:${s.state}${s.realm_name ? ` in ${s.realm_name}` : ''} · ${s.members.length} houses · leader ${s.leader ? `${s.leader.name} (${addr(s.leader)})` : 'none'} · ${s.majority} votes make a majority${L ? ' · you lead' : ''}`;
     $('members').innerHTML = membersHTML();
+    // Aid: what you can send, and your balance.
+    const aidOn = !!(P.aid_ticks > 0);
+    $('aidsec').hidden = !aidOn;
+    if (aidOn) {
+      if (!dirty.has('d-st-at')) { const v = $('at').value; $('at').innerHTML = s.members.filter((m) => m.id !== h.id).map((m) => `<option value="${m.id}">${esc(m.name)} (${addr(m)})</option>`).join(''); if (v) $('at').value = v; }
+      if (!$('aw').options.length) {
+        const goods = ['gold', 'food', 'soldiers', 'horses', 'aether', ...(h.explorable ? ['explorable'] : []), ...Object.keys(h.materials || {}).map((m) => `material:${m}`)];
+        $('aw').innerHTML = goods.map((g) => `<option value="${esc(g)}">${esc(g.replace('material:', '').replace('explorable', 'explorable acres'))}</option>`).join('');
+      }
+      const bal = h.aid_balance || 0;
+      $('abal').textContent = bal > 0 ? `you have given ${fmt(bal)} more than received (credit)` : bal < 0 ? `you have received ${fmt(-bal)} more than given` : 'even';
+      aidQuote();
+    }
     // leadership
     const mv = s.my_vote || {};
     $('lead').innerHTML = kv([['Leader', s.leader ? `${s.leader.name} (${addr(s.leader)})` : 'none'], ['Votes for a majority', s.majority],
@@ -249,6 +272,27 @@ export function stateDetail(b, on) {
     $('ovwhy').textContent = !L ? leaderWhy() : busy ? 'your state already keeps a vigil' : v ? `replaces the ${v.name} being gathered` : '';
     b.querySelectorAll('[data-open-vigil]').forEach((x) => { x.disabled = !L || !!busy; x.title = !L ? leaderWhy() : busy ? 'already in force' : ''; });
     renderWar();
+  }
+
+  /** How much of `what` you hold. */
+  function holding(what) {
+    const h = store.house;
+    if (what.startsWith('material:')) return h.materials[what.slice(9)] || 0;
+    return { gold: h.gold, food: h.food, soldiers: h.units[0], horses: h.horses, aether: h.aether, explorable: h.explorable?.acres ?? 0 }[what] ?? 0;
+  }
+  let quoteSeq = 0;
+  /** What the aid would arrive as (the server works out the receiver's tax). */
+  async function aidQuote() {
+    const to = $('at').value, what = $('aw').value, n = num($('an').value);
+    const seq = ++quoteSeq;
+    if (!to || !n) { $('aq').textContent = ''; return; }
+    if (n > holding(what)) { $('aq').textContent = `You have ${fmt(holding(what))} ${what}.`; $('aq').className = 'small span short'; return; }
+    try {
+      const q = await api(`/aid/quote?to=${to}&what=${encodeURIComponent(what)}&amount=${n}`);
+      if (seq !== quoteSeq) return;
+      $('aq').textContent = `${fmt(q.arriving)} arrive after ${q.ticks} ticks (${q.loss_bp / 100}% lost on the way${q.tax_bp ? `, ${q.tax_bp / 100}% tax: they have received more than they gave` : ''}).`;
+      $('aq').className = 'small span';
+    } catch (e) { if (seq === quoteSeq) { $('aq').textContent = e.message; $('aq').className = 'small span short'; } }
   }
 
   function renderWar() {
@@ -313,6 +357,8 @@ export function stateDetail(b, on) {
     const x = ev.target.closest('button');
     if (!x || x.disabled) return;
     if (x.dataset.voteFor) act.vote({ type: 'for', house: Number(x.dataset.voteFor) }, { button: x });
+    else if (x.dataset.aidTo) { $('at').value = x.dataset.aidTo; dirty.add('d-st-at'); aidQuote(); $('an').focus(); }
+    else if (x.dataset.max === 'aid') { $('an').value = String(holding($('aw').value)); aidQuote(); }
     else if (x.dataset.grantTo) { STATE_TAB.set('leadership'); tabs.sync(); $('gt').value = x.dataset.grantTo; dirty.add('d-st-gt'); render(); $('gn').focus(); }
     else if (x.dataset.openVigil) act.openVigil(x.dataset.openVigil, { button: x });
     else if (x.dataset.pickState) { $('ws').value = x.dataset.pickState; if (x.dataset.ticks) $('wt').value = x.dataset.ticks; hint(); $('ws').focus(); }
@@ -344,6 +390,11 @@ export function stateDetail(b, on) {
     if (!n || n.length > 40) { say('A state name is 1–40 characters.', 'bad'); return; }
     dirty.delete('d-st-nn');
     act.renameState(n, { button: ev.submitter });
+  });
+  on($('aid'), 'input', () => aidQuote());
+  on($('aid'), 'submit', async (ev) => {
+    ev.preventDefault();
+    if (await act.sendAid($('at').value, $('aw').value, num($('an').value), { button: ev.submitter })) aidQuote();
   });
   on($('tax'), 'submit', (ev) => {
     ev.preventDefault();

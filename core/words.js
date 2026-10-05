@@ -1,6 +1,9 @@
 // Sentences: news items, command outcomes and intel reports, in plain words.
 // Everything returned is plain text; callers escape it (esc) or set it with textContent.
 
+/** "explorable acres", "bauxite", "gold". */
+const aidName = (what) => String(what || '').replace('material:', '').replace(/^explorable$/, 'explorable acres');
+
 let myHouseId = null;
 /** The store tells words which house is yours (news reads differently for each side). */
 export const setMyHouse = (id) => { myHouseId = id; };
@@ -150,6 +153,8 @@ export function newsLine(n) {
     case 'blockade_lifted': return ['The blockade on our state has lifted.', 'good'];
     case 'tax_changed': return [`${where(n.by)} set the state's tax to ${n.rate_bp / 100}%.`, ''];
     case 'state_renamed': return [`${where(n.by)} renamed our state from ${n.from} to ${n.to}.`, ''];
+    case 'aid_sent': return [`${where(n.from)} sent us aid: ${fmt(n.amount)} ${aidName(n.what)}, arriving ${when(n.arrives_at)}.`, 'good'];
+    case 'aid_arrived': return [`Aid arrived from ${where(n.from)}: ${fmt(n.amount)} ${aidName(n.what)}.`, 'good'];
     case 'admin_action': return [`The game's staff ${n.what}${n.note ? `: ${n.note}` : ''}.`, ''];
     case 'troops_recovered': return [`${fmt((n.units || []).reduce((a, b) => a + b, 0))} of our battle dead rose again and came home.`, 'good'];
     case 'afflicted': return [`${n.by ? where(n.by) : 'A veiled army'} afflicted us with ${n.name} until tick ${n.until_tick}.`, 'bad'];
@@ -216,6 +221,7 @@ export function describe(o) {
     case 'offer_dropped': return 'Offer dropped; any held gold went back.';
     case 'heir_recalled': return `${o.name} has returned and is settling in.`;
     case 'state_renamed': return `The state is now called ${o.name}.`;
+    case 'aid_sent': return `Aid sent: ${fmt(o.amount)} ${aidName(o.what)} left; ${fmt(o.arriving)} will arrive ${when(o.arrives_at)}${o.tax_bp ? ` (after a ${o.tax_bp / 100}% tax on the receiver)` : ''}.`;
     case 'mirrored': return o.race ? `Your troops now fight with the unit stats of the ${o.race}.` : 'Your troops fight with their own unit stats again.';
     case 'second_strike': return `Second strike at ${fmt(o.offense)} offense: ${o.success ? `${fmt((o.killed || []).reduce((a, b) => a + b, 0))} of their specialists killed` : 'repulsed'}; we lost ${fmt((o.lost || []).reduce((a, b) => a + b, 0))}. Your general is spent for a while.`;
     case 'land_retaken': return `Took back ${fmt(o.acres)} acres for ${fmt(o.elites)} elites.`;

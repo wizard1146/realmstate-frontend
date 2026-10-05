@@ -82,7 +82,7 @@ export function fillMax(input, n, why) {
   input.dispatchEvent(new Event('input', { bubbles: true }));
   if (!n) say(`MAX is 0: ${why}.`, 'bad');
 }
-export const exploreWhy = () => (!price.have() ? '' : store.house.units[SOLDIER] < price.exploreSoldiers(1) ? `no soldiers to settle land (${fmt(price.exploreSoldiers(1))} per acre, ${fmt(store.house.units[SOLDIER])} at home): draft more in MIL` : store.house.gold < price.exploreCost(1) ? 'not enough gold for one acre' : 'nothing fits');
+export const exploreWhy = () => (!price.have() ? '' : price.explorable() === 0 ? 'no explorable acres left: more come each tick (or ask a statemate for aid)' : store.house.units[SOLDIER] < price.exploreSoldiers(1) ? `no soldiers to settle land (${fmt(price.exploreSoldiers(1))} per acre, ${fmt(store.house.units[SOLDIER])} at home): draft more in MIL` : store.house.gold < price.exploreCost(1) ? 'not enough gold for one acre' : 'nothing fits');
 export const trainWhy = (slot, direct = false) => (!price.trainPool(direct) ? (direct ? 'no peasants to recruit' : 'no soldiers at home: draft more (MIL), or recruit direct') : store.house.gold < price.trainCost(slot, 1, direct) ? 'not enough gold for one' : 'nothing fits');
 
 // ---------- the ACT tabs (ORDERS, INTRIGUE, RITES), shared by the pane and its detail ----------
@@ -323,7 +323,7 @@ export function actDetail(body, on, { goto, tab, report }) {
     const h = store.house;
     const per = (price.have() ? store.house.prices.explore.soldiers_milli_per_acre || 0 : 0) / 1000;
     $('d-x-info').textContent = price.have()
-      ? `${q.why ? `Can't: ${q.why}. ` : ''}Each acre costs ${fmt(price.exploreCost(1))} gold and ${fmt(per)} soldiers, spent settling it. You can explore up to ${fmt(price.exploreMax())} acres now (${fmt(h.gold)} gold, ${fmt(h.units[SOLDIER])} soldiers at home; ${fmt(price.exploreLimit())} per order). Land now ${fmt(h.land)}, ${fmt(h.incoming_land)} on the way.`
+      ? `${q.why ? `Can't: ${q.why}. ` : ''}Each acre costs ${fmt(price.exploreCost(1))} gold and ${fmt(per)} soldiers, spent settling it. You can explore up to ${fmt(price.exploreMax())} acres now (${fmt(h.gold)} gold, ${fmt(h.units[SOLDIER])} soldiers at home; ${fmt(price.exploreLimit())} per order).${h.explorable ? ` Explorable acres: ${fmt(h.explorable.acres)} of ${fmt(h.explorable.cap)}, +${(h.explorable.per_tick_milli / 1000).toLocaleString('en-US', { maximumFractionDigits: 2 })} a tick (fewer as you grow).` : ''} Land now ${fmt(h.land)}, ${fmt(h.incoming_land)} on the way.`
       : '';
     $('d-x-info').classList.toggle('short', !!q.why);
   }
