@@ -225,7 +225,7 @@
 
   /* ---------- sheets: drawers on wide screens, bottom sheets on phones ---------- */
   & .sheet {
-    top: var(--sheet-top, 84px); bottom: 76px; width: min(370px, calc(50vw - 40px));
+    top: var(--sheet-top, 84px); bottom: 118px; width: min(370px, calc(50vw - 40px));   /* clear of both dock rows */
     border-radius: var(--r); z-index: 15; display: flex; flex-direction: column; opacity: 0;
   }
   & .sheet.left { left: 12px; transform: translateX(-24px); }
@@ -233,6 +233,12 @@
   & .sheet.open { transform: none; opacity: 1; }
   & .sheet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; padding: 0.7rem 0.9rem 0.5rem; border-bottom: 1px solid var(--panel-line); }
   & .sheet-head h2 { margin: 0; font-size: 1.12rem; color: var(--brass); }
+  /* Links from a sheet to the War Room panel with the same thing in full. */
+  & .fulls { margin: 0.3rem 0 0; display: flex; flex-wrap: wrap; gap: 4px; }
+  & .fulls .full { border: 1px solid var(--panel-line); background: transparent; border-radius: 999px; padding: 0.05rem 0.6rem; font-size: 0.8rem; color: var(--brass); cursor: pointer; }
+  & .fulls .full:hover { background: var(--brass-soft); }
+  & button.link { border: 0; background: none; padding: 0; color: var(--brass); text-decoration: underline; cursor: pointer; font: inherit; }
+  & .uw-host { margin: 0.2rem 0 0.6rem; }
   & .sub { margin: 0.1rem 0 0; color: var(--map-muted); font-size: 0.88rem; }
   & .mapview button.close { border: 0; background: transparent; font-size: 1.35rem; line-height: 1; min-height: 2.2rem; min-width: 2.2rem; padding: 0; }
   & .sheet-body { overflow-y: auto; overflow-x: hidden; padding: 0.6rem 0.9rem 0.9rem; flex: 1; overscroll-behavior: contain; }

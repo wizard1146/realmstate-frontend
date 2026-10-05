@@ -2,10 +2,10 @@
 // Reads the shared store and calls shared actions; owns only its DOM, the SVG map and its panels.
 import {
   store, subscribe, say, setTarget, knownHouses, loadStateMembers, raceName, persName, unitNames,
-  isProtected, countdown, findHouse,
+  isProtected, countdown, findHouse, raceOf, trainableSlots,
 } from '../../core/store.js';
 import * as act from '../../core/actions.js';
-import { fmt, esc, addr, when, newsLine, intelRows, names, empty } from '../../core/words.js';
+import { fmt, esc, addr, when, newsLine, intelRows, names, empty, TRAINABLE } from '../../core/words.js';
 import { switchHTML } from '../../core/viewswitch.js';
 import { WorldMap } from './worldmap.js';
 import * as commands from '../../core/commands.js';
@@ -13,6 +13,9 @@ import * as commands from '../../core/commands.js';
 // the three-channel chat box, and the War Room's detail view of every pane.
 import { mountChat } from '../room/chatbox.js';
 import { mountDetail, PANES } from '../room/detail.js';
+import * as uw from '../room/underway.js';
+import { attackSlots } from '../room/orders.js';
+import * as price from '../../core/prices.js';
 
 const INTEL = ['survey', 'muster', 'ledgers', 'archives', 'couriers', 'dossier'];
 const MAX_LOADED_STATES = 21; // load every house of the states on screen when this many or fewer show
@@ -86,11 +89,13 @@ const TEMPLATE = (view) => `
 
 <section class="sheet left" id="m-sheet-house" hidden aria-labelledby="m-h-house">
   <header class="sheet-head">
-    <div><h2 id="m-h-house" class="sc">Your house</h2><p class="sub" id="m-house-sub"></p></div>
+    <div><h2 id="m-h-house" class="sc">Your house</h2><p class="sub" id="m-house-sub"></p><p class="fulls"><button class="full" data-detail="res" title="Open Holdings in full">Holdings ↗</button><button class="full" data-detail="act" title="Open Orders in full">Orders ↗</button><button class="full" data-detail="mil" title="Open Military in full">Military ↗</button></p></div>
     <button class="close" data-close aria-label="Close house panel">×</button>
   </header>
   <div class="sheet-body">
     <div class="protect" id="m-protect"></div>
+    <h3 class="sc">Under way</h3>
+    <div class="room-scope uw-host"><div class="room"><div class="uw-box" id="m-uw"></div></div></div>
     <table class="facts" id="m-house-facts"></table>
     <h3 class="sc">Troops</h3>
     <table class="facts" id="m-house-troops"></table>
@@ -117,14 +122,14 @@ const TEMPLATE = (view) => `
       <button>Train</button>
       <p class="hint" id="m-t-hint"></p>
     </form>
-    <p class="hint">Costs marked ≈ are estimates before modifiers; the real cost shows when the order goes through. To attack or gather intel, choose a house on the map.</p>
+    <p class="hint">To attack or gather intel, choose a house on the map. More orders (many buildings at once, upgrades, rites) are in <button class="link" data-detail="act">Orders in full</button>.</p>
     <p class="row end"><button id="m-logout-2" class="ghost small">Sign out</button></p>
   </div>
 </section>
 
 <section class="sheet right" id="m-sheet-target" hidden aria-labelledby="m-h-target">
   <header class="sheet-head">
-    <div><h2 id="m-h-target" class="sc">House</h2><p class="sub" id="m-target-sub"></p></div>
+    <div><h2 id="m-h-target" class="sc">House</h2><p class="sub" id="m-target-sub"></p><p class="fulls"><button class="full" data-detail="act" data-tab="attacks" title="Open Attack in full">Attack ↗</button><button class="full" data-detail="act" data-tab="intrigue" title="Open Intrigue in full">Intrigue ↗</button></p></div>
     <button class="close" data-close aria-label="Close house facts">×</button>
   </header>
   <div class="sheet-body">
@@ -161,7 +166,7 @@ const TEMPLATE = (view) => `
 </section>
 
 <section class="sheet right" id="m-sheet-news" hidden aria-labelledby="m-h-news">
-  <header class="sheet-head"><h2 id="m-h-news" class="sc">News</h2><button class="close" data-close aria-label="Close news">×</button></header>
+  <header class="sheet-head"><div><h2 id="m-h-news" class="sc">News</h2><p class="fulls"><button class="full" data-detail="news" title="Open All news in full">All news ↗</button></p></div><button class="close" data-close aria-label="Close news">×</button></header>
   <div class="sheet-body"><ol class="feed" id="m-news"></ol></div>
 </section>
 
@@ -171,7 +176,7 @@ const TEMPLATE = (view) => `
 </section>
 
 <section class="sheet right" id="m-sheet-state" hidden aria-labelledby="m-h-state">
-  <header class="sheet-head"><div><h2 id="m-h-state" class="sc">Your state</h2><p class="sub" id="m-state-sub"></p></div><button class="close" data-close aria-label="Close state">×</button></header>
+  <header class="sheet-head"><div><h2 id="m-h-state" class="sc">Your state</h2><p class="sub" id="m-state-sub"></p><p class="fulls"><button class="full" data-detail="roster" title="Open Leadership, war, treasury in full">Leadership, war, treasury ↗</button></p></div><button class="close" data-close aria-label="Close state">×</button></header>
   <div class="sheet-body">
     <table class="list" id="m-members"><thead><tr><th class="r">Seat</th><th>House</th><th class="r">Land</th><th class="r">Might</th></tr></thead><tbody></tbody></table>
     <h3 class="sc">Wars</h3>
@@ -180,7 +185,7 @@ const TEMPLATE = (view) => `
 </section>
 
 <section class="sheet right" id="m-sheet-ranks" hidden aria-labelledby="m-h-ranks">
-  <header class="sheet-head"><div><h2 id="m-h-ranks" class="sc">Rankings</h2><p class="sub">Houses by land</p></div><button class="close" data-close aria-label="Close rankings">×</button></header>
+  <header class="sheet-head"><div><h2 id="m-h-ranks" class="sc">Rankings</h2><p class="sub">Houses by land</p><p class="fulls"><button class="full" data-detail="rank" title="Open All rankings in full">All rankings ↗</button></p></div><button class="close" data-close aria-label="Close rankings">×</button></header>
   <div class="sheet-body">
     <table class="list" id="m-ranks"><thead><tr><th class="r">#</th><th>House</th><th class="r">Land</th><th class="r">Might</th><th class="r">Renown</th></tr></thead><tbody></tbody></table>
     <h3 class="sc">States</h3>
@@ -328,7 +333,11 @@ export function mount(root) {
 
     const tu = $('t-unit');
     if (tu.dataset.race !== h.race) {
-      tu.innerHTML = un.slice(0, 4).map((u, i) => `<option value="${i}">${esc(u.name)} (${['offense', 'defense', 'elite', 'thief'][i]}, ${fmt(u.gold)} gold)</option>`).join('');
+      // Unit slots you can train (1 offense, 2 defense, 3 elite, 4 thief; not elites for a race that can't), by slot.
+      const role = { 1: 'offense', 2: 'defense', 3: 'elite', 4: 'thief' };
+      const each = (i) => (price.have() ? price.trainCost(i, 1) : un[i].gold);
+      tu.innerHTML = trainableSlots(raceOf(h.race), TRAINABLE).map((i) =>
+        `<option value="${i}">${esc(un[i].name)} (${role[i]}, ${price.have() ? '' : '≈'}${fmt(each(i))} gold)</option>`).join('');
       tu.dataset.race = h.race;
     }
     hints();
@@ -337,16 +346,31 @@ export function mount(root) {
   function hints() {
     const h = store.house;
     if (!h) return;
-    const acres = $('x-acres').value;
-    $('x-hint').textContent = `${act.approx(act.estimate.explore(acres))} gold (estimate). Arrives in ${P.explore_ticks} ticks.`;
+    // Exact prices (after your modifiers) when the server sends them; estimates (≈) from an older one.
+    const exact = price.have();
+    const gold = (n, est) => (exact ? `${fmt(n)} gold` : `${act.approx(est)} gold (estimate)`);
+    const why = (problem) => (problem ? ` Can't yet: ${problem}.` : '');
+    const acres = Number($('x-acres').value) || 0;
+    $('x-hint').textContent = `${gold(exact ? price.exploreCost(acres) : 0, act.estimate.explore(acres))}`
+      + (exact && price.exploreSoldiers(acres) ? ` and ${fmt(price.exploreSoldiers(acres))} soldiers` : '')
+      + `. Arrives in ${P.explore_ticks} ticks.` + (exact ? why(price.exploreProblem(acres, h)) : '');
     const b = store.rules.buildings.find((x) => x.building === $('b-kind').value);
     if (b) {
       const n = Number($('b-count').value) || 0;
-      const extra = b.materials.length ? ` plus ${b.materials.map((m) => `${fmt(m.per_building * n)} ${m.material}`).join(', ')}` : '';
-      $('b-hint').textContent = `${b.description} ${act.approx(act.estimate.build(b.building, n))} gold (estimate)${extra}. ${fmt(h.barren)} barren acres free; ready in ${P.construction_ticks} ticks.`;
+      const c = exact ? price.buildCost(b.building, n) : null;
+      const mats = exact ? Object.entries(c.materials).map(([m, q]) => `${fmt(q)} ${m}`)
+        : b.materials.map((m) => `${fmt(m.per_building * n)} ${m.material}`);
+      $('b-hint').textContent = `${b.description} ${gold(c?.gold ?? 0, act.estimate.build(b.building, n))}${mats.length ? ` plus ${mats.join(', ')}` : ''}. `
+        + `${fmt(h.barren)} barren acres free; ready in ${P.construction_ticks} ticks.`
+        + (exact ? why(price.buildProblem(b.building, n, price.buildBudget(h))) : '');
     }
-    const u = unitNames()[Number($('t-unit').value)];
-    if (u) $('t-hint').textContent = `${u.off} offense, ${u.def} defense each. ${act.approx(act.estimate.train($('t-unit').value, $('t-count').value))} gold (estimate); ready in ${P.train_ticks} ticks.`;
+    const slot = Number($('t-unit').value);
+    const u = unitNames()[slot];
+    if (u) {
+      const n = Number($('t-count').value) || 0;
+      $('t-hint').textContent = `${u.off} offense, ${u.def} defense each. ${gold(exact ? price.trainCost(slot, n) : 0, act.estimate.train(slot, n))}; ready in ${P.train_ticks} ticks.`
+        + (exact && n > price.trainMax(slot) ? ` Can't yet: at most ${fmt(price.trainMax(slot))} now (soldiers and gold).` : '');
+    }
   }
 
   function renderTick() {
@@ -428,7 +452,8 @@ export function mount(root) {
     const un = unitNames();
     const box = $('a-units');
     const prev = Object.fromEntries([...box.querySelectorAll('input')].map((i) => [i.dataset.slot, i.value]));
-    box.innerHTML = [0, 2, 4, 6].filter((i) => i < 4 || me.units[i]).map((i) => `
+    // Every unit with offense except thieves (soldiers, offense, elite and their upgrades), as the War Room's attack form.
+    box.innerHTML = attackSlots(raceOf(me.race)).map((i) => `
       <div class="unit-row">
         <label for="m-a-u${i}">${esc(un[i]?.name || `slot ${i + 1}`)} <span class="have">${fmt(me.units[i])} home</span></label>
         <input id="m-a-u${i}" data-slot="${i}" type="number" min="0" max="${me.units[i]}" value="${prev[i] ?? 0}" class="num">
@@ -450,6 +475,9 @@ export function mount(root) {
     if (k.renown) bits.push('earns renown');
     $('a-kind-hint').textContent = `${bits.join('; ')}.`;
   }
+
+  // ---------- under way (the War Room's list, in map colours) ----------
+  function renderUw() { $('uw').innerHTML = uw.html(['explore', 'build', 'train', 'medics', 'army'], { limit: 5, more: 'res' }); uw.tick($('uw')); }
 
   // ---------- news and chat ----------
   const newsItem = (n, fresh) => { const [text, tone] = newsLine(n); return `<li class="${tone}${fresh ? ' fresh' : ''}"><time>${esc(when(n.at))}</time>${esc(text)}</li>`; };
@@ -507,7 +535,19 @@ export function mount(root) {
   const chat = mountChat($('cbox'), on, { p: 'm-c', roomy: true });
   // The War Room's detail views, opened from the "In full" dock.
   const detail = mountDetail($('roomhost'), on);
-  root.querySelectorAll('[data-detail]').forEach((b) => on(b, 'click', () => detail.open(b.dataset.detail)));
+  root.querySelectorAll('[data-detail]').forEach((b) => on(b, 'click', () => detail.open(b.dataset.detail, b.dataset.tab ? { tab: b.dataset.tab } : {})));
+  // Keys, as in the War Room where they overlap: H N C S R toggle the map's sheets; / opens chat with a command.
+  const SHEET_KEYS = { h: 'house', n: 'news', c: 'chat', s: 'state', r: 'ranks' };
+  on(document, 'keydown', (ev) => {
+    if (ev.ctrlKey || ev.metaKey || ev.altKey || detail.isOpen()) return;
+    const t = ev.target;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    if (ev.key === '/') { ev.preventDefault(); openSheet('chat', { focus: false }); chat.input.value = '/'; chat.focus(); return; }
+    const name = SHEET_KEYS[ev.key.toLowerCase()];
+    if (!name || ev.shiftKey) return;
+    ev.preventDefault();
+    if (isOpen(name)) closeSheet(name); else openSheet(name);
+  });
   on(document, 'keydown', (ev) => {
     // Shift+Alt+1-8 opens a pane in full, as in the War Room (ev.code: Alt changes the typed character).
     if (!ev.shiftKey || !ev.altKey || ev.ctrlKey || ev.metaKey) return;
@@ -579,7 +619,8 @@ export function mount(root) {
     if (c.has('news')) renderNews(c.get('news'));
     chat.update(c);
     if (c.has('chat') || c.has('unread')) badges();
-    if (c.has('clock')) detail.tick();
+    if (c.has('clock')) { detail.tick(); uw.tick($('uw')); }
+    if (c.has('house')) renderUw();
     detail.update(c);
     if (c.has('target')) renderTarget();
   });
@@ -589,7 +630,8 @@ export function mount(root) {
   map.setMe({ id: h.id, realm: h.realm, state: h.state });
   map.setRealmMaterials(store.realms);
   renderHouse(); drawHouses(); renderTick(); renderStandings(); renderRanks(); renderState(); renderWars();
-  renderNews([]); chat.update(); badges(); renderCover();
+  renderNews([]); chat.update(); badges(); renderCover(); renderUw();
+  on($('uw'), 'click', (ev) => { const b = ev.target.closest('[data-expand]'); if (b) detail.open(b.dataset.expand); });
   if (store.target) {
     map.showHouse(store.target, false);
     renderTarget();
