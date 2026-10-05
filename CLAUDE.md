@@ -4,7 +4,8 @@ The prototype repository for the front end's five views (Straightline, War Room,
 `PLAN.md` first: what each view is for, the shared skeleton, the order of work, and how work goes back to the
 front end. `README.md` still describes the front end this began as.
 
-Identity: **wizard1146** (`yellowhat1146@gmail.com`). Local git config is set. No GitHub remote yet.
+Identity: **wizard1146** (`yellowhat1146@gmail.com`), SSH host alias `github-wizard1146`. Local git config is set.
+Remote `origin`: `git@github-wizard1146:wizard1146/realmstate-lab.git` (branch `main`).
 The `frontend` remote is `../realmstate-frontend`, fetch only: the lab never pushes there. Take its newer work with
 `git fetch frontend && git merge frontend/main`.
 

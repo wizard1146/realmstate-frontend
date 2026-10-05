@@ -40,6 +40,11 @@ becomes a lens inside Atlas or War Ring once the attack-range rule exists in the
 5. Atlas canvas from the mock-up; Range as its lens when the attack-range rule lands.
 6. Map: cut back hard (no blur, no looping animation, fewer marks), or drop it.
 
+## Before a view ships
+
+- Web fonts picked in a look lab (Straightline's defaults are Cinzel and Alegreya Sans) load from Google Fonts
+  while we choose; the chosen faces get self-hosted (as the War Room's are) so a shipped page makes no outside requests.
+
 ## Going back to the front end
 
 - The lab never pushes to the front end (its `frontend` remote has push disabled). To take the front end's

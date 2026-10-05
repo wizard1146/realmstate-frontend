@@ -9,6 +9,7 @@ import { paneRunner } from '../room/detail.js';
 import { RES_TAB } from '../room/market.js';
 import { MIL_TAB } from '../room/generals.js';
 import { STATE_TAB } from '../room/statedetail.js';
+import { mountLook, clear as clearLook } from './looklab.js';
 
 const KEY = 'realmstate.line.page';
 
@@ -51,7 +52,10 @@ const TEMPLATE = (view) => `
   <span class="brand"><span class="banner">Hegemoney:&nbsp;</span>Realmstate</span>
   <span class="who"><b id="l-name"></b> <span id="l-addr" class="dim"></span> <span id="l-ident" class="dim"></span></span>
   <span class="tick">Tick <b id="l-tick">–</b> · next <b id="l-next">–</b></span>
-  <span class="end">${switchHTML(view)}<button type="button" id="l-out" class="btn">Sign out</button></span>
+  <span class="end">${switchHTML(view)}
+    <button type="button" id="l-fonts" class="btn" aria-expanded="false" aria-controls="l-fontpanel" title="Fonts (F)">Aa</button>
+    <button type="button" id="l-theme" class="btn" aria-expanded="false" aria-controls="l-themepanel" title="Theme (P)"><span class="ico-pal" aria-hidden="true"></span><span class="vh">Theme</span></button>
+    <button type="button" id="l-out" class="btn">Sign out</button></span>
 </header>
 <dl class="line-res" id="l-res" aria-label="Your house at a glance"></dl>
 <div class="line-body">
@@ -61,7 +65,7 @@ const TEMPLATE = (view) => `
   </nav>
   <main class="line-main room-scope" id="l-main" tabindex="-1">
     <div class="room">
-      <header class="line-page-h"><h1 id="l-title"></h1><p id="l-what" class="dim"></p></header>
+      <header class="line-page-h"><h1 id="l-title"></h1><div class="orn-rule" aria-hidden="true"></div></header>
       <p class="line-protect" id="l-protect" hidden></p>
       <div class="line-page" id="l-page" tabindex="-1"></div>
     </div>
@@ -79,13 +83,12 @@ export function mount(root) {
 
   /** Opens a page: picks the pane's tab first, so the pane draws on that section. */
   function select(id, { draw = true, focus = false } = {}) {
-    const [pid, label, pane, tab, what] = page(id);
+    const [pid, label, pane, tab] = page(id);
     current = pid;
     try { localStorage.setItem(KEY, pid); } catch { /* storage off */ }
     if (location.hash.slice(1) !== pid) history.replaceState(null, '', `#${pid}`);
     root.querySelectorAll('[data-page]').forEach((a) => a.toggleAttribute('aria-current', a.dataset.page === pid));
     $('title').textContent = label;
-    $('what').textContent = what;
     if (!draw) return;
     let opts = {};
     if (tab) {
@@ -126,6 +129,7 @@ export function mount(root) {
   });
   on(window, 'hashchange', () => { const id = location.hash.slice(1); if (id && id !== current && PAGES.some((p) => p[0] === id)) select(id); });
   on($('out'), 'click', () => act.signOut());
+  mountLook(root, on);
 
   const unsub = subscribe((c) => {
     if (c.has('house') || c.has('me') || c.has('rules')) renderTop();
@@ -144,6 +148,7 @@ export function mount(root) {
       ac.abort();
       unsub();
       panes.clear();
+      clearLook();
       if (location.hash) history.replaceState(null, '', location.pathname + location.search);
       root.replaceChildren();
     },
