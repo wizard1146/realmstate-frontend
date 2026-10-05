@@ -34,7 +34,7 @@ const PANE_KEY = 'realmstate.room.pane';
 const TEMPLATE = (view) => `
 <div class="room">
 <header class="bar">
-  <span class="brand"><span class="dim">HEGEMONEY//</span>REALMSTATE</span>
+  <span class="brand"><span class="dim">HEGEMONEY:&nbsp;</span>REALMSTATE</span>
   <span class="cell"><b id="r-name"></b> <span class="dim" id="r-addr"></span></span>
   <span class="cell dim" id="r-ident"></span>
   <span class="cell" id="r-prot"></span>
