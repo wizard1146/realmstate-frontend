@@ -113,7 +113,8 @@ export function sciDetail(b, on) {
   }
   on($('inv'), 'input', quote);
   on($('inv'), 'click', (ev) => { if (ev.target.closest('[data-max]')) fillMax($('n'), s().books[S.catOf(defOf())], `no ${defOf().category} books`); });
-  on($('inv'), 'submit', (ev) => { ev.preventDefault(); act.invest($('sci').value, num($('n').value), { button: ev.submitter }); });
+  // Invested: the count goes back to 0 (a refused order keeps it, to correct).
+  on($('inv'), 'submit', async (ev) => { ev.preventDefault(); if (await act.invest($('sci').value, num($('n').value), { button: ev.submitter })) { $('n').value = 0; quote(); } });
   on($('set'), 'submit', (ev) => { ev.preventDefault(); act.setScience({ focus: $('focus').value, paper: $('paper').value }, { button: ev.submitter }); });
   on($('move'), 'click', (ev) => { if (ev.target.closest('[data-max]')) fillMax($('mn'), s().scientists[S.CATS.indexOf($('from').value)], `no ${$('from').value} scientists`); });
   on($('move'), 'submit', (ev) => { ev.preventDefault(); act.assignScientists($('from').value, $('to').value, num($('mn').value), { button: ev.submitter }); });
