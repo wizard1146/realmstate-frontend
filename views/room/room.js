@@ -9,6 +9,7 @@ import { mountFontLab, clear as clearFonts, rowHover } from './fontlab.js';
 import { mountPaletteLab, clear as clearPalette, clearGlyphs } from './palettelab.js';
 import * as wiki from '../../core/wiki.js';
 import * as commands from '../../core/commands.js';
+import { switchHTML } from '../../core/viewswitch.js';
 import * as price from '../../core/prices.js';
 import * as uw from './underway.js';
 import { mountDetail, PANES as DETAIL_PANES, newsFeed } from './detail.js';
@@ -41,6 +42,7 @@ const TEMPLATE = (view) => `
   <span class="cell">NEXT <b class="num" id="r-next">--:--</b></span>
   <span class="cell"><span id="r-live-dot" class="dot" aria-hidden="true"></span><span id="r-live">OFF</span></span>
   <span class="spacer"></span>
+  <span class="cell sw">${switchHTML(view)}</span>
   <a class="cell wikilink" href="${wiki.WIKI}" target="_blank" rel="noopener" title="Open the wiki in a new tab (or type /wiki topic)">WIKI&nbsp;&#8599;</a>
   <span class="cell sw"><button class="btn ghost mini" id="r-fonts" aria-expanded="false" aria-controls="r-fontlab" title="Font lab (F)">Aa</button><button class="btn ghost mini" id="r-palette" aria-expanded="false" aria-controls="r-palettelab" title="Palette lab (P)"><span class="pal-ico" aria-hidden="true"></span><span class="vh">Palette</span></button></span>
   <span class="cell dim" id="r-email"></span>

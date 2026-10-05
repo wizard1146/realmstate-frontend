@@ -1,5 +1,6 @@
 // Realmstate's War Room: the shell. Starts the shared core, shows sign-in / found-a-house, and
-// mounts the War Room (views/room) once you hold a house.
+// mounts a view once you hold a house: the War Room (views/room), or the Map (views/map). Switching
+// swaps only the view: the store and the live socket stay.
 import { store, subscribe, start, say, playable } from './core/store.js';
 import * as live from './core/live.js';
 import * as actions from './core/actions.js';
@@ -7,16 +8,27 @@ import { connected, configProblem, startConnect, finishConnect, API } from './co
 import { esc } from './core/words.js';
 import { WIKI } from './core/wiki.js';
 import { nameRoll } from './core/names.js';
+import { VIEWS, savedView, saveView, otherView } from './core/viewswitch.js';
 
 const $ = (id) => document.getElementById(id);
 const root = $('view');
 
-let mounted = null;   // the War Room instance on screen
+const loaders = {
+  room: () => import('./views/room/room.js'),
+  map: () => import('./views/map/map.js'),
+};
+let viewName = savedView();
+let mounted = null;   // { name, inst } of the view on screen
 let mountSeq = 0;
+
+function applyViewName() {
+  document.documentElement.dataset.view = viewName;
+  document.title = `Realmstate · ${VIEWS.find((v) => v.id === viewName).label}`;
+}
 
 function unmountView() {
   if (!mounted) return;
-  try { mounted.unmount(); } catch (e) { console.error(e); }
+  try { mounted.inst.unmount(); } catch (e) { console.error(e); }
   mounted = null;
   root.replaceChildren();
 }
@@ -24,11 +36,35 @@ function unmountView() {
 async function mountView() {
   const seq = ++mountSeq;
   if (!store.house) { unmountView(); return; }
-  if (mounted) return;
-  const mod = await import('./views/room/room.js');
-  if (seq !== mountSeq || !store.house) return; // signed out meanwhile
-  mounted = mod.mount(root);
+  if (mounted && mounted.name === viewName) return;
+  const mod = await loaders[viewName]();
+  if (seq !== mountSeq || !store.house) return; // signed out, or switched again, meanwhile
+  unmountView();
+  mounted = { name: viewName, inst: mod.mount(root) };
 }
+
+/** Switch views without a reload; focus lands on the new view's switch. */
+async function setView(name, { focus = false } = {}) {
+  if (!loaders[name] || name === viewName) return;
+  viewName = name;
+  saveView(name);
+  applyViewName();
+  await mountView();
+  if (focus) root.querySelector(`[data-switch-view="${name}"]`)?.focus();
+}
+document.addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-switch-view]');
+  if (b) setView(b.dataset.switchView, { focus: true });
+});
+// V switches views, unless typing or a dialog is open.
+document.addEventListener('keydown', (ev) => {
+  if (ev.key !== 'v' && ev.key !== 'V') return;
+  if (ev.ctrlKey || ev.metaKey || ev.altKey || document.querySelector('dialog[open]')) return;
+  const t = ev.target;
+  if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+  ev.preventDefault();
+  setView(otherView(viewName), { focus: true });
+});
 
 // ---------- the message line ----------
 function renderStatus() {
@@ -92,7 +128,8 @@ subscribe((c) => {
 });
 
 // For checking in a browser console (and the headless test): the store and socket.
-window.realmstate = { store, live };
+window.realmstate = { store, live, setView: (v) => setView(v) };
+applyViewName();
 
 // Back from the game's site with its answer to connecting?
 const answer = finishConnect();
