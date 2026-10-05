@@ -6,7 +6,12 @@
 <meta name="color-scheme" content="light dark">
 <title>Realmstate · War Room</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+<script>
+  // The remembered view, before anything paints (core/viewswitch.js keeps the same key).
+  try { if (localStorage.getItem('realmstate.view') === 'map') document.documentElement.dataset.view = 'map'; } catch (e) { /* storage off */ }
+</script>
 <link rel="stylesheet" href="shell.css">
+<link rel="stylesheet" href="views/map/map.css">
 <link rel="stylesheet" href="views/room/room.css">
 </head>
 <body>

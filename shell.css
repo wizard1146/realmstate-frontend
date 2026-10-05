@@ -66,3 +66,18 @@ body { background: var(--bg); color: var(--ink); font: var(--font); -webkit-text
 .gate .where input { width: 5.5rem; text-align: right; }
 .gate .where .hint { flex-basis: 100%; }
 @media (max-width: 400px) { .gate .grid2 { grid-template-columns: minmax(0, 1fr); } }
+
+/* The view switch (War room / Map), shown by both views. */
+.vswitch { display: inline-flex; align-items: center; gap: 0; flex: none; }
+.vswitch button {
+  font: inherit; color: inherit; cursor: pointer; white-space: nowrap;
+  background: transparent; border: 1px solid var(--line); padding: 0.15rem 0.6rem; min-height: 2rem;
+}
+.vswitch button:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.vswitch button:nth-child(2) { border-radius: 0 var(--radius) var(--radius) 0; border-left: 0; }
+.vswitch button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+.vswitch kbd {
+  font: 0.72rem/1 ui-monospace, Menlo, Consolas, monospace; color: var(--muted);
+  border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0.12rem 0.3rem; margin-left: 0.4rem;
+}
+@media (hover: none) { .vswitch kbd { display: none; } }
