@@ -10,23 +10,29 @@ import { RES_TAB } from '../room/market.js';
 import { MIL_TAB } from '../room/generals.js';
 import { STATE_TAB } from '../room/statedetail.js';
 import { mountLook, clear as clearLook } from './looklab.js';
+import { mountThrone } from './throne.js';
+import { mountTrain } from './train.js';
+
+// Straightline's own page parts (not War Room panels): mount(host, on) -> { update(c), tick(), destroy() }.
+const PARTS = { throne: mountThrone, train: mountTrain };
 
 const KEY = 'realmstate.line.page';
 
 /**
  * The menu: [group, [[page id, label, pane, tab, what it's for, extra]]]. Tabs pick a section inside a pane.
  * extra.show: only the pane's sections matching this ('train'); extra.hide: its sections to leave out;
- * extra.pre: another pane drawn above, as [pane, tab, show], for a page made of two (Military: Train, then forces).
+ * extra.part: a Straightline part instead of a pane (Throne); extra.top: a part drawn above the pane (Military's Train).
  */
 const MENU = [
   ['Your house', [
-    ['throne', 'Throne', 'res', ['res', 'holdings'], 'what you hold, and how it moved'],
+    ['throne', 'Throne', null, null, 'your house at a glance', { part: 'throne' }],
+    ['resources', 'Resources', 'res', ['res', 'holdings'], 'what you hold, and how it moved each tick'],
     ['buildings', 'Buildings', 'res', ['res', 'buildings'], 'land, construction, what each building does'],
     ['orders', 'Explore & build', 'act', ['act', 'orders'], 'explore land and build', { hide: 'train' }],
     ['science', 'Science', 'sci', null, 'books, sciences, academics'],
   ]],
   ['Military', [
-    ['military', 'Military', 'mil', ['mil', 'forces'], 'train troops; troops, draft, medics, upgrades', { pre: ['act', 'orders', 'train'] }],
+    ['military', 'Military', 'mil', ['mil', 'forces'], 'train troops; troops, draft, medics, upgrades', { top: 'train' }],
     ['attack', 'Attack', 'act', ['act', 'attacks'], 'send an army'],
     ['generals', 'Generals', 'mil', ['mil', 'generals'], 'raise and command generals'],
     ['hall', 'Hall of Deeds', 'mil', ['mil', 'hall'], 'trade generals and academics'],
@@ -84,9 +90,11 @@ export function mount(root) {
   const ac = new AbortController();
   const on = (t, type, fn, o = {}) => t.addEventListener(type, fn, { signal: ac.signal, ...o });
   const panes = paneRunner($('page'), $('main'), { onShow: (name) => { if (page(current)[2] !== name) select(PAGES.find((p) => p[2] === name)[0], { draw: false }); } });
-  // A second runner for pages made of two panes (it draws above the page's own pane).
-  const pre = paneRunner($('pre'), $('main'));
+  // A part's buttons can ask for a pane ("+3 more · detail"): go to that pane's first page.
+  on(root, 'click', (ev) => { const x = ev.target.closest('.line-main [data-expand]'); if (x && x.dataset.expand) { const pg = PAGES.find((p) => p[2] === x.dataset.expand); if (pg) select(pg[0]); } });
   let current = null;
+  let part = null;   // the page's Straightline part, if any
+  let top = null;    // a part drawn above the page's pane, if any
 
   /** Opens a page: picks the pane's tab first, so the pane draws on that section. */
   function select(id, { draw = true, focus = false } = {}) {
@@ -105,16 +113,16 @@ export function mount(root) {
       else if (kind === 'state') STATE_TAB.set(t);
       else if (kind === 'act') opts = { tab: t };
     }
+    // Parts first come down; then the part above (if any), and the page's own part or pane.
+    top?.destroy(); top = null;
+    part?.destroy(); part = null;
+    $('pre').hidden = !extra.top;
+    if (extra.top) top = PARTS[extra.top]($('pre'), on);
     // Sections: only some of a pane (data-show), or all but some (data-hide); line.css does the hiding.
-    const mark = (el, show, hide) => { el.dataset.show = show || ''; el.dataset.hide = hide || ''; };
-    if (extra.pre) {
-      const [ppane, ptab, pshow] = extra.pre;
-      $('pre').hidden = false;
-      mark($('pre'), pshow, '');
-      pre.show(ppane, ppane === 'act' ? { tab: ptab } : {});
-    } else { $('pre').hidden = true; pre.clear(); }
-    mark($('page'), extra.show, extra.hide);
-    panes.show(pane, { focus: false, ...opts });
+    $('page').dataset.show = extra.show || '';
+    $('page').dataset.hide = extra.hide || '';
+    if (extra.part) { panes.clear(); part = PARTS[extra.part]($('page'), on); }
+    else panes.show(pane, { focus: false, ...opts });
     if (focus) $('page').focus({ preventScroll: true });
     $('main').scrollTop = 0;
   }
@@ -150,9 +158,9 @@ export function mount(root) {
   const unsub = subscribe((c) => {
     if (c.has('house') || c.has('me') || c.has('rules')) renderTop();
     if (c.has('age') || c.has('clock')) renderTick();
-    if (c.has('clock')) { panes.tick(); pre.tick(); }
-    panes.update(c);
-    pre.update(c);
+    if (c.has('clock')) { panes.tick(); part?.tick(); top?.tick(); }
+    if (part) part.update(c); else panes.update(c);
+    top?.update(c);
   });
 
   renderTop(); renderTick();
@@ -165,7 +173,7 @@ export function mount(root) {
       ac.abort();
       unsub();
       panes.clear();
-      pre.clear();
+      part?.destroy(); top?.destroy();
       clearLook();
       if (location.hash) history.replaceState(null, '', location.pathname + location.search);
       root.replaceChildren();

@@ -113,6 +113,34 @@
   & .line-page[data-show="train"] .dgrid.act > section:not(:has(#d-f-train)) { display: none; }
   & .line-page[data-hide="train"] .dgrid.act > section:has(#d-f-train) { display: none; }
   & .line-pre { margin-bottom: 26px; }
+  /* Throne: two columns of key/value tables, as in Utopia. */
+  & .throne { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 34px; align-items: start; min-width: min(100%, 760px); }
+  & .throne section { margin-bottom: 20px; }
+  & .throne .tbl { width: 100%; min-width: 0; }
+  & .throne table.kv th { text-align: left; font-weight: 400; color: var(--l-muted); font-variant-caps: normal; letter-spacing: 0; font-size: inherit; width: 55%; padding: 4px 4px; border-bottom: 1px solid var(--l-rule); }
+  & .throne .army tr.plus td:first-child { padding-left: 1.2em; color: var(--l-muted); }
+  & .throne .army tr.sum td, & .throne .kv tr.sum td { font-weight: 600; border-top: 1px solid var(--l-line); }
+  & .throne .note { font-style: italic; margin: -12px 0 20px; }
+  @media (max-width: 900px) { & .throne { grid-template-columns: 1fr; } }
+  /* News: a toolbar strip over a steady-width feed; times in a narrow column, battle reports as framed cards. */
+  & .line-page .dtools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 0 0 14px; padding: 8px 12px;
+    background: var(--l-self); border: 1px solid var(--l-line); border-radius: 4px; }
+  & .line-page .dtools select { min-height: 30px; }
+  & .line-page .dtools .check { display: inline-flex; gap: 6px; align-items: center; }
+  & .line-page .dtools #d-ncount { margin-left: auto; }
+  & .line-page .tape.roomy { min-width: min(100%, 720px); }
+  & .line-page .tape.roomy li { grid-template-columns: 9.5ch minmax(0, 1fr); gap: 14px; padding: 7px 2px; border-bottom: 1px solid var(--l-rule); line-height: 1.45; }
+  & .line-page .tape.roomy time { font-style: italic; font-size: .88em; padding-top: 1px; }
+  & .line-page .tape li.battle { padding: 10px 2px; }
+  & .line-page .bcard { border: 1px solid var(--l-line); border-left: 3px solid var(--l-bad); border-radius: 3px; padding: 6px 10px; background: color-mix(in srgb, var(--l-self) 40%, var(--l-page)); }
+  /* Train: one row per unit, one button. */
+  & .traingrid .tbl { width: 100%; }
+  & .traingrid input[type=number] { width: 8ch; text-align: right; }
+  & .traingrid .tg-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 10px; }
+  & .traingrid .tg-tot { margin-left: auto; font-variant-numeric: lining-nums tabular-nums; }
+  & .traingrid .tg-from { display: flex; gap: 14px; }
+  & .traingrid .tg-from label { display: flex; gap: 6px; align-items: center; }
+  & .traingrid .tg-note { margin: 8px 0 0; }
 
   /* Ornaments off: plain frame, plain rules. */
   &[data-line-orn="off"] {
