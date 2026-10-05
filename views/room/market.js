@@ -1,9 +1,12 @@
 // The market (RES › MARKET, pane and detail). Books per material from /market, your orders and
 // your state's treasury orders from /orders. Orders clear once a tick at one price per material.
 // Escrow when placing (economy.rs place_order): a buy holds quantity × price gold (the difference
-// comes back if it clears lower); a sell holds the goods. Leaders may trade from the treasury.
-// Nobody trades with themselves: the server refuses a buy and a sell on one material by one
-// trader (a leader and the treasury count as one); its message goes to the message line.
+// comes back if it clears lower); a sell holds the goods. A sale pays the market fee (the house's
+// market_fee_bp from /me, after trading houses; a treasury sale pays the age's full fee), which is
+// destroyed. Leaders may trade from the treasury.
+// Nobody trades with themselves: a trader may quote both sides of a material, but the server
+// refuses a buy at or above its own sell (or a sell at or below its own buy), which could fill
+// against it at the one clearing price. A leader and the treasury count as one trader.
 import { store, say, loadMarket } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc, when } from '../../core/words.js';
@@ -20,6 +23,11 @@ export const leaderId = () => store.state?.leader ? (store.state.leader.house ??
 export const isLeader = () => !!(store.house && leaderId() != null && leaderId() === store.house.id);
 const book = (m) => (store.market || []).find((x) => x.material === m);
 const best = (b, side) => (side === 'buy' ? b?.bids?.[0] : b?.asks?.[0]);
+
+/** The market fee on a sale, basis points: yours from /me, or the age's for the treasury. */
+const feeBp = (treasury) => (treasury ? store.rules?.params?.market_fee_bp : store.house?.market_fee_bp) ?? 0;
+/** What a sale of `gold` pays after the fee. */
+const afterFee = (gold, treasury) => gold - Math.floor(gold * feeBp(treasury) / 10000);
 
 /** What a party holds: { gold, mat(m) } for you, or for the treasury. */
 function holder(treasury) {
@@ -58,7 +66,7 @@ export function formHTML(p, full = false) {
     <span class="quote num span" id="${p}-cost"></span>
     <p class="small span" id="${p}-hold"></p>
     <span class="btns span"><button class="btn primary">PLACE ORDER</button></span>
-    <p class="dim small span">Orders clear at the next tick, all at one price per material: buyers pay that price and get the rest of their escrow back. You can't hold a buy and a sell on the same material (nor can you and the treasury, if you lead).</p>
+    <p class="dim small span">Orders clear at the next tick, all at one price per material: buyers pay that price and get the rest of their escrow back. Sellers pay the market fee on what they receive; trading houses cut it. You may buy and sell one material at once, but your buy must be below your own sell (and the treasury's, if you lead): you can't trade with yourself.</p>
   </form>`;
 }
 
@@ -99,12 +107,14 @@ export function wireForm(box, on, p, full = false) {
     }
     const need = s === 'buy' ? q * pr : q;
     const have = s === 'buy' ? hd.gold : hd.mat(m);
-    const mine = (store.orders || []).find((o) => o.material === m && o.side !== s && (tr ? o.treasury || lead : !o.treasury || lead));
-    const why = !q ? 'choose a quantity' : !pr ? 'choose a price' : q > MAX_Q ? `at most ${fmt(MAX_Q)}` : mine ? `open ${mine.side} order #${mine.order} on ${m}: cancel it first (no trading with yourself)` : need > have ? `${hd.who === 'you' ? 'you have' : 'the treasury has'} ${fmt(have)} ${s === 'buy' ? 'gold' : m}`
+    const crosses = (o) => (s === 'buy' ? o.price <= pr : o.price >= pr);
+    const mine = (store.orders || []).find((o) => o.material === m && o.side !== s && (tr ? o.treasury || lead : !o.treasury || lead) && crosses(o));
+    const why = !q ? 'choose a quantity' : !pr ? 'choose a price' : q > MAX_Q ? `at most ${fmt(MAX_Q)}` : mine ? `would fill your own ${mine.side} #${mine.order} at ${fmt(mine.price)}: ${s === 'buy' ? 'buy below' : 'sell above'} ${fmt(mine.price)} (no trading with yourself)` : need > have ? `${hd.who === 'you' ? 'you have' : 'the treasury has'} ${fmt(have)} ${s === 'buy' ? 'gold' : m}`
       : '';
     const c = $('cost');
-    c.textContent = `${s === 'buy' ? `escrow ${fmt(need)}g` : `escrow ${fmt(q)} ${m} → ≥${fmt(q * pr)}g`}${full && why ? ` · ${why}` : ''}`;
-    c.title = why ? `Can't: ${why}` : s === 'buy' ? `Holds ${fmt(need)} gold until it clears; any gold above the clearing price comes back.` : `Holds ${fmt(q)} ${m}; pays at least ${fmt(q * pr)} gold if it all clears.`;
+    const fee = feeBp(tr), net = afterFee(q * pr, tr);
+    c.textContent = `${s === 'buy' ? `escrow ${fmt(need)}g` : `escrow ${fmt(q)} ${m} → ≥${fmt(net)}g${fee ? ` after ${fee / 100}% fee` : ''}`}${full && why ? ` · ${why}` : ''}`;
+    c.title = why ? `Can't: ${why}` : s === 'buy' ? `Holds ${fmt(need)} gold until it clears; any gold above the clearing price comes back.` : `Holds ${fmt(q)} ${m}; pays at least ${fmt(net)} gold if it all clears (${fmt(q * pr)} less the ${fee / 100}% market fee, which is destroyed).`;
     c.classList.toggle('short', !!why);
     const b = book(m);
     $('hold').innerHTML = `${tr ? 'Treasury' : 'You'}: <b class="num">${fmt(hd.gold)}</b> gold · <b class="num">${fmt(hd.mat(m))}</b> ${esc(m)}`

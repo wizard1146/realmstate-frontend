@@ -24,7 +24,7 @@ export const STATS = {
   construction_cost: ['build cost', 'Gold cost of construction'],
   thief_strength: ['thief strength', 'Strength of your thieves when spying'],
   thief_defense: ['thief defense', 'Strength of your thieves against enemy spies'],
-  trade_bonus: ['trade bonus', 'Extra gold on your market sales'],
+  market_fee: ['market fee', 'The market fee on your sales'],
   building_efficiency: ['building efficiency', 'Building efficiency (can pass 100%)'],
   construction_time: ['build time', 'Time to build'],
   land_gain: ['land taken', 'Land taken on a successful attack'],
