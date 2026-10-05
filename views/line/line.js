@@ -74,10 +74,14 @@ const TEMPLATE = (view) => `
 </header>
 <dl class="line-res" id="l-res" aria-label="Your house at a glance"></dl>
 <div class="line-body">
-  <nav class="line-menu" aria-label="Pages">
-    ${MENU.map(([g, items]) => `<h2>${esc(g)}</h2><ul>${items.map(([id, label, , , what]) =>
-      `<li><a href="#${id}" data-page="${id}" title="${esc(what)}">${esc(label)}</a></li>`).join('')}</ul>`).join('')}
-  </nav>
+  <div class="line-side">
+    <nav class="line-menu" id="l-menu" aria-label="Pages">
+      ${MENU.map(([g, items]) => `<h2>${esc(g)}</h2><ul>${items.map(([id, label, , , what]) =>
+        `<li><a href="#${id}" data-page="${id}" title="${esc(what)}">${esc(label)}</a></li>`).join('')}</ul>`).join('')}
+    </nav>
+    <span class="l-sword" id="l-sword" aria-hidden="true"></span>
+    <span class="l-shield" id="l-shield" aria-hidden="true"></span>
+  </div>
   <main class="line-main room-scope" id="l-main" tabindex="-1">
     <div class="room">
       <header class="line-page-h"><h1 id="l-title"></h1><div class="orn-rule" aria-hidden="true"></div></header>
@@ -108,7 +112,13 @@ export function mount(root) {
     current = pid;
     try { localStorage.setItem(KEY, pid); } catch { /* storage off */ }
     if (location.hash.slice(1) !== pid) history.replaceState(null, '', `#${pid}`);
-    root.querySelectorAll('[data-page]').forEach((a) => a.toggleAttribute('aria-current', a.dataset.page === pid));
+    root.querySelectorAll('.line-menu [data-page]').forEach((a) => a.toggleAttribute('aria-current', a.dataset.page === pid));
+    // Keep the current row in view inside the menu (scrollIntoView would scroll the page too).
+    requestAnimationFrame(() => {
+      const a = menu.querySelector('[aria-current]');
+      if (a && (a.offsetTop < menu.scrollTop || a.offsetTop + a.offsetHeight > menu.scrollTop + menu.clientHeight)) menu.scrollTop = a.offsetTop - menu.clientHeight / 2;
+      place();
+    });
     $('title').textContent = label;
     if (!draw) return;
     let opts = {};
@@ -164,15 +174,17 @@ export function mount(root) {
 
   // News as it arrives: a small card bottom right, with a link to the News page (not while you're on it).
   const MAX_TOASTS = 3, TOAST_MS = 10000;
-  function toast(n) {
-    const [text, tone] = newsLine(n);
+  let lastMsg = store.msg.text;
+  /** A card in the stack: news (with its link to the News page) or a message from an order (store.msg). */
+  function toast(n) { const [text, tone] = newsLine(n); card(text, tone, { news: true }); }
+  function card(text, tone, { news = false, ms = TOAST_MS } = {}) {
     const el = document.createElement('div');
-    el.className = `toast ${tone || ''}`;
-    el.innerHTML = `<p>${esc(text)}</p><a href="#news" data-page="news">Open News →</a><button type="button" class="x" aria-label="Dismiss">×</button>`;
+    el.className = `toast ${tone || ''}${news ? '' : ' msg'}`;
+    el.innerHTML = `<p>${esc(text)}</p>${news ? '<a href="#news" data-page="news">Open News →</a>' : ''}<button type="button" class="x" aria-label="Dismiss">×</button>`;
     const box = $('toasts');
     box.prepend(el);
     while (box.children.length > MAX_TOASTS) box.lastElementChild.remove();
-    let left = TOAST_MS, last = Date.now(), timer = null;
+    let left = ms, last = Date.now(), timer = null;
     const go = () => { el.classList.add('out'); setTimeout(() => el.remove(), 300); };
     const run = () => { last = Date.now(); timer = setTimeout(go, left); };
     el.addEventListener('mouseenter', () => { clearTimeout(timer); left -= Date.now() - last; });
@@ -184,8 +196,46 @@ export function mount(root) {
     run();
   }
 
+  // The menu scrolls as the wiki's does: a sword is the handle (left edge; drag it, or scroll the menu as usual), and the
+  // current page's broken shield sits on the menu's right border, level with its row (at the top or bottom edge
+  // once the row has scrolled away). Both are tinted to the theme.
+  const menu = $('menu'), sword = $('sword'), shield = $('shield'), side = root.querySelector('.line-side');
+  const PAD = 8;
+  function placeSword() {
+    const room = menu.scrollHeight - menu.clientHeight;
+    sword.hidden = room <= 1;
+    if (sword.hidden) return;
+    const track = menu.clientHeight - sword.offsetHeight - PAD * 2;
+    sword.style.top = `${menu.offsetTop + PAD + (menu.scrollTop / room) * track}px`;
+  }
+  function placeShield() {
+    const a = menu.querySelector('a[aria-current]');
+    shield.hidden = !a;
+    if (!a) return;
+    const r = a.getBoundingClientRect(), n = menu.getBoundingClientRect(), half = shield.offsetHeight / 2;
+    const mid = Math.min(Math.max(r.top + r.height / 2, n.top + half), n.bottom - half);
+    shield.style.top = `${mid - side.getBoundingClientRect().top}px`;
+  }
+  const place = () => { placeSword(); placeShield(); };
+  on(menu, 'scroll', place, { passive: true });
+  on(window, 'resize', place);
+  on(sword, 'pointerdown', (ev) => {
+    ev.preventDefault();
+    sword.setPointerCapture(ev.pointerId);
+    const y0 = ev.clientY, s0 = menu.scrollTop;
+    const per = (menu.scrollHeight - menu.clientHeight) / Math.max(1, menu.clientHeight - sword.offsetHeight - PAD * 2);
+    const move = (e) => { menu.scrollTop = s0 + (e.clientY - y0) * per; };
+    sword.addEventListener('pointermove', move);
+    sword.addEventListener('pointerup', () => sword.removeEventListener('pointermove', move), { once: true });
+  });
+  document.fonts?.ready.then(place);
+
   const unsub = subscribe((c) => {
     if (c.has('news') && current !== 'news') for (const d of c.get('news')) if (d.added) toast(d.added);
+    // Messages from orders ("Built 10 Homes", errors) come as cards too: Straightline has no message line
+    // (it moved the page each time it changed). Errors stay until dismissed or replaced; the rest go after 5 s.
+    if (c.has('msg') && store.msg.text && store.msg.text !== lastMsg) card(store.msg.text, store.msg.tone, { ms: store.msg.tone === 'bad' ? 30000 : 5000 });
+    if (c.has('msg')) lastMsg = store.msg.text;
     if (c.has('house') || c.has('me') || c.has('rules')) renderTop();
     if (c.has('age') || c.has('clock')) renderTick();
     if (c.has('clock')) { panes.tick(); part?.tick(); top?.tick(); }
