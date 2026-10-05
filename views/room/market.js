@@ -180,10 +180,26 @@ export function booksHTML() {
         + `<td><button type="button" class="btn mini" data-pick-mat="${esc(m.material)}" data-side="buy" aria-label="Buy ${esc(m.material)}">B</button><button type="button" class="btn mini" data-pick-mat="${esc(m.material)}" data-side="sell" aria-label="Sell ${esc(m.material)}">S</button></td></tr>`;
     }).join('') + '</table>';
 }
-/** The detail's full books: each material's bids and asks (10 levels each). */
+/** The detail's full books: each material's bids and asks (10 levels each). A level's button
+ * trades against it at once: SELL into a bid, BUY from an ask, at that price, as much as the level
+ * shows and you hold (or can pay for). It's an ordinary order, so it fills at the next clearing,
+ * at that price or better, and can be cancelled until then. */
+/** How much one click can trade against a level: { q, why } (why: the reason it's 0). */
+function hitSize(side, m, price, quantity) {
+  const h = store.house;
+  const can = side === 'sell' ? (h.materials[m] || 0) : Math.floor(h.gold / price);
+  const q = Math.min(quantity, can, MAX_Q);
+  return { q, why: q ? '' : side === 'sell' ? `you have no ${m}` : 'not enough gold' };
+}
 export function depthHTML() {
   if (!store.market) return '<p class="dim">Loading the market…</p>';
-  const lvl = (rows, cls, side, m) => rows.length ? rows.map((r) => `<tr><td class="num ${cls}">${fmt(r.price)}</td><td class="num">${fmt(r.quantity)}</td><td><button type="button" class="btn mini" data-pick-mat="${esc(m)}" data-side="${side}" data-price="${r.price}" aria-label="${side === 'buy' ? 'Buy' : 'Sell'} ${esc(m)} at ${r.price}">${side === 'buy' ? 'BUY' : 'SELL'} @</button></td></tr>`).join('') : '<tr><td colspan="3" class="dim">none</td></tr>';
+  const lvl = (rows, cls, side, m) => rows.length ? rows.map((r) => {
+    const { q, why } = hitSize(side, m, r.price, r.quantity);
+    const verb = side === 'buy' ? 'BUY' : 'SELL';
+    const label = q ? `${verb} ${fmt(q)}` : verb;
+    const tip = q ? `${side === 'buy' ? 'Buy' : 'Sell'} ${fmt(q)} ${m} at ${fmt(r.price)} now: fills at the next clearing, at this price or better` : `Can't: ${why}`;
+    return `<tr><td class="num ${cls}">${fmt(r.price)}</td><td class="num">${fmt(r.quantity)}</td><td><button type="button" class="btn mini" data-hit-mat="${esc(m)}" data-side="${side}" data-price="${r.price}" data-qty="${r.quantity}"${q ? '' : ' disabled'} title="${esc(tip)}" aria-label="${esc(tip)}">${label}</button></td></tr>`;
+  }).join('') : '<tr><td colspan="3" class="dim">none</td></tr>';
   return `<div class="dgrid">${store.market.map((m) => `<section><h4 class="sub">${esc(m.name || cap(m.material))} <span class="dim">${m.realms.length ? `realms ${m.realms.join(', ')} · ${fmt(m.output_per_tick)}/tick` : 'refined'} · last ${m.last.volume ? `${fmt(m.last.price)} ×${fmt(m.last.volume)} at T${m.last.tick}` : 'none'}</span></h4>
     <p class="dim small">${esc(m.description)}</p>
     <div class="dgrid"><div><table class="tbl book"><tr><th class="num">BID</th><th class="num">QTY</th><th></th></tr>${lvl(m.bids, 'bid', 'sell', m.material)}</table></div>
@@ -218,7 +234,7 @@ export function detailHTML() {
     <section><h3 class="sub">PLACE AN ORDER <span class="dim">cleared at the next tick</span></h3>${formHTML('d-mo', true)}</section>
     <section><h3 class="sub">OPEN ORDERS <span class="dim">yours and your state's treasury's</span> <button type="button" class="btn mini" id="d-mk-reload">RELOAD</button></h3><div id="d-mk-orders"></div>
       <h3 class="sub gap">BOOKS <span class="dim">best bid and ask</span></h3><div id="d-mk-books"></div></section>
-    <section class="wide"><h3 class="sub">DEPTH <span class="dim">every material's bids and asks; a level's button fills the form to trade against it</span></h3><div id="d-mk-depth"></div></section>
+    <section class="wide"><h3 class="sub">DEPTH <span class="dim">every material's bids and asks; a level's button sells into that bid or buys from that ask at once (it fills at the next clearing, at that price or better)</span></h3><div id="d-mk-depth"></div></section>
   </div>`;
 }
 export function wireDetail(sec, on) {
@@ -227,6 +243,13 @@ export function wireDetail(sec, on) {
   on(sec, 'click', (ev) => {
     const b = ev.target.closest('[data-pick-mat]');
     if (b) form.set(b.dataset.pickMat, b.dataset.side, Number(b.dataset.price) || 0);
+    const hit = ev.target.closest('[data-hit-mat]');
+    if (hit) {
+      const { hitMat: m, side } = hit.dataset, price = Number(hit.dataset.price);
+      const { q, why } = hitSize(side, m, price, Number(hit.dataset.qty));
+      if (!q) say(`Can't: ${why}.`, 'bad');
+      else act.order({ side, material: m, quantity: q, price }, { button: hit });
+    }
     if (ev.target.closest('#d-mk-reload')) loadMarket();
   });
   function update(c) {
