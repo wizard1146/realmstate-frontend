@@ -752,3 +752,12 @@
   & .race-row { margin: 3px 0; font-size: calc(12px * var(--room-scale)); line-height: 1.5; }
   & .race-row input.w4 { width: 5em; }
 }
+
+/* Dev panel (devlab.js): the font lab's panel, with a few rows of controls. */
+:root[data-view="room"] {
+  & .devlab .row, & .devlab .dv-form { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 6px 0; }
+  & .devlab .lab { min-width: 5.5em; font-weight: 700; }
+  & .devlab .dv-out { max-height: 240px; overflow: auto; font-size: calc(11px * var(--room-scale)); background: var(--panel, transparent); border: 1px solid var(--room-line); padding: 6px; margin: 6px 0; }
+  & .devlab input.w4 { width: 5em; } & .devlab input.w5 { width: 9em; }
+}
+

@@ -4,6 +4,7 @@ import { store, subscribe, say, setTarget, raceOf, isProtected, nextTickAt, show
 import * as act from '../../core/actions.js';
 import { API } from '../../core/api.js';
 import { renderRace, wireRace } from './racebox.js';
+import { mountDevLab } from './devlab.js';
 import { fmt, esc, addr, UNIT_ORDER, isUpgrade, when, newsLine, empty, SOLDIER, fullTime, zoneLabel, tickLine } from '../../core/words.js';
 import { mountFontLab, clear as clearFonts, rowHover } from './fontlab.js';
 import { mountPaletteLab, clear as clearPalette, clearGlyphs } from './palettelab.js';
@@ -551,6 +552,9 @@ export function mount(root) {
   on($('logout'), 'click', () => act.signOut());
   mountFontLab(root, on, { blocked: () => detail.isOpen() });
   mountPaletteLab(root, on, { blocked: () => detail.isOpen() });
+  // Dev mode (a dev server only): a DEV button and panel, and /dev in chat.
+  let unmountDev = () => {};
+  mountDevLab(root, on).then((fn) => { unmountDev = fn; });
   const detail = mountDetail(root, on);
   const unregDetail = commands.register('detail', {
     args: '[pane]',
@@ -715,6 +719,7 @@ export function mount(root) {
       clearPalette();
       clearGlyphs();
       unregister();
+      unmountDev();
       unregPalette();
       unregisterHover();
       unregDetail();
