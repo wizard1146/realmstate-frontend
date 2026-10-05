@@ -247,6 +247,26 @@
     & .line-page-h h1 { font-size: 1.45rem; }
     & .look-panel { top: 46px; }
     & .toasts { right: 8px; left: 8px; bottom: 8px; width: auto; }
+    /* Tables too wide for the screen become cards (cards.js marks them and labels their cells). */
+    & .line-page .scrollx:has(> table.cards) { overflow: visible; }
+    & .line-page table.cards, & .line-page table.cards tbody { display: block; width: 100%; min-width: 0; }
+    & .line-page table.cards tr.card-head { display: none; }
+    & .line-page table.cards tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 14px; padding: 10px 6px; border-bottom: 1px solid var(--l-line); }
+    & .line-page table.cards tr.card-group { display: block; padding: 14px 6px 4px; border-bottom: 3px double var(--l-line); }
+    & .line-page table.cards tr.card-group > * { display: block; text-align: left; padding: 0; border: 0; }
+    & .line-page table.cards td, & .line-page table.cards th { display: block; padding: 0; border: 0; text-align: left; white-space: normal; min-width: 0; max-width: none; width: auto; overflow: visible; }
+    & .line-page table.cards tr:not(.card-group) > :first-child { grid-column: 1 / -1; font-weight: 600; font-size: 1.05em; }
+    & .line-page table.cards [data-label]::before { content: attr(data-label); display: block; font-size: .72em; letter-spacing: .06em; font-variant-caps: all-small-caps; color: var(--l-muted); font-weight: 400; }
+    & .line-page table.cards td:empty, & .line-page table.cards td:not([data-label]):not(:first-child):has(> .btn:only-child) { grid-column: 1 / -1; }
+    & .line-page table.cards td.wrap, & .line-page table.cards td.does { grid-column: 1 / -1; }
+    & .line-page table.cards tr.lead-num > :first-child { font-size: .8em; font-weight: 400; color: var(--l-muted); }
+    & .line-page table.cards tr.lead-num > :first-child::before { display: inline; margin-right: .4em; }
+    & .line-page table.cards tr.lead-num > :nth-child(2) { grid-column: 1 / -1; font-weight: 600; font-size: 1.05em; }
+    & .line-page table.cards tr.lead-num > :nth-child(2)::before { display: none; }
+    & .line-page table.cards tr:is(.self, .tgt) { background: var(--self); } & .line-page table.cards tr:is(.self, .tgt) > * { background: transparent; }
+    /* Lines that wouldn't wrap. */
+    & .line-page .quote, & .line-page .ch-where, & .line-page .span { white-space: normal; overflow-wrap: break-word; }
+    & .line-page .dform > .quote { grid-column: 1 / -1; }   /* a form's cost line spans the form, not one column */
     /* The train grid: name, gold, home, count; off/def and training go (Military's tables have them). */
     & .traingrid th:nth-child(2), & .traingrid td:nth-child(2), & .traingrid th:nth-child(5), & .traingrid td:nth-child(5) { display: none; }
     & .traingrid input[type=number] { width: 6.5ch; }

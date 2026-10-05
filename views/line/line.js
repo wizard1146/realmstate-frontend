@@ -14,6 +14,7 @@ import { mountLook, clear as clearLook } from './looklab.js';
 import { mountThrone } from './throne.js';
 import { mountTrain } from './train.js';
 import { mountResources } from './resources.js';
+import { watchCards } from './cards.js';
 import { newsLine } from '../../core/words.js';
 
 // Straightline's own page parts (not War Room panels): mount(host, on) -> { update(c), tick(), destroy() }.
@@ -250,6 +251,8 @@ export function mount(root) {
   });
   document.fonts?.ready.then(place);
 
+  const stopCards = watchCards([$('page'), $('pre')], on);
+
   const unsub = subscribe((c) => {
     if (c.has('news') && current !== 'news') for (const d of c.get('news')) if (d.added) toast(d.added);
     // Messages from orders ("Built 10 Homes", errors) come as cards too: Straightline has no message line
@@ -276,6 +279,7 @@ export function mount(root) {
       part?.destroy(); top?.destroy();
       clearLook();
       document.documentElement.classList.remove('line-drawer');
+      stopCards();
       if (location.hash) history.replaceState(null, '', location.pathname + location.search);
       root.replaceChildren();
     },
