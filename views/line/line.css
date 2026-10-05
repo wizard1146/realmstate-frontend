@@ -108,6 +108,11 @@
   & .line-protect { margin: 0 0 16px; padding: 8px 12px; border: 1px solid var(--l-gold); background: var(--l-self); border-radius: 4px; }
   & .line-page:focus { outline: none; }
   & .line-page > .acttabs { display: none; }   /* the side menu picks a pane's section */
+  /* A page can show only some of a pane's sections (data-show) or leave some out (data-hide). "train" is the
+     Orders panel's Train section, which Straightline shows on the Military page instead of Explore & build. */
+  & .line-page[data-show="train"] .dgrid.act > section:not(:has(#d-f-train)) { display: none; }
+  & .line-page[data-hide="train"] .dgrid.act > section:has(#d-f-train) { display: none; }
+  & .line-pre { margin-bottom: 26px; }
 
   /* Ornaments off: plain frame, plain rules. */
   &[data-line-orn="off"] {

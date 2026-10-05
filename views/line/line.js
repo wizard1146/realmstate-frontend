@@ -13,16 +13,20 @@ import { mountLook, clear as clearLook } from './looklab.js';
 
 const KEY = 'realmstate.line.page';
 
-/** The menu: [group, [[page id, label, pane, tab, what it's for]]]. Tabs pick a section inside a pane. */
+/**
+ * The menu: [group, [[page id, label, pane, tab, what it's for, extra]]]. Tabs pick a section inside a pane.
+ * extra.show: only the pane's sections matching this ('train'); extra.hide: its sections to leave out;
+ * extra.pre: another pane drawn above, as [pane, tab, show], for a page made of two (Military: Train, then forces).
+ */
 const MENU = [
   ['Your house', [
     ['throne', 'Throne', 'res', ['res', 'holdings'], 'what you hold, and how it moved'],
     ['buildings', 'Buildings', 'res', ['res', 'buildings'], 'land, construction, what each building does'],
-    ['orders', 'Explore & build', 'act', ['act', 'orders'], 'explore land, build, train troops'],
+    ['orders', 'Explore & build', 'act', ['act', 'orders'], 'explore land and build', { hide: 'train' }],
     ['science', 'Science', 'sci', null, 'books, sciences, academics'],
   ]],
   ['Military', [
-    ['military', 'Military', 'mil', ['mil', 'forces'], 'troops, draft, medics, upgrades'],
+    ['military', 'Military', 'mil', ['mil', 'forces'], 'train troops; troops, draft, medics, upgrades', { pre: ['act', 'orders', 'train'] }],
     ['attack', 'Attack', 'act', ['act', 'attacks'], 'send an army'],
     ['generals', 'Generals', 'mil', ['mil', 'generals'], 'raise and command generals'],
     ['hall', 'Hall of Deeds', 'mil', ['mil', 'hall'], 'trade generals and academics'],
@@ -67,6 +71,7 @@ const TEMPLATE = (view) => `
     <div class="room">
       <header class="line-page-h"><h1 id="l-title"></h1><div class="orn-rule" aria-hidden="true"></div></header>
       <p class="line-protect" id="l-protect" hidden></p>
+      <div class="line-page line-pre" id="l-pre" hidden></div>
       <div class="line-page" id="l-page" tabindex="-1"></div>
     </div>
   </main>
@@ -79,11 +84,13 @@ export function mount(root) {
   const ac = new AbortController();
   const on = (t, type, fn, o = {}) => t.addEventListener(type, fn, { signal: ac.signal, ...o });
   const panes = paneRunner($('page'), $('main'), { onShow: (name) => { if (page(current)[2] !== name) select(PAGES.find((p) => p[2] === name)[0], { draw: false }); } });
+  // A second runner for pages made of two panes (it draws above the page's own pane).
+  const pre = paneRunner($('pre'), $('main'));
   let current = null;
 
   /** Opens a page: picks the pane's tab first, so the pane draws on that section. */
   function select(id, { draw = true, focus = false } = {}) {
-    const [pid, label, pane, tab] = page(id);
+    const [pid, label, pane, tab, , extra = {}] = page(id);
     current = pid;
     try { localStorage.setItem(KEY, pid); } catch { /* storage off */ }
     if (location.hash.slice(1) !== pid) history.replaceState(null, '', `#${pid}`);
@@ -98,6 +105,15 @@ export function mount(root) {
       else if (kind === 'state') STATE_TAB.set(t);
       else if (kind === 'act') opts = { tab: t };
     }
+    // Sections: only some of a pane (data-show), or all but some (data-hide); line.css does the hiding.
+    const mark = (el, show, hide) => { el.dataset.show = show || ''; el.dataset.hide = hide || ''; };
+    if (extra.pre) {
+      const [ppane, ptab, pshow] = extra.pre;
+      $('pre').hidden = false;
+      mark($('pre'), pshow, '');
+      pre.show(ppane, ppane === 'act' ? { tab: ptab } : {});
+    } else { $('pre').hidden = true; pre.clear(); }
+    mark($('page'), extra.show, extra.hide);
     panes.show(pane, { focus: false, ...opts });
     if (focus) $('page').focus({ preventScroll: true });
     $('main').scrollTop = 0;
@@ -134,8 +150,9 @@ export function mount(root) {
   const unsub = subscribe((c) => {
     if (c.has('house') || c.has('me') || c.has('rules')) renderTop();
     if (c.has('age') || c.has('clock')) renderTick();
-    if (c.has('clock')) panes.tick();
+    if (c.has('clock')) { panes.tick(); pre.tick(); }
     panes.update(c);
+    pre.update(c);
   });
 
   renderTop(); renderTick();
@@ -148,6 +165,7 @@ export function mount(root) {
       ac.abort();
       unsub();
       panes.clear();
+      pre.clear();
       clearLook();
       if (location.hash) history.replaceState(null, '', location.pathname + location.search);
       root.replaceChildren();
