@@ -99,13 +99,22 @@ export function sciDetail(b, on) {
     $('ranks').innerHTML = `<p class="dim small">Rank ladder (books each scientist writes a tick, by books written per scientist in that category): ${S.ranks().map((r, i) => `${S.rankName(i)} ${fmt(r.books)} from ${fmt(r.from)}`).join(' · ')}. "Next at" is books written per scientist; yours is in brackets.</p>`;
     const eff = S.efficiency();
     $('eff').textContent = eff.exact ? `science efficiency ${(eff.mult * 100).toFixed(1)}% (read back from your bonuses)` : 'science efficiency not known until a science has books; previews assume 100%';
-    $('list').innerHTML = `<div class="scrollx"><table class="tbl wide-tbl"><tr><th>SCIENCE</th><th>CAT</th><th>WHAT IT DOES</th><th class="num">INVESTED</th><th>BONUS NOW</th><th><abbr title="What the next 1,000 books add (estimate from the formula)">+1,000 BOOKS</abbr></th><th><abbr title="Bonus with twice the books invested">AT 2×</abbr></th></tr>${S.defs().map((d) => {
+    // Grouped by category; each group opens with a heading row (.sci-cat: hidden in the War Room, shown in Straightline).
+    const defs = [...S.defs()].sort((a, c) => S.CATS.indexOf(a.category) - S.CATS.indexOf(c.category));
+    let lastCat = null;
+    const catRow = (d) => {
+      if (d.category === lastCat) return '';
+      lastCat = d.category;
+      const i = S.CATS.indexOf(d.category);
+      return `<tr class="sci-cat"><th colspan="7">${esc(d.category[0].toUpperCase() + d.category.slice(1))} <span class="dim">${i >= 0 ? `${fmt(x.books[i])} books to invest` : ''}</span></th></tr>`;
+    };
+    $('list').innerHTML = `<div class="scrollx"><table class="tbl wide-tbl sci-list"><tr><th>SCIENCE</th><th>CAT</th><th>WHAT IT DOES</th><th class="num">INVESTED</th><th>BONUS NOW</th><th><abbr title="What the next 1,000 books add (estimate from the formula)">+1,000 BOOKS</abbr></th><th><abbr title="Bonus with twice the books invested">AT 2×</abbr></th></tr>${defs.map((d) => {
       const r = S.rowOf(d.science) || { invested: 0, bonus_bp: [] };
       const nowExact = d.effects.map((e, j) => ({ stat: e.stat, bp: r.bonus_bp[j] || 0 }));
       const est = S.bonusAt(d, r.invested, eff), next = S.bonusAt(d, r.invested + 1000, eff);
       const gain = next.map((g, j) => ({ stat: g.stat, bp: g.bp - est[j].bp }));
       const dbl = S.bonusAt(d, Math.max(r.invested * 2, 1), eff);
-      return `<tr class="graphable" tabindex="0" data-sci="${esc(d.science)}" title="Select to invest in ${esc(d.name)}"><td class="name">${esc(d.name)}</td><td class="dim">${S.CAT_SHORT[d.category]}</td><td class="dim small wrap">${esc(d.description)}</td><td class="num${r.invested ? '' : ' zero'}">${fmt(r.invested)}</td>`
+      return catRow(d) + `<tr class="graphable" tabindex="0" data-sci="${esc(d.science)}" title="Select to invest in ${esc(d.name)}"><td class="name">${esc(d.name)}</td><td class="dim">${S.CAT_SHORT[d.category]}</td><td class="dim small wrap">${esc(d.description)}</td><td class="num${r.invested ? '' : ' zero'}">${fmt(r.invested)}</td>`
         + `<td class="${r.invested ? '' : 'zero'}">${esc(S.effText(nowExact))}</td><td class="up">${esc(S.effText(gain))}</td><td class="dim">${r.invested ? esc(S.effText(dbl)) : '·'}</td></tr>`;
     }).join('')}</table></div>`;
     quote();
@@ -113,7 +122,8 @@ export function sciDetail(b, on) {
   }
   on($('inv'), 'input', quote);
   on($('inv'), 'click', (ev) => { if (ev.target.closest('[data-max]')) fillMax($('n'), s().books[S.catOf(defOf())], `no ${defOf().category} books`); });
-  on($('inv'), 'submit', (ev) => { ev.preventDefault(); act.invest($('sci').value, num($('n').value), { button: ev.submitter }); });
+  // Invested: the count goes back to 0 (a refused order keeps it, to correct).
+  on($('inv'), 'submit', async (ev) => { ev.preventDefault(); if (await act.invest($('sci').value, num($('n').value), { button: ev.submitter })) { $('n').value = 0; quote(); } });
   on($('set'), 'submit', (ev) => { ev.preventDefault(); act.setScience({ focus: $('focus').value, paper: $('paper').value }, { button: ev.submitter }); });
   on($('move'), 'click', (ev) => { if (ev.target.closest('[data-max]')) fillMax($('mn'), s().scientists[S.CATS.indexOf($('from').value)], `no ${$('from').value} scientists`); });
   on($('move'), 'submit', (ev) => { ev.preventDefault(); act.assignScientists($('from').value, $('to').value, num($('mn').value), { button: ev.submitter }); });

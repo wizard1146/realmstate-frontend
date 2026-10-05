@@ -133,6 +133,32 @@
   & .line-page .tape.roomy time { font-style: italic; font-size: .88em; padding-top: 1px; }
   & .line-page .tape li.battle { padding: 10px 2px; }
   & .line-page .bcard { border: 1px solid var(--l-line); border-left: 3px solid var(--l-bad); border-radius: 3px; padding: 6px 10px; background: color-mix(in srgb, var(--l-self) 40%, var(--l-page)); }
+  /* Science: the sciences under a heading per category; the CAT column goes, the heading says it. */
+  & .line-page .sci-list tr.sci-cat { display: table-row; }
+  & .line-page .sci-list tr.sci-cat th { font: 600 1rem/1.3 var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-ink);
+    text-align: left; padding: 18px 4px 4px; border-bottom: 3px double var(--l-line); }
+  & .line-page .sci-list tr.sci-cat th .dim { font: italic .85em var(--l-body-font); letter-spacing: 0; font-variant-caps: normal; margin-left: 8px; }
+  & .line-page .sci-list tr > :nth-child(2):not([colspan]) { display: none; }
+  & .line-page .sci-list tr:first-child th { font-size: .82em; }
+
+  /* Resources: Throne's two columns, with a change column per row. */
+  & .res2 table.kv.res { table-layout: fixed; }   /* every block's columns line up */
+  & .res2 table.kv.res th:first-child, & .res2 table.kv.res tr > :first-child { width: 46%; }
+  & .res2 table.kv.res tr:first-child th { font-variant-caps: all-small-caps; letter-spacing: .06em; font-size: .9em; }
+  & .res2 tr[data-graph] { cursor: pointer; }
+  & .res2 tr[data-graph]:hover th, & .res2 tr[data-graph]:focus-visible th { color: var(--l-ink); }
+
+  /* News as it arrives: small cards bottom right, each with a link to the News page. */
+  & .toasts { position: fixed; right: 16px; bottom: 16px; z-index: 40; display: flex; flex-direction: column-reverse; gap: 8px; width: min(340px, calc(100vw - 32px)); pointer-events: none; }
+  & .toast { pointer-events: auto; position: relative; background: var(--l-page); color: var(--l-ink); border: 1px solid var(--l-frame); border-left: 4px solid var(--l-gold);
+    border-radius: 4px; box-shadow: 0 6px 20px rgba(30, 20, 5, .22); padding: 9px 30px 9px 12px; animation: l-toast-in .25s ease-out; transition: opacity .3s, transform .3s; }
+  & .toast.bad { border-left-color: var(--l-bad); } & .toast.good { border-left-color: var(--l-good); }
+  & .toast p { margin: 0 0 4px; font-size: .92em; line-height: 1.4; }
+  & .toast a { color: var(--l-blue); font-weight: 600; font-size: .88em; }
+  & .toast .x { position: absolute; top: 4px; right: 6px; background: none; border: 0; color: var(--l-muted); font-size: 1.1em; cursor: pointer; }
+  & .toast.out { opacity: 0; transform: translateY(8px); }
+  @media (prefers-reduced-motion: reduce) { & .toast { animation: none; transition: none; } }
+
   /* Train: one row per unit, one button. */
   & .traingrid .tbl { width: 100%; }
   & .traingrid input[type=number] { width: 8ch; text-align: right; }
@@ -214,3 +240,5 @@
   & .dgrid.act { grid-template-columns: minmax(0, 1fr); }
   & .dgrid.act > .bsec, & .dgrid.act > section:not(.bsec) { grid-column: 1; grid-row: auto; }
 }
+
+@keyframes l-toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }

@@ -414,10 +414,11 @@
   & .dgrid .sub { margin: 0 0 4px; font-size: calc(12px * var(--room-scale)); color: var(--room-ink); border-bottom: 1px solid var(--room-ink); padding-bottom: 2px; }
   & .dgrid .sub .dim { font-weight: 400; letter-spacing: 0; color: var(--room-muted); }
   & .scrollx { overflow-x: auto; max-width: 100%; }
-  & .dlg .tbl td, & .dlg .tbl th { padding: 3px 8px 3px 4px; }
-  & .dlg .tbl td.name { max-width: none; width: auto; white-space: nowrap; }
-  & .dlg .tbl td.wrap { white-space: normal; min-width: 24ch; }
-  & .dlg .tbl td.txt { text-align: right; white-space: normal; overflow-wrap: anywhere; }
+  & .detail-host .tbl td, & .detail-host .tbl th { padding: 3px 8px 3px 4px; }
+  & .detail-host .tbl td.name { max-width: none; width: auto; white-space: nowrap; }
+  & .sci-list tr.sci-cat { display: none; }   /* category headings: the War Room keeps its CAT column instead */
+  & .detail-host .tbl td.wrap { white-space: normal; min-width: 24ch; }
+  & .detail-host .tbl td.txt { text-align: right; white-space: normal; overflow-wrap: anywhere; }
   & .dgrid.act { grid-template-columns: minmax(0, 1.9fr) minmax(300px, 1fr); }
   & .dgrid.act > .bsec { grid-column: 1; grid-row: 1 / span 3; }
   & .dgrid.act > section:not(.bsec) { grid-column: 2; }
@@ -425,7 +426,7 @@
     & .dgrid.act { grid-template-columns: minmax(0, 1fr); }
     & .dgrid.act > .bsec, & .dgrid.act > section:not(.bsec) { grid-column: 1; grid-row: auto; }
   }
-  & .dlg .tbl tr.sum td { border-top: 1px solid var(--room-line); font-weight: 600; }
+  & .detail-host .tbl tr.sum td { border-top: 1px solid var(--room-line); font-weight: 600; }
   & .tbl .flag.l { color: var(--rust); }
   & .land.big { height: 14px; margin: 4px 0 8px; }
   & .dtools { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; margin-bottom: 8px; }
@@ -555,7 +556,7 @@
   & .force { list-style: none; margin: 0; padding: 0; }
   & .force li { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dotted var(--rule); padding: 2px 0; }
   & .optbl tr.grp td { font-family: var(--room-label); font-size: calc(11px * var(--room-scale)); letter-spacing: .06em; color: var(--room-muted); padding-top: 8px; border-bottom: 1px solid var(--room-line); }
-  & .dlg .optbl td.wrap { min-width: 22ch; }
+  & .detail-host .optbl td.wrap { min-width: 22ch; }
   & .sub.gap { margin-top: 14px; }
 
   /* ACT detail tabs */
@@ -621,7 +622,7 @@
 
 /* ---------- RES detail: DOES, per-hour, graph rows ---------- */
 :is(:root[data-view="room"], .room-scope) {
-  & .dlg .tbl td.does { white-space: normal; min-width: 30ch; max-width: 46ch; line-height: 1.35; }
+  & .detail-host .tbl td.does { white-space: normal; min-width: 30ch; max-width: 46ch; line-height: 1.35; }
   & td.does .does-now, & td.does .does-more { display: block; }
   & td.does .does-more { color: var(--room-muted); }
   & .tbl .up { color: var(--up); }
@@ -681,9 +682,9 @@
   & .sc-curve { display: block; width: 100%; max-width: 440px; height: auto; font-family: var(--room-mono); font-size: 10px; margin-top: 4px; }
   & .sc-now { fill: var(--moss); }
   & .sc-after { fill: var(--pane); stroke: var(--rust); stroke-width: 2; }
-  & .dlg .tbl td.up { color: var(--up); }
-  & .dlg .tbl td.down { color: var(--down); }
-  & .dlg .tbl tr.zero td { color: var(--room-muted); }
+  & .detail-host .tbl td.up { color: var(--up); }
+  & .detail-host .tbl td.down { color: var(--down); }
+  & .detail-host .tbl tr.zero td { color: var(--room-muted); }
 }
 
 :is(:root[data-view="room"], .room-scope) { & .dform .w-name { max-width: 32ch; } }
@@ -697,7 +698,7 @@
   & form.inl { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 4px; margin: 0; }
   & form.inl input { width: 9ch; }
   & form.inl [data-held] { flex-basis: 100%; }
-  & .dlg h4.small { font-family: var(--room-label); font-weight: 400; letter-spacing: .06em; color: var(--room-muted); margin: 8px 0 2px; }
+  & .detail-host h4.small { font-family: var(--room-label); font-weight: 400; letter-spacing: .06em; color: var(--room-muted); margin: 8px 0 2px; }
   & .ticket.attack #r-a-gen { max-width: 22ch; }
   & #d-a-gen { max-width: 100%; }
 }

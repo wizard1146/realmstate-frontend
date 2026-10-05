@@ -9,12 +9,15 @@ import { paneRunner } from '../room/detail.js';
 import { RES_TAB } from '../room/market.js';
 import { MIL_TAB } from '../room/generals.js';
 import { STATE_TAB } from '../room/statedetail.js';
+import { SCI_TAB } from '../room/science.js';
 import { mountLook, clear as clearLook } from './looklab.js';
 import { mountThrone } from './throne.js';
 import { mountTrain } from './train.js';
+import { mountResources } from './resources.js';
+import { newsLine } from '../../core/words.js';
 
 // Straightline's own page parts (not War Room panels): mount(host, on) -> { update(c), tick(), destroy() }.
-const PARTS = { throne: mountThrone, train: mountTrain };
+const PARTS = { throne: mountThrone, train: mountTrain, resources: mountResources };
 
 const KEY = 'realmstate.line.page';
 
@@ -26,10 +29,12 @@ const KEY = 'realmstate.line.page';
 const MENU = [
   ['Your house', [
     ['throne', 'Throne', null, null, 'your house at a glance', { part: 'throne' }],
-    ['resources', 'Resources', 'res', ['res', 'holdings'], 'what you hold, and how it moved each tick'],
+    ['resources', 'Resources', null, null, 'what you hold, and how it moved each tick', { part: 'resources' }],
     ['buildings', 'Buildings', 'res', ['res', 'buildings'], 'land, construction, what each building does'],
     ['orders', 'Explore & build', 'act', ['act', 'orders'], 'explore land and build', { hide: 'train' }],
-    ['science', 'Science', 'sci', null, 'books, sciences, academics'],
+    ['science', 'Science', 'sci', ['sci', 'science'], 'books and sciences'],
+    ['academics', 'Academics', 'sci', ['sci', 'academics'], 'your scholars and their attributes'],
+    ['colloquium', 'Colloquium', 'sci', ['sci', 'colloquium'], 'your state’s shared research'],
   ]],
   ['Military', [
     ['military', 'Military', 'mil', ['mil', 'forces'], 'train troops; troops, draft, medics, upgrades', { top: 'train' }],
@@ -77,11 +82,12 @@ const TEMPLATE = (view) => `
     <div class="room">
       <header class="line-page-h"><h1 id="l-title"></h1><div class="orn-rule" aria-hidden="true"></div></header>
       <p class="line-protect" id="l-protect" hidden></p>
-      <div class="line-page line-pre" id="l-pre" hidden></div>
-      <div class="line-page" id="l-page" tabindex="-1"></div>
+      <div class="line-page line-pre detail-host" id="l-pre" hidden></div>
+      <div class="line-page detail-host" id="l-page" tabindex="-1"></div>
     </div>
   </main>
 </div>
+<div class="toasts" id="l-toasts" role="status" aria-live="polite" aria-label="New news"></div>
 </div>`;
 
 export function mount(root) {
@@ -111,6 +117,7 @@ export function mount(root) {
       if (kind === 'res') RES_TAB.set(t);
       else if (kind === 'mil') MIL_TAB.set(t);
       else if (kind === 'state') STATE_TAB.set(t);
+      else if (kind === 'sci') SCI_TAB.set(t);
       else if (kind === 'act') opts = { tab: t };
     }
     // Parts first come down; then the part above (if any), and the page's own part or pane.
@@ -155,7 +162,30 @@ export function mount(root) {
   on($('out'), 'click', () => act.signOut());
   mountLook(root, on);
 
+  // News as it arrives: a small card bottom right, with a link to the News page (not while you're on it).
+  const MAX_TOASTS = 3, TOAST_MS = 10000;
+  function toast(n) {
+    const [text, tone] = newsLine(n);
+    const el = document.createElement('div');
+    el.className = `toast ${tone || ''}`;
+    el.innerHTML = `<p>${esc(text)}</p><a href="#news" data-page="news">Open News →</a><button type="button" class="x" aria-label="Dismiss">×</button>`;
+    const box = $('toasts');
+    box.prepend(el);
+    while (box.children.length > MAX_TOASTS) box.lastElementChild.remove();
+    let left = TOAST_MS, last = Date.now(), timer = null;
+    const go = () => { el.classList.add('out'); setTimeout(() => el.remove(), 300); };
+    const run = () => { last = Date.now(); timer = setTimeout(go, left); };
+    el.addEventListener('mouseenter', () => { clearTimeout(timer); left -= Date.now() - last; });
+    el.addEventListener('mouseleave', run);
+    el.addEventListener('click', (ev) => {
+      if (ev.target.closest('.x')) return go();
+      if (ev.target.closest('[data-page]')) { ev.preventDefault(); go(); select('news', { focus: true }); }
+    });
+    run();
+  }
+
   const unsub = subscribe((c) => {
+    if (c.has('news') && current !== 'news') for (const d of c.get('news')) if (d.added) toast(d.added);
     if (c.has('house') || c.has('me') || c.has('rules')) renderTop();
     if (c.has('age') || c.has('clock')) renderTick();
     if (c.has('clock')) { panes.tick(); part?.tick(); top?.tick(); }

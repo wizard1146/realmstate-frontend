@@ -322,7 +322,7 @@ export function paneRunner(body, frame, { onShow = () => {} } = {}) {
  */
 export function mountDetail(root, on) {
   const dlg = document.createElement('dialog');
-  dlg.className = 'dlg';
+  dlg.className = 'dlg detail-host';   // detail-host: room.css lays the panels' tables out for a detail view
   dlg.id = 'r-dlg';
   dlg.setAttribute('aria-labelledby', 'r-dlg-title');
   dlg.innerHTML = `
