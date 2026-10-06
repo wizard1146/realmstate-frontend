@@ -230,8 +230,10 @@ export function riteOn(r, s) {
     if (!ok) out.blocked = `${r.name} needs your state ${r.needs === 'war' ? `at war with ${stName(s)}` : `to feel ${NEEDS_WORD[r.needs] || r.needs} ${stName(s)}, or to be at war with it`}; it feels ${out.feel} (${fmt(out.points)} hostility points)`;
   }
   if (!out.war && out.feel === 'unfriendly' && r.unfriendly_cost_bp && r.unfriendly_cost_bp !== 10000) {
-    out.cost = Math.floor(c.aether * r.unfriendly_cost_bp / 10000);
-    out.approx = true; // the server sends no cost per target
+    // The server sends the cost while only unfriendly; an older one doesn't, so work it out (≈).
+    const sent = (store.house?.rite_costs_unfriendly || []).find((x) => x[0] === r.id);
+    out.cost = sent ? sent[1] : Math.floor(c.aether * r.unfriendly_cost_bp / 10000);
+    out.approx = !sent;
   }
   return out;
 }
@@ -309,11 +311,13 @@ function magicHTML() {
   const vfade = P.vengeance_decay_bp ? `fades ${pct(P.vengeance_decay_bp)} a tick` : '';
   const lasting = rites().find((r) => r.ticks && riteKind(r) === 'self');
   const c = lasting && riteFor(lasting);
-  const share = c && c.exact ? `≈${fmt(Math.round(c.ticks * 100 / lasting.ticks))}%` : '';
+  // Both lengths come from the server, so the share of full length is exact (rounded).
+  const share = c && c.exact ? `${fmt(Math.round(c.ticks * 100 / lasting.ticks))}%` : '';
+  const shrines = typeof h.shrine_share_bp === 'number' ? `your shrines cover ${pct(h.shrine_share_bp)} of your land; ` : '';
   return `<table class="tbl kv magic">
     <tr><td>Spell Resilience</td><td class="txt"><b class="num">${pct(res)}</b> <span class="dim">of ${pct(P.resilience_max_bp || 0)} max</span><br><span class="dim small">Each hex that lands on you adds its resilience; it cuts the chance of every hex on you by that much and fades ${pct(P.resilience_decay_bp || 0)} a tick.${clear}</span></td></tr>
     <tr><td>Vengeance</td><td class="txt">${v.length ? `<ul class="force">${v.map(([s, bp]) => `<li><span class="name">state ${esc(stName(s))}</span> <span class="num">+${pct(bp)} hex chance</span></li>`).join('')}</ul>` : '<span class="dim">none</span>'}<span class="dim small">Every hex a state tries on you, landed or not, adds half its resilience to your vengeance on that state (max ${pct(P.vengeance_max_bp || 0)}). Your hexes on its houses gain that much chance; casting one spends half; it ${vfade}.</span></td></tr>
-    ${share ? `<tr><td>Lasting rites</td><td class="txt">run <b class="num">${share}</b> of full length for you now (${esc(lasting.name)}: ${fmt(c.ticks)} of ${fmt(lasting.ticks)} ticks) <span class="dim small">(full at shrines on ${pct(P.rite_full_share_bp || 0)} of your land, ${pct(P.rite_min_duration_bp || 0)} with none)</span></td></tr>` : ''}
+    ${share ? `<tr><td>Lasting rites</td><td class="txt">run <b class="num">${share}</b> of full length for you now (${esc(lasting.name)}: ${fmt(c.ticks)} of ${fmt(lasting.ticks)} ticks) <span class="dim small">(${shrines}full at shrines on ${pct(P.rite_full_share_bp || 0)} of your land, ${pct(P.rite_min_duration_bp || 0)} with none)</span></td></tr>` : ''}
   </table>`;
 }
 

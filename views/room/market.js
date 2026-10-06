@@ -226,7 +226,7 @@ export function ordersHTML(compact = false) {
       // The server decides; this only says when the lock lifts (the clocks may differ a little).
       const locked = life && o.placed_at + life > Date.now() ? ` title="An order stands ${lockMin()} minutes: cancel from ${esc(dayTime(o.placed_at + life))}"` : '';
       // A waiting buy holds its price and room for the cross-realm fee (orders placed before the fee held none).
-      const esc2 = o.side === 'buy' ? `${fmt(waitHold(o.quantity, o.price))}g` : `${fmt(o.quantity)} ${o.material}`;
+      const esc2 = o.side === 'buy' ? `${fmt(o.held ?? waitHold(o.quantity, o.price))}g` : `${fmt(o.quantity)} ${o.material}`;
       return `<tr><td class="num dim">${o.order}</td><td class="${o.side === 'buy' ? 'up' : 'down'}">${o.side.toUpperCase()}</td><td>${esc(o.material)}${compact && o.treasury ? ' <span class="dim">T</span>' : ''}</td><td class="num">${fmt(o.quantity)}</td><td class="num">${fmt(o.price)}</td>`
         + `${compact ? '' : `<td class="num dim">${esc2}</td><td>${o.treasury ? 'treasury' : 'you'}</td><td class="small dim">${esc(when(o.placed_at))}</td>`}`
         + `<td><button type="button" class="btn mini" data-cancel="${o.order}"${can ? '' : ' disabled title="Treasury orders: the leader only"'}${can ? locked : ''} aria-label="Cancel order ${o.order}">CANCEL</button></td></tr>`;

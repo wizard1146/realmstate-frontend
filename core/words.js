@@ -128,7 +128,7 @@ export function newsLine(n) {
     case 'leader_chosen': return [`${where(n.leader)} was chosen to lead the state.`, ''];
     case 'leader_removed': return [`${where(n.was)} lost the leadership.`, ''];
     case 'order_filled': return [`${n.side === 'buy' ? 'Bought' : 'Sold'} ${fmt(n.quantity)} ${n.material} at ${fmt(n.price)}${n.fee ? `, ${n.side === 'buy' ? 'plus' : 'less'} a ${fmt(n.fee)} gold fee` : ''}${n.cross_fee ? `${n.fee ? ' and' : ', plus'} a ${fmt(n.cross_fee)} gold cross-realm fee (from another realm)` : ''}${n.left ? ` (${fmt(n.left)} still open)` : ''}.`, ''];
-    case 'treasury_share': return [`Our treasury's overflow: ${Object.entries(n.materials || {}).map(([m, q]) => `${fmt(q)} ${m}`).join(', ')}, shared among the state's houses instead of spoiling.`, 'good'];
+    case 'treasury_share': return [`Our treasury's overflow${n.ticks ? ` over the last ${n.ticks === 24 ? 'day' : `${fmt(n.ticks)} ticks`}` : ''}: ${Object.entries(n.materials || {}).map(([m, q]) => `${fmt(q)} ${m}`).join(', ')}, shared among the state's houses instead of spoiling.`, 'good'];
     case 'granted': return [`${where(n.by)} granted us ${fmt(n.amount)} ${n.material || 'gold'}.`, 'good'];
     case 'medics_trained': return [`${fmt(n.count)} medics are ready.`, 'good'];
     case 'general_killed': return [`Our general ${n.name} fell in battle.`, 'bad'];

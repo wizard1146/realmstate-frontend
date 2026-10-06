@@ -44,10 +44,18 @@ export function mountAges() {
 
   function fillPick() {
     const n = cur() || 1;
-    const opts = [];
-    for (let i = n; i >= 1; i--) opts.push(`<option value="${i}">${i === n ? `${esc(ages.ageName(store.age))} · now` : `Age ${i}`}</option>`);
-    pick.innerHTML = opts.join('');
-    pick.value = String(shownAge ?? n);
+    const now = `<option value="${n}">${esc(ages.ageName(store.age))} · now</option>`;
+    const fill = (opts) => { pick.innerHTML = opts.join(''); pick.value = String(shownAge ?? n); };
+    // Every number down to 1 until the server says which ages it recorded (an older one never does).
+    const all = [now];
+    for (let i = n - 1; i >= 1; i--) all.push(`<option value="${i}">Age ${i}</option>`);
+    fill(all);
+    ages.recorded().then((list) => {
+      if (!list || cur() !== n) return;
+      const past = list.filter((a) => a.age !== n).reverse()
+        .map((a) => `<option value="${a.age}">${esc(a.name || `Age ${a.age}`)}${a.winner_name ? ` · ${esc(a.winner_name)} won` : ''}</option>`);
+      fill([now, ...past]);
+    }).catch(() => {});
   }
   function header() {
     const t = st.get();

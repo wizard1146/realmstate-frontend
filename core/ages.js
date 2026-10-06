@@ -34,6 +34,10 @@ export function recap(n) {
   if (n == null || n === cur) return cached('recap:now', '/age/recap', false);
   return cached(`recap:${n}`, `/ages/${Number(n)}/recap`, true);
 }
+/** Every recorded (ended) age, oldest first: [{age, name, started_at, ended_at, winner, winner_name}]; null on an older server. */
+export function recorded() {
+  return cached(`recorded:${store.age?.age}`, '/ages', true);
+}
 /**
  * An age's result. For the current age it is /age's `result` (once ended), with the age's number
  * and name; for an earlier one, /ages/n. Null if the age hasn't ended or isn't recorded here.

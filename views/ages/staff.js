@@ -30,6 +30,7 @@ function parseValue(t) {
 }
 /** The server's problems as a list (one string, lines, or an array). */
 function problems(e) {
+  if (Array.isArray(e?.data?.errors)) return e.data.errors.map((s) => String(s).trim()).filter(Boolean);
   const x = e?.data?.error ?? e?.message ?? String(e);
   const list = Array.isArray(x) ? x : String(x).split(/\n+|;\s+(?=[a-z_]+[: ])/i);
   return list.map((s) => String(s).trim()).filter(Boolean);

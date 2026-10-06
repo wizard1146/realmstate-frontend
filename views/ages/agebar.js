@@ -78,9 +78,10 @@ export function mountAgeBar(el, open) {
       const w = el.querySelector('[data-winner]');
       if (w) {
         const win = a.result.winner;
-        w.textContent = stateLabel(win);
-        // The winner's name comes with the age's recap (the result itself gives an address).
-        if (hasAges()) recap(a.age).then((rc) => { if (rc && w.isConnected) w.textContent = stateLabel({ ...win, name: namer(rc).state(win.realm, win.state) }); }).catch(() => {});
+        // The result's state rows carry names; an older server's don't, so ask the recap then.
+        const row = (a.result.states || []).find((x) => x.state?.realm === win.realm && x.state?.state === win.state);
+        w.textContent = stateLabel(row?.name ? { ...win, name: row.name } : win);
+        if (!row?.name && hasAges()) recap(a.age).then((rc) => { if (rc && w.isConnected) w.textContent = stateLabel({ ...win, name: namer(rc).state(win.realm, win.state) }); }).catch(() => {});
       }
     }
     tick();
