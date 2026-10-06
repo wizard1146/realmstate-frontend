@@ -38,7 +38,14 @@ export function mountAges() {
   let seq = 0;
 
   const cur = () => store.age?.age ?? null;
-  const mine = (n) => (store.house && n === cur() ? { realm: store.house.realm, state: store.house.state, house: store.house.id } : null);
+  // Your house to mark: this age's from /me; an ended age's from your own record (/me/ages).
+  let records = [];
+  const mine = (n) => {
+    if (n === cur()) return store.house ? { realm: store.house.realm, state: store.house.state, house: store.house.id } : null;
+    const r = records.find((x) => x.age === n);
+    return r ? { realm: r.state.realm, state: r.state.state, house: r.house.house } : null;
+  };
+  const loadMine = async () => { records = await ages.myAges(); };
   // Keys typed in the window stay in it (the War Room's own shortcuts are behind the modal).
   dlg.addEventListener('keydown', (ev) => ev.stopPropagation());
 
@@ -92,8 +99,25 @@ export function mountAges() {
         ${sc ? `<dt>SCORING</dt><dd>land ${fmt(sc.land_bp / 100)} and might ${fmt(sc.might_bp / 100)} points against the leading state, plus ${fmt(sc.per_war_point / 100)} a war point</dd>` : ''}
       </dl>
       ${a.ended || n ? `<h3 class="sub">NEXT AGE</h3>${n ? `<p><b>${esc(n.name || `Age ${n.age}`)}</b> <span class="dim">(age ${fmt(n.age)})</span> · ${n.start_at > Date.now() ? `starts in <b class="num" data-cd="${n.start_at}"></b> · ${esc(fullTime(n.start_at))}` : `opening soon (start ${esc(fullTime(n.start_at))})`}</p>` : '<p class="dim">Not planned yet. Staff announce it here once it is.</p>'}` : ''}
+      <div id="ag-mine"></div>
       <p class="ag-go">${ages.hasAges() ? '<button type="button" class="btn" data-go="recap">WATCH THE RECAP</button>' : ''}${a.ended ? ' <button type="button" class="btn primary" data-go="results">SEE THE RESULTS</button>' : ages.hasAges() || a.standings ? ' <button type="button" class="btn" data-go="results">STANDINGS</button>' : ''}</p>
     </div>`;
+  }
+  /** Your past ages: where your house finished in each. */
+  function mineHTML() {
+    if (!records.length) return '';
+    const of = (rank, n) => (rank ? `#${fmt(rank)}<span class="dim"> of ${fmt(n)}</span>` : '·');
+    return `<h3 class="sub">YOUR PAST AGES</h3><ul class="ag-past">${records.map((r) => `<li>
+      <p><b>${esc(r.name || `Age ${r.age}`)}</b>: ${esc(r.house.name)} of ${esc(r.state.name || `${r.state.realm}:${r.state.state}`)}${r.won ? ' <span class="ag-won">WON THE AGE</span>' : ''}</p>
+      <dl class="sf-sum">
+        <dt>STATE</dt><dd>${of(r.state_rank, r.states)}${r.state_score != null ? ` · score ${(r.state_score / 100).toFixed(1)}` : ''}</dd>
+        <dt>LAND</dt><dd>${of(r.land_rank, r.houses)} · ${fmt(r.land)} acres</dd>
+        <dt>MIGHT</dt><dd>${of(r.might_rank, r.houses)} · ${fmt(r.might)}</dd>
+        <dt>RENOWN</dt><dd>${of(r.renown_rank, r.houses)} · ${fmt(r.renown)}</dd>
+        ${r.heirs?.length ? `<dt>HEIRS</dt><dd>${r.heirs.map((h) => esc(h.name)).join(', ')}</dd>` : ''}
+      </dl>
+      <p class="ag-go"><button type="button" class="btn mini" data-past="${r.age}" data-go="results">RESULTS</button> <button type="button" class="btn mini" data-past="${r.age}" data-go="recap">RECAP</button></p>
+    </li>`).join('')}</ul>`;
   }
   function tickClocks() {
     dlg.querySelectorAll('[data-cd]').forEach((b) => { b.textContent = ages.span(Number(b.dataset.cd) - Date.now()); });
@@ -107,7 +131,7 @@ export function mountAges() {
     if (!recap) { box.innerHTML = '<div class="rc"></div><p class="dim rc-msg" hidden></p>'; recap = mountRecap(box.querySelector('.rc')); }
     const msg = box.querySelector('.rc-msg');
     let rc = null, err = null;
-    try { rc = await ages.recap(n); } catch (e) { err = e; }
+    try { [rc] = await Promise.all([ages.recap(n), loadMine()]); } catch (e) { err = e; }
     if (my !== seq || !dlg.open) return;
     box.querySelector('.rc').hidden = !rc;
     msg.hidden = !!rc;
@@ -123,7 +147,7 @@ export function mountAges() {
     const my = ++seq;
     box.innerHTML = '<p class="dim">Reading the results…</p>';
     let r = null, rc = null;
-    try { r = await ages.result(n); } catch (e) { if (my === seq) box.innerHTML = `<p class="bad">Couldn't read the results: ${esc(e.message)}</p>`; return; }
+    try { [r] = await Promise.all([ages.result(n), loadMine()]); } catch (e) { if (my === seq) box.innerHTML = `<p class="bad">Couldn't read the results: ${esc(e.message)}</p>`; return; }
     // State names come with the age's recap (and with an archived result).
     if (!r?.names && ages.hasAges()) rc = await ages.recap(n).catch(() => null);
     if (my !== seq || !dlg.open) return;
@@ -139,7 +163,11 @@ export function mountAges() {
   function draw(t) {
     header();
     if (t !== 'recap') recap?.stop();
-    if (t === 'now') { body.querySelector('#ag-sec-now').innerHTML = nowHTML(); tickClocks(); }
+    if (t === 'now') {
+      body.querySelector('#ag-sec-now').innerHTML = nowHTML();
+      tickClocks();
+      loadMine().then(() => { const el = body.querySelector('#ag-mine'); if (el && st.get() === 'now') el.innerHTML = mineHTML(); });
+    }
     else if (t === 'recap') showRecap(false);
     else if (t === 'results') showResults();
     else if (t === 'staff' && !staff) staff = mountStaff(body.querySelector('#ag-sec-staff'), access, (x, type, fn) => x.addEventListener(type, fn, { signal: ac.signal }));
@@ -180,6 +208,8 @@ export function mountAges() {
   dlg.addEventListener('click', (ev) => {
     if (ev.target === dlg || ev.target.closest('[data-close]')) { dlg.close(); return; }
     const g = ev.target.closest('[data-go]');
+    // A past age's buttons show that age.
+    if (g?.dataset.past) { shownAge = Number(g.dataset.past); fillPick(); }
     if (g) { st.set(g.dataset.go); body.querySelector(`#ag-tab-${g.dataset.go}`)?.focus(); }
   });
   dlg.addEventListener('close', () => {

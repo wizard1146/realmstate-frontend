@@ -39,6 +39,15 @@ export function recorded() {
   return cached(`recorded:${store.age?.age}`, '/ages', true);
 }
 /**
+ * Your own record in every ended age you played, latest first (signed in): [{age, name, house,
+ * state: {realm, state, name}, won, land_rank, might_rank, renown_rank, houses, state_rank,
+ * states, state_score, land, might, renown, heirs}]. Empty when signed out or on an older server.
+ */
+export async function myAges() {
+  if (!store.me) return [];
+  try { return (await cached(`myages:${store.age?.age}`, '/me/ages', true)) || []; } catch { return []; }
+}
+/**
  * An age's result. For the current age it is /age's `result` (once ended), with the age's number
  * and name; for an earlier one, /ages/n. Null if the age hasn't ended or isn't recorded here.
  */

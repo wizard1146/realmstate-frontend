@@ -158,6 +158,10 @@ export function newsLine(n) {
     case 'aid_arrived': return [`Aid arrived from ${where(n.from)}: ${fmt(n.amount)} ${aidName(n.what)}.`, 'good'];
     case 'admin_action': return [`The game's staff ${n.what}${n.note ? `: ${n.note}` : ''}.`, ''];
     case 'troops_recovered': return [`${fmt((n.units || []).reduce((a, b) => a + b, 0))} of our battle dead rose again and came home.`, 'good'];
+    case 'burned': {
+      const troops = (n.units || []).reduce((a, b) => a + b, 0);
+      return [`${n.name} burned us: ${fmt(n.peasants || 0)} peasants and ${fmt(troops)} troops at home died this tick (it burns until tick ${n.until_tick}).`, 'bad'];
+    }
     case 'afflicted': return [`${n.by ? where(n.by) : 'A veiled army'} afflicted us with ${n.name} until tick ${n.until_tick}.`, 'bad'];
     case 'second_strike': {
       const killed = fmt((n.killed || []).reduce((a, b) => a + b, 0));

@@ -36,6 +36,10 @@
   & .ag-big b { font-size: calc(22px * var(--room-scale)); }
   & .ag-note { padding: 6px 8px; border-left: 3px solid var(--moss); background: var(--pane-2); }
   & .ag-go { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  & .ag-past { list-style: none; margin: 0; padding: 0; }
+  & .ag-past > li { border-top: 1px solid var(--room-line, currentColor); padding: 8px 0; }
+  & .ag-past .ag-go { margin-top: 4px; }
+  & .ag-won { font-family: var(--room-label); font-size: calc(11px * var(--room-scale)); letter-spacing: .06em; padding: 1px 6px; background: var(--self); }
 
   /* A summary as label / value lines. */
   & .sf-sum { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 3px 12px; margin: 8px 0; }
