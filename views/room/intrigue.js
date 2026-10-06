@@ -145,10 +145,32 @@ export const riteById = (id) => rites().find((r) => r.id === id);
 export const riteKind = (r) => (SELF.includes(r.effect.type) ? 'self' : DIVINE.includes(r.effect.type) ? 'divination' : 'hex');
 const KIND_LABEL = { self: 'Self rites (always work if you have the aether)', divination: 'Divinations (intel on a house, shared with your state)', hex: 'Hexes (burn resin; harm a house)' };
 const mods = (r) => (r.mods || []).map((m) => `${m.bp > 0 ? '+' : '−'}${pct(Math.abs(m.bp))} ${m.stat.replace(/_/g, ' ')}`).join(', ');
-/** What a rite does, in a phrase. */
-export function riteDoes(r) {
+const sameSt = (a, b) => !!a && !!b && a.realm === b.realm && a.state === b.state;
+const stName = (s) => `${s.realm}:${s.state}`;
+
+/**
+ * A rite for your house now, as the server prices it (`rite_costs`): aether and incense grow with
+ * land, a lasting rite's length with your shrine share. `exact` is false only on an old server,
+ * which sends no `rite_costs`: then these are the listed numbers.
+ */
+export function riteFor(r) {
+  const row = (store.house?.rite_costs || []).find((x) => x[0] === r.id);
+  return row ? { aether: row[1], ticks: row[2], incense: row[3] ?? (r.incense || 0), exact: true } :{ aether: r.aether, ticks: r.ticks || 0, incense: r.incense || 0, exact: false };
+}
+const ap = (c) => (c.exact ? '' : '≈');
+/** How long a lasting rite runs for you: "9 ticks" (and, if short of full, "of 12"). */
+const lengthText = (r, c = riteFor(r)) => (r.ticks ? `${ap(c)}${c.ticks} tick${c.ticks === 1 ? '' : 's'}${c.ticks < r.ticks ? ` (${r.ticks} at full shrine share)` : ''}` : '');
+
+/** Which relations a strong hex needs, in words: "unfriendly or hostile toward". */
+const NEEDS_WORD = { unfriendly: 'unfriendly or hostile toward', hostile: 'hostile toward' };
+const needsText = (r) => (!r.needs ? '' : r.needs === 'war' ? 'only on a state yours is at war with' : `only on a state yours feels ${NEEDS_WORD[r.needs] || r.needs}, or is at war with`);
+const unfriendlyExtra = (r) => (r.needs && r.unfriendly_cost_bp && r.unfriendly_cost_bp !== 10000 ? `; ${pct(r.unfriendly_cost_bp)} of the aether while relations are only unfriendly` : '');
+
+/** What a rite does, in a phrase (lasting rites: the length your house would get now). */
+export function riteDoes(r, { table = false } = {}) {
   const e = r.effect;
-  const dur = r.ticks ? ` for ${r.ticks} ticks` : '';
+  const len = table ? '' : lengthText(r); // the table has a TICKS column
+  const dur = len ? ` for ${len}` : '';
   switch (e.type) {
     case 'modifiers': return `${mods(r)}${dur}`;
     case 'veil': return `your attacks show only "a veiled army"${dur}`;
@@ -156,34 +178,95 @@ export function riteDoes(r) {
     case 'scry': return 'see their land, peasants, gold, food and troops';
     case 'omens': return 'see the rites and hexes in force on them';
     case 'roads': return 'see their armies on the road and whose land they carry';
-    case 'rot': return `rots ${pct(e.bp)} of their food a tick${dur}`;
-    case 'storm': return `wrecks ${pct(e.bp)} of every building (less their ward)`;
+    case 'loss': return `takes ${pct(e.bp)} of their ${e.of} at once`;
+    case 'storm': return `wrecks ${pct(e.bp)} of all their buildings at once`;
+    case 'seize': return `seizes ${pct(e.bp)} of their land at once, as barren land (less from a smaller house)`;
+    case 'hellfire': return `kills ${pct(e.bp)} of their peasants and troops at home each tick${dur}`;
     case 'blight': return `cuts ${pct(e.bp)} of their material allotment${dur}`;
     case 'unravel': return 'ends one of the rites on them';
     case 'curse': return `${mods(r)}${dur}`;
-    default: return e.type;
+    default: return e.type.replace(/_/g, ' ');
   }
 }
-export const riteCost = (r) => `${fmt(r.aether)} aether${r.incense ? ` + ${fmt(r.incense)} ${store.rules.params.rite_material}` : ''}`;
-/** One line about a rite: kind, cost, chance, effect. */
+/** A rite's cost for your house now: "≈" marks a number the server didn't send. */
+export const riteCost = (r, c = riteFor(r)) => `${ap(c)}${fmt(c.aether)} aether${c.incense ? ` + ${fmt(c.incense)} ${store.rules.params.rite_material}` : ''}`;
+/** One line about a rite: kind, cost, chance, effect, what it needs. */
 export function riteLine(r) {
   const k = riteKind(r);
-  const chance = k === 'self' ? 'always works if you have the aether' : `chance: adepts per acre, yours against theirs, ×${pct(r.chance_bp)}, less their ward`;
+  const chance = k === 'self' ? 'always works if you have the aether' : `chance: adepts per acre, yours against theirs, ×${pct(r.chance_bp)}, less their ward${k === 'hex' ? ' and Spell Resilience, plus your vengeance on their state' : ''}`;
   const war = r.war_bonus_bp ? `; stronger at war (+${pct(r.war_bonus_bp)})` : '';
-  return `${r.name} (${k}): ${riteDoes(r)}. Costs ${riteCost(r)}; ${chance}${war}.`;
+  const needs = r.needs ? ` ${needsText(r)[0].toUpperCase()}${needsText(r).slice(1)}${unfriendlyExtra(r)}.` : '';
+  const hard = k === 'hex' && r.resilience_bp ? ` Landing it hardens them +${pct(r.resilience_bp)} resilience.` : '';
+  return `${r.name} (${k}): ${riteDoes(r)}. Costs ${riteCost(r)}; ${chance}${war}.${needs}${hard}`;
 }
+
+/** The state of a target typed in a field (a house address, or your chosen target), or null. */
+function targetState(input) {
+  const t = typedTarget(input);
+  if (t && typeof t === 'object') return { realm: t.realm, state: t.state };
+  const m = /^(\d+)\s*:\s*(\d+)\s*:\s*\d+$/.exec(String(t || ''));
+  return m ? { realm: Number(m[1]), state: Number(m[2]) } : null;
+}
+/** Your Countercast Vengeance against a state (bp), from `/me`. */
+const vengeanceOn = (s) => ((store.house?.vengeance || []).find(([x]) => sameSt(x, s)) || [null, 0])[1];
+
+/**
+ * A divination or hex on a house of state `s`, as far as the page can tell from /relations and
+ * /me: { blocked: why not ('' if it may go), feel, war, cost, approx, venge }. The server's answer
+ * to CAST is the final word.
+ */
+export function riteOn(r, s) {
+  const h = store.house, R = store.relations;
+  const c = riteFor(r);
+  const out = { blocked: '', feel: 'normal', war: false, cost: c.aether, approx: !c.exact, venge: vengeanceOn(s), known: !!R };
+  if (sameSt(s, h)) { out.blocked = 'that house is in your own state'; return out; }
+  if (!R) return out;
+  out.war = !!R.war && (sameSt(R.war.a, s) || sameSt(R.war.b, s));
+  const row = (R.relations || []).find((x) => sameSt(x.state, s));
+  out.feel = row ? row.we_feel.relation : 'normal';
+  out.points = row ? row.we_feel.points : 0;
+  if (r.needs && !out.war) {
+    const ok = r.needs === 'unfriendly' ? out.feel !== 'normal' : r.needs === 'hostile' ? out.feel === 'hostile' : false;
+    if (!ok) out.blocked = `${r.name} needs your state ${r.needs === 'war' ? `at war with ${stName(s)}` : `to feel ${NEEDS_WORD[r.needs] || r.needs} ${stName(s)}, or to be at war with it`}; it feels ${out.feel} (${fmt(out.points)} hostility points)`;
+  }
+  if (!out.war && out.feel === 'unfriendly' && r.unfriendly_cost_bp && r.unfriendly_cost_bp !== 10000) {
+    out.cost = Math.floor(c.aether * r.unfriendly_cost_bp / 10000);
+    out.approx = true; // the server sends no cost per target
+  }
+  return out;
+}
+/** A line about the typed target for a rite: relations, its cost there, your vengeance. */
+function targetNote(r, input) {
+  if (riteKind(r) === 'self') return { text: '', bad: false };
+  const s = targetState(input);
+  if (!s) return { text: '', bad: false };
+  const o = riteOn(r, s);
+  if (o.blocked) return { text: `Not now: ${o.blocked}.`, bad: true };
+  const parts = [`On ${stName(s)}: ${o.known ? (o.war ? 'at war' : `your state feels ${o.feel}`) : 'relations not loaded yet'}`];
+  if (o.cost !== riteFor(r).aether || o.approx) parts.push(`costs ${o.approx ? '≈' : ''}${fmt(o.cost)} aether there`);
+  if (riteKind(r) === 'hex' && o.venge) parts.push(`your vengeance on ${stName(s)} lifts the chance by ${pct(o.venge)} (casting spends half)`);
+  const short = o.cost > store.house.aether ? ` You have ${fmt(store.house.aether)} aether.` : '';
+  return { text: `${parts.join('; ')}.${short}`, bad: !!short };
+}
+
 /** Can you afford it now? '' or why not. */
 export function riteShort(r) {
   const h = store.house;
-  if (h.aether < r.aether) return `needs ${fmt(r.aether)} aether, you have ${fmt(h.aether)}`;
+  const c = riteFor(r);
+  if (h.aether < c.aether) return `needs ${ap(c)}${fmt(c.aether)} aether, you have ${fmt(h.aether)}`;
   const mat = store.rules.params.rite_material;
-  if (r.incense && (h.materials[mat] || 0) < r.incense) return `needs ${fmt(r.incense)} ${mat}, you have ${fmt(h.materials[mat] || 0)}`;
+  if (c.incense && (h.materials[mat] || 0) < c.incense) return `needs ${ap(c)}${fmt(c.incense)} ${mat}, you have ${fmt(h.materials[mat] || 0)}`;
   return '';
 }
+const optText = (r) => `${r.name} · ${riteCost(r)}${r.needs ? ` · needs ${r.needs}` : ''}`;
 const riteOptions = (sel) => ['self', 'divination', 'hex'].map((k) => {
   const list = rites().filter((r) => riteKind(r) === k);
-  return `<optgroup label="${esc(KIND_LABEL[k])}">${list.map((r) => `<option value="${esc(r.id)}"${r.id === sel ? ' selected' : ''}>${esc(r.name)} · ${esc(riteCost(r))}</option>`).join('')}</optgroup>`;
+  return `<optgroup label="${esc(KIND_LABEL[k])}">${list.map((r) => `<option value="${esc(r.id)}"${r.id === sel ? ' selected' : ''}>${esc(optText(r))}</option>`).join('')}</optgroup>`;
 }).join('');
+/** Costs grow with land: keep the options' prices current. */
+function refreshOptions(sel) {
+  for (const o of sel.options) { const r = riteById(o.value); if (r && o.textContent !== optText(r)) o.textContent = optText(r); }
+}
 
 /** Your aether, adepts and resin, in a line. */
 export function aetherLine() {
@@ -199,6 +282,40 @@ const inForceHTML = () => {
     ? `<ul class="force">${list.map(([n, until, left]) => `<li><span class="name">${esc(n)}</span> <span class="num dim">to T${until} · ${left} tick${left === 1 ? '' : 's'} left</span></li>`).join('')}</ul>`
     : '<p class="dim small">No rites in force on your house.</p>';
 };
+
+// Spell Resilience (yours only: another house's is hidden) and Countercast Vengeance, from /me.
+const has = (k) => store.house && k in store.house;
+/** Your Spell Resilience in a phrase: "15% (max 75%, fades 2.5% a tick)". */
+function resilienceText() {
+  const P = store.rules.params, bp = store.house.resilience_bp || 0;
+  const fade = P.resilience_decay_bp ? `, fades ${pct(P.resilience_decay_bp)} a tick` : '';
+  return `${pct(bp)}${P.resilience_max_bp ? ` (max ${pct(P.resilience_max_bp)}${fade})` : ''}`;
+}
+/** Your vengeance, highest first: [[state, bp]]. */
+const vengeanceList = () => (store.house.vengeance || []).slice().sort((a, b) => b[1] - a[1]);
+/** The compact line for the ACT pane. */
+function magicLine() {
+  if (!has('resilience_bp')) return '';
+  const v = vengeanceList();
+  return `RESILIENCE ${resilienceText()} · VENGEANCE ${v.length ? v.map(([s, bp]) => `${stName(s)} +${pct(bp)}`).join(', ') : 'none'}`;
+}
+/** The detail's table: resilience, vengeance per state, and lasting rites' length. */
+function magicHTML() {
+  const P = store.rules.params, h = store.house;
+  if (!has('resilience_bp')) return '<p class="dim small">This server sends no Spell Resilience or vengeance.</p>';
+  const res = h.resilience_bp || 0;
+  const clear = res && P.resilience_decay_bp ? ` Gone in about ${Math.ceil(res / P.resilience_decay_bp)} ticks if no hex lands.` : '';
+  const v = vengeanceList();
+  const vfade = P.vengeance_decay_bp ? `fades ${pct(P.vengeance_decay_bp)} a tick` : '';
+  const lasting = rites().find((r) => r.ticks && riteKind(r) === 'self');
+  const c = lasting && riteFor(lasting);
+  const share = c && c.exact ? `≈${fmt(Math.round(c.ticks * 100 / lasting.ticks))}%` : '';
+  return `<table class="tbl kv magic">
+    <tr><td>Spell Resilience</td><td class="txt"><b class="num">${pct(res)}</b> <span class="dim">of ${pct(P.resilience_max_bp || 0)} max</span><br><span class="dim small">Each hex that lands on you adds its resilience; it cuts the chance of every hex on you by that much and fades ${pct(P.resilience_decay_bp || 0)} a tick.${clear}</span></td></tr>
+    <tr><td>Vengeance</td><td class="txt">${v.length ? `<ul class="force">${v.map(([s, bp]) => `<li><span class="name">state ${esc(stName(s))}</span> <span class="num">+${pct(bp)} hex chance</span></li>`).join('')}</ul>` : '<span class="dim">none</span>'}<span class="dim small">Every hex a state tries on you, landed or not, adds half its resilience to your vengeance on that state (max ${pct(P.vengeance_max_bp || 0)}). Your hexes on its houses gain that much chance; casting one spends half; it ${vfade}.</span></td></tr>
+    ${share ? `<tr><td>Lasting rites</td><td class="txt">run <b class="num">${share}</b> of full length for you now (${esc(lasting.name)}: ${fmt(c.ticks)} of ${fmt(lasting.ticks)} ticks) <span class="dim small">(full at shrines on ${pct(P.rite_full_share_bp || 0)} of your land, ${pct(P.rite_min_duration_bp || 0)} with none)</span></td></tr>` : ''}
+  </table>`;
+}
 
 async function sendCast(f, button) {
   const r = riteById(f.rite.value);
@@ -259,10 +376,12 @@ export function mountPane(secOps, secRites, on, ctx) {
       <span class="cost num" id="r-r-cost"></span>
       <button class="btn primary">CAST</button>
     </form>
+    <p class="small" id="r-r-tgt" role="status" hidden></p>
     <p class="small" id="r-r-hold"></p>
     <p class="dim small" id="r-r-info"></p>
     <h3 class="sub">IN FORCE ON YOU</h3>
     <div id="r-r-force"></div>
+    <p class="small" id="r-r-magic"></p>
     <p class="dim small">Divinations land in REPORTS (INTRIGUE tab). Shift+Alt+1 opens the full list of rites.</p>`;
   const $ = (id) => document.getElementById(id);
   const fo = { target: $('r-o-target'), op: $('r-o-op'), thieves: $('r-o-n'), extra: $('r-o-x'), frame: $('r-o-frame') };
@@ -300,10 +419,13 @@ export function mountPane(secOps, secRites, on, ctx) {
     const why = riteShort(r);
     cost.textContent = riteCost(r).replace(' aether', 'ae');
     cost.classList.toggle('short', !!why);
-    cost.title = why || `Costs ${riteCost(r)}`;
+    cost.title = why || `Costs ${riteCost(r)} for your house now (grows with land)`;
+    refreshOptions(fr.rite);
+    showNote($('r-r-tgt'), targetNote(r, fr.target));
     $('r-r-info').textContent = riteLine(r);
     $('r-r-hold').textContent = aetherLine();
     $('r-r-force').innerHTML = inForceHTML();
+    $('r-r-magic').textContent = magicLine();
   }
   function targets() {
     const t = store.target;
@@ -328,7 +450,7 @@ export function mountPane(secOps, secRites, on, ctx) {
   opForm(); riteForm(); reps(); targets();
   return {
     update(c) {
-      if (!c || c.has('house') || c.has('tick')) { opForm(); riteForm(); }
+      if (!c || c.has('house') || c.has('tick')) { opForm(); riteForm(); } else if (c.has('relations') || c.has('target')) riteForm();
       if (!c || c.has('reports') || c.has('timemode') || c.has('state')) reps();
       if (!c || c.has('target')) targets();
     },
@@ -461,6 +583,29 @@ export function detailIntrigue(sec, on, ctx) {
 }
 
 // ---------- the ACT detail: RITES ----------
+/** Every rite with what it costs your house now, how long it runs for you, and what it needs. */
+function riteTable() {
+  const mat = store.rules.params.rite_material;
+  return `<table class="tbl optbl rites">
+    <tr><th>RITE</th><th class="num"><abbr title="Aether your house pays now (grows with land)">AETHER</abbr></th><th class="num"><abbr title="${esc(cap1(mat))} your house burns now">${esc(mat.toUpperCase())}</abbr></th><th class="num"><abbr title="How long it runs for you now (by shrine share)">TICKS</abbr></th><th class="num">CHANCE ×</th><th>DOES</th><th></th></tr>
+    ${['self', 'divination', 'hex'].map((k) => `<tr class="grp"><td colspan="7">${esc(KIND_LABEL[k].toUpperCase())}</td></tr>` + rites().filter((r) => riteKind(r) === k).map((r) => {
+      const c = riteFor(r);
+      const listed = c.exact && (c.aether !== r.aether || c.incense !== (r.incense || 0)) ? ` title="Listed: ${fmt(r.aether)} aether${r.incense ? `, ${fmt(r.incense)} ${esc(mat)}` : ''} at ${fmt(store.rules.params.rite_cost_land || 400)} acres"` : '';
+      const ticks = r.ticks ? `${ap(c)}${c.ticks}${c.ticks < r.ticks ? `<span class="dim">/${r.ticks}</span>` : ''}` : '·';
+      const needs = r.needs ? `. <span class="needs">Needs ${esc(r.needs === 'war' ? 'war' : `${r.needs} or war`)}${esc(unfriendlyExtra(r))}.</span>` : '';
+      return `<tr data-rite-row="${esc(r.id)}"><td class="name">${esc(r.name)}</td><td class="num"${listed}>${ap(c)}${fmt(c.aether)}</td><td class="num${c.incense ? '' : ' zero'}">${c.incense ? `${ap(c)}${fmt(c.incense)}` : '0'}</td><td class="num${r.ticks ? '' : ' zero'}">${ticks}</td><td class="num dim">${k === 'self' ? 'sure' : pct(r.chance_bp)}</td><td class="wrap small">${esc(riteDoes(r, { table: true }))}${needs}</td><td><button type="button" class="btn mini" data-use-rite="${esc(r.id)}" aria-label="Use ${esc(r.name)}">USE</button></td></tr>`;
+    }).join('')).join('')}
+  </table>`;
+}
+const cap1 = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+/** Shows a target note (or hides it when empty). */
+function showNote(el, n) {
+  el.hidden = !n.text;
+  el.textContent = n.text;
+  el.classList.toggle('short', n.bad);
+}
+
+// ---------- the ACT detail: RITES ----------
 export function detailRites(sec, on, ctx) {
   sec.innerHTML = `
     <div class="dgrid">
@@ -472,24 +617,26 @@ export function detailRites(sec, on, ctx) {
           <label for="d-r-target" title="Target house for divinations and hexes">Target</label>
           <span class="field"><input id="d-r-target" placeholder="r:s:seat" autocomplete="off"><button type="button" class="btn mini" data-pick>PICK FROM RANK</button></span>
           <span class="quote num span" id="d-r-q"></span>
+          <p class="small span" id="d-r-tgt" role="status" hidden></p>
           <p class="small span" id="d-r-hold"></p>
           <p class="dim small span" id="d-r-info"></p>
           <span class="btns span"><button class="btn primary">CAST</button></span>
         </form>
         <h3 class="sub gap">IN FORCE ON YOU</h3>
         <div id="d-r-force"></div>
+        <h3 class="sub gap">RESILIENCE AND VENGEANCE <span class="dim">yours only</span></h3>
+        <div id="d-r-magic"></div>
         <p class="dim small">Shrines draw adepts and gather aether each tick; Watchstones give ward against hexes and divinations. Divinations land in INTRIGUE's reports.</p>
       </section>
       <section>
         <h3 class="sub">RITES <span class="dim">cost, length and what each does</span></h3>
-        <div class="scrollx"><table class="tbl optbl">
-          <tr><th>RITE</th><th class="num">AETHER</th><th class="num">${esc(store.rules.params.rite_material.toUpperCase())}</th><th class="num">TICKS</th><th class="num">CHANCE ×</th><th>DOES</th><th></th></tr>
-          ${['self', 'divination', 'hex'].map((k) => `<tr class="grp"><td colspan="7">${esc(KIND_LABEL[k].toUpperCase())}</td></tr>` + rites().filter((r) => riteKind(r) === k).map((r) => `<tr data-rite-row="${esc(r.id)}"><td class="name">${esc(r.name)}</td><td class="num">${fmt(r.aether)}</td><td class="num${r.incense ? '' : ' zero'}">${fmt(r.incense)}</td><td class="num${r.ticks ? '' : ' zero'}">${r.ticks || '·'}</td><td class="num dim">${k === 'self' ? 'sure' : pct(r.chance_bp)}</td><td class="wrap small">${esc(riteDoes(r))}</td><td><button type="button" class="btn mini" data-use-rite="${esc(r.id)}" aria-label="Use ${esc(r.name)}">USE</button></td></tr>`).join('')).join('')}
-        </table></div>
+        <div class="scrollx" id="d-r-list"></div>
+        <p class="dim small">Aether and ${esc(store.rules.params.rite_material)} are what your house pays now: rites cost more as your land grows. Ticks are how long a lasting rite runs for you, by your shrine share.</p>
       </section>
     </div>`;
   const $ = (id) => sec.querySelector(`#${id}`);
   const f = { rite: $('d-r-rite'), target: $('d-r-target') };
+  let lastMagic = '', lastList = '';
   function form() {
     const r = riteById(f.rite.value);
     if (!r) return;
@@ -500,9 +647,15 @@ export function detailRites(sec, on, ctx) {
     const why = riteShort(r);
     $('d-r-q').textContent = `Costs ${riteCost(r)}${why ? ` · ${why}` : ''}`;
     $('d-r-q').classList.toggle('short', !!why);
+    refreshOptions(f.rite);
+    showNote($('d-r-tgt'), targetNote(r, f.target));
     $('d-r-hold').textContent = aetherLine();
     $('d-r-info').textContent = riteLine(r);
     $('d-r-force').innerHTML = inForceHTML();
+    const mh = magicHTML();
+    if (mh !== lastMagic) $('d-r-magic').innerHTML = lastMagic = mh;
+    const lh = riteTable();
+    if (lh !== lastList) $('d-r-list').innerHTML = lastList = lh;
     sec.querySelectorAll('[data-rite-row]').forEach((tr) => tr.classList.toggle('tgt', tr.dataset.riteRow === r.id));
   }
   on($('d-f-rite'), 'input', form);
@@ -519,8 +672,8 @@ export function detailRites(sec, on, ctx) {
   form();
   return {
     update(c) {
-      if (!c || c.has('house') || c.has('tick')) form();
       if (c && c.has('target') && store.target && document.activeElement !== f.target && !f.target.disabled) f.target.value = addr(store.target);
+      if (!c || c.has('house') || c.has('tick') || c.has('relations') || c.has('target')) form();
     },
     focus: () => f.rite.focus(),
   };

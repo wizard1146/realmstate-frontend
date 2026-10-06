@@ -74,6 +74,7 @@ export async function loadRules() {
   names.attacks = Object.fromEntries(r.params.attacks.map((k) => [k.id, k.name]));
   names.ops = Object.fromEntries(r.params.operations.map((o) => [o.id, o.name]));
   names.rites = Object.fromEntries((r.params.rites || []).map((o) => [o.id, o.name]));
+  names.riteFx = Object.fromEntries((r.params.rites || []).map((o) => [o.id, o.effect]));
   names.traits = Object.fromEntries((r.traits || []).map((t) => [t.trait, t.name]));
   names.mats = { upgrade: r.params.upgrade_material, medic: r.params.medic_material, chariot: r.params.chariot_material };
   notify('rules');
@@ -211,9 +212,10 @@ export function addNews(n) {
   // Your own attack's report card: the attack command's outcome already filled the message line.
   if (n.type === 'research_chosen' || n.type === 'project_tier') loadColloquium();
   if (n.type === 'order_filled') loadMarket();
-  if (/^(war_|peace_|ceasefire_|blockade_)/.test(n.type)) { loadWars(); loadRelations(); loadState(); }
+  // Reads lag the live news by about ¼ s: read wars and relations a little later.
+  if (/^(war_|peace_|ceasefire_|blockade_)/.test(n.type)) setTimeout(() => { loadWars(); loadRelations(); loadState(); }, 400);
   if (/^(vigil_|leader_|tax_|granted)/.test(n.type)) loadState();
-  if (n.type === 'attacked' || n.type === 'spies_caught') loadRelations();
+  if (n.type === 'attacked' || n.type === 'spies_caught' || n.type === 'hex_suffered' || n.type === 'rite_resisted') setTimeout(loadRelations, 400);
   if (n.type !== 'attack_report') { const [text, tone] = newsLine(n); say(text, tone === 'bad' ? 'bad' : 'good'); }
   refreshMeSoon(300);
 }

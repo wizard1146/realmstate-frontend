@@ -230,6 +230,7 @@ export async function cast(rite, target, opts = {}) {
   const out = await run(cmd, opts);
   if (out) addLocalNews({ type: 'own_result', outcome: out, target: cmd.target != null ? store.target : null });
   if (out && out.intel) loadReports();
+  if (out && cmd.target != null) setTimeout(loadRelations, 400); // a hex or divination stirs hostility
   return out;
 }
 

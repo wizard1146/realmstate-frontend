@@ -9,7 +9,7 @@ let myHouseId = null;
 export const setMyHouse = (id) => { myHouseId = id; };
 
 /** Display names, filled from /rules and your race by the store. */
-export const names = { buildings: {}, attacks: {}, ops: {}, rites: {}, units: [], traits: {}, mats: {} };
+export const names = { buildings: {}, attacks: {}, ops: {}, rites: {}, riteFx: {}, units: [], traits: {}, mats: {} };
 
 export const fmt = (n) => (typeof n === 'number' && Number.isFinite(n) ? n.toLocaleString('en-US') : String(n ?? '–'));
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -114,7 +114,7 @@ export function newsLine(n) {
     case 'vigil_ended': return [`The ${n.name} has ended.`, ''];
     case 'age_ended': return [`The age is over. ${n.winner ? `State ${st(n.winner)} won. ` : ''}Our state finished ${ord(n.state_rank)}, our house ${ord(n.land_rank)} by land.`, ''];
     case 'rite_resisted': return [`We resisted ${n.rite} from ${where(n.by)}.`, 'good'];
-    case 'hex_suffered': return [`${n.reflected ? 'Our own hex turned back on us' : 'A hex struck us'} (${n.rite}): ${n.taken && !String(n.what).includes('unravelled') ? `${fmt(n.taken)} ` : ''}${n.what}.`, 'bad'];
+    case 'hex_suffered': return [`${n.reflected ? 'Our own hex turned back on us' : 'A hex struck us'} (${n.rite}): ${hexTook(n.taken, n.what)}${n.until_tick ? `, until tick ${n.until_tick}` : ''}.`, 'bad'];
     case 'operation_suffered': return [`Thieves struck us (${n.op}): ${/delayed|growth|unsettled|cut/.test(n.what) ? n.what : `${fmt(n.taken)} ${n.what}`}${n.blamed ? `. They wore the colours of ${st(n.blamed)}` : ''}.`, 'bad'];
     case 'land_arrived': return [`${fmt(n.acres)} explored acres arrived.`, 'good'];
     case 'troops_trained': return [`${fmt(n.count)} ${uname(n.unit)} finished training.`, 'good'];
@@ -232,13 +232,36 @@ export function describe(o, cmd) {
     default: return 'Done.';
   }
 }
+/** What a landed hex took, from the server's `taken` and `what` ("aether drained", "cursed for 6 ticks"). */
+function hexTook(taken, what) {
+  const w = String(what || 'struck');
+  if (/unravel| for \d+ ticks?$/.test(w)) return w; // a rite unravelled (or none), or a lasting hex
+  if (!taken) return `nothing to take (${w.replace(/ \w+$/, '')})`;
+  return w === 'land captured' ? `${fmt(taken)} acres of land seized` : `${fmt(taken)} ${w}`;
+}
+const LOSS_VERB = { food: 'spoiled', gold: 'lost', peasants: 'killed', aether: 'drained' };
+/** What a landed hex did to its victim, from the caster's side ('their') or a reflected one ('our'). */
+function hexDid(o, whose) {
+  const e = names.riteFx[o.rite] || {};
+  const until = o.until_tick ? ` until tick ${o.until_tick}` : '';
+  switch (e.type) {
+    case 'loss': return o.taken ? `${fmt(o.taken)} of ${whose} ${e.of} ${LOSS_VERB[e.of] || 'lost'}` : `${whose} ${e.of}: none to take`;
+    case 'seize': return o.taken ? `${fmt(o.taken)} acres of ${whose} land seized, as barren land` : 'no land to seize';
+    case 'storm': return `${fmt(o.taken)} of ${whose} buildings wrecked`;
+    case 'unravel': return o.taken ? `one of ${whose} rites unravelled` : `no rite of ${whose === 'our' ? 'ours' : 'theirs'} to unravel`;
+    case 'hellfire': return `hellfire burns ${whose} peasants and troops at home${until}`;
+    case 'blight': return `${whose} material allotment is blighted${until}`;
+    case 'curse': return `${whose} house is cursed${until}`;
+    default: return o.until_tick ? `in force${until}` : `done${o.taken ? ` (${fmt(o.taken)})` : ''}`;
+  }
+}
 function castLine(o) {
   const n = names.rites[o.rite] || o.rite;
   const chance = o.chance_bp < 10000 ? ` Chance was ${o.chance_bp / 100}%.` : '';
   if (!o.success) return `${n}: it was resisted. Aether left ${fmt(o.aether)}.${chance}`;
-  const what = o.reflected ? 'it worked, but a Mirror Ward turned it back on us'
+  const what = o.reflected ? `it worked, but a Mirror Ward turned it back on us: ${hexDid(o, 'our')}`
     : o.intel ? 'the vision is in INTRIGUE, shared with your state'
-      : o.until_tick ? `in force until tick ${o.until_tick}` : `done${o.taken ? ` (${fmt(o.taken)})` : ''}`;
+      : hexDid(o, 'their');
   return `${n}: ${what}. Aether left ${fmt(o.aether)}.${chance}`;
 }
 

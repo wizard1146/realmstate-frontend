@@ -549,6 +549,13 @@
   & .tbl.kv td.txt { overflow-wrap: anywhere; }
   & .force { list-style: none; margin: 0; padding: 0; }
   & .force li { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dotted var(--rule); padding: 2px 0; }
+  & .tbl.magic td, & .dlg .tbl.magic td.txt { text-align: left; vertical-align: top; }
+  @media (max-width: 719px) {
+    & .tbl.magic tr, & .tbl.magic td { display: block; width: auto; }
+    & .tbl.magic td:first-child { border-bottom: 0; padding-bottom: 0; }
+  }
+  & .tbl.magic .force { margin-bottom: 2px; }
+  & .optbl .needs { color: var(--rust); }
   & .optbl tr.grp td { font-family: var(--room-label); font-size: calc(11px * var(--room-scale)); letter-spacing: .06em; color: var(--room-muted); padding-top: 8px; border-bottom: 1px solid var(--room-line); }
   & .dlg .optbl td.wrap { min-width: 22ch; }
   & .sub.gap { margin-top: 14px; }
