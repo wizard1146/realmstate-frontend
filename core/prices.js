@@ -26,7 +26,10 @@ export function largest(hi, ok) {
 const n0 = (v) => Math.max(0, Math.floor(Number(v) || 0));
 
 // ---------- explore ----------
-export const exploreLimit = () => P()?.explore.max ?? 1000;
+/** Explorable acres you have now (null when the age has no allowance). */
+export const explorable = (h = store.house) => (h?.explorable ? h.explorable.acres : null);
+/** The most acres one order may ask for: the server's limit, and your explorable acres. */
+export const exploreLimit = () => Math.min(P()?.explore.max ?? 1000, explorable() ?? Infinity);
 /** Gold to explore n acres. */
 export function exploreCost(n) {
   const e = P().explore;
@@ -45,6 +48,8 @@ export function exploreMax(gold = store.house.gold, soldiers = store.house.units
 export function exploreProblem(n, h = store.house) {
   const c = n0(n);
   if (!c) return '';
+  const ex = explorable(h);
+  if (ex != null && c > ex) return `you have ${ex.toLocaleString('en-US')} explorable acres; more come each tick`;
   if (c > exploreLimit()) return `at most ${exploreLimit().toLocaleString('en-US')} acres per order`;
   const s = exploreSoldiers(c);
   if (s > h.units[0]) return `needs ${s.toLocaleString('en-US')} soldiers to settle; you have ${h.units[0].toLocaleString('en-US')} at home (draft more in MIL)`;

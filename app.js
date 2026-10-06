@@ -9,6 +9,8 @@ import { esc } from './core/words.js';
 import { WIKI } from './core/wiki.js';
 import { nameRoll } from './core/names.js';
 import { VIEWS, savedView, saveView, nextView } from './core/viewswitch.js';
+import { mountAgeBar } from './views/ages/agebar.js';
+import { mountAges } from './views/ages/ages.js';
 
 const $ = (id) => document.getElementById(id);
 const root = $('view');
@@ -119,8 +121,14 @@ function raceLink() { $('c-race-wiki').href = `${WIKI}race-${encodeURIComponent(
 let houseName = null;
 $('c-race').addEventListener('change', () => { raceLink(); houseName?.refresh(); });
 
+// ---------- the age: a bar on every screen, and the ages window ----------
+const agesWindow = mountAges();
+mountAgeBar($('agebar'), (tab) => agesWindow.open(tab));
+
 // ---------- wiring ----------
 subscribe((c) => {
+  // A new age: new rules, so the founding form's races and personalities are read again.
+  if (c.has('age:changed')) { $('c-race').replaceChildren(); $('c-pers').replaceChildren(); renderGate(); }
   if (c.has('msg')) renderStatus();
   if (c.has('me') || c.has('house') || c.has('rules')) renderGate();
   if (c.has('house:changed')) {

@@ -8,6 +8,7 @@ import * as price from '../../core/prices.js';
 import { fmt, esc, addr, names, when, UNIT_ORDER, TRAINABLE, THIEF, SOLDIER } from '../../core/words.js';
 import { detailIntrigue, detailRites } from './intrigue.js';
 import * as ax from './atkextra.js';
+import { buildingChoice, buildingOptions } from './truthsui.js';
 
 const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
 const matText = (mats) => Object.entries(mats).map(([m, q]) => `${fmt(q)} ${m}`).join(', ');
@@ -82,7 +83,7 @@ export function fillMax(input, n, why) {
   input.dispatchEvent(new Event('input', { bubbles: true }));
   if (!n) say(`MAX is 0: ${why}.`, 'bad');
 }
-export const exploreWhy = () => (!price.have() ? '' : store.house.units[SOLDIER] < price.exploreSoldiers(1) ? `no soldiers to settle land (${fmt(price.exploreSoldiers(1))} per acre, ${fmt(store.house.units[SOLDIER])} at home): draft more in MIL` : store.house.gold < price.exploreCost(1) ? 'not enough gold for one acre' : 'nothing fits');
+export const exploreWhy = () => (!price.have() ? '' : price.explorable() === 0 ? 'no explorable acres left: more come each tick (or ask a statemate for aid)' : store.house.units[SOLDIER] < price.exploreSoldiers(1) ? `no soldiers to settle land (${fmt(price.exploreSoldiers(1))} per acre, ${fmt(store.house.units[SOLDIER])} at home): draft more in MIL` : store.house.gold < price.exploreCost(1) ? 'not enough gold for one acre' : 'nothing fits');
 export const trainWhy = (slot, direct = false) => (!price.trainPool(direct) ? (direct ? 'no peasants to recruit' : 'no soldiers at home: draft more (MIL), or recruit direct') : store.house.gold < price.trainCost(slot, 1, direct) ? 'not enough gold for one' : 'nothing fits');
 
 // ---------- the ACT tabs (ORDERS, INTRIGUE, RITES), shared by the pane and its detail ----------
@@ -189,6 +190,8 @@ export function actDetail(body, on, { goto, tab, report }) {
         <span class="field"><input id="d-a-target" placeholder="r:s:seat" required autocomplete="off" pattern="\\s*\\d+\\s*:\\s*\\d+\\s*:\\s*\\d+\\s*"><button type="button" class="btn mini" id="d-a-pick">PICK FROM RANK</button></span>
         <label for="d-a-kind">Kind</label>
         <select id="d-a-kind">${P.attacks.map((k) => `<option value="${esc(k.id)}">${esc(k.name)}</option>`).join('')}</select>
+        <label for="d-a-bld" id="d-a-bldl" title="The building type the land comes from first" hidden>From</label>
+        <select id="d-a-bld" hidden>${buildingOptions()}</select>
         <label for="d-a-gen">General</label>
         <select id="d-a-gen" aria-describedby="d-a-genl"></select>
         <p class="dim small span" id="d-a-genl"></p>
@@ -323,7 +326,7 @@ export function actDetail(body, on, { goto, tab, report }) {
     const h = store.house;
     const per = (price.have() ? store.house.prices.explore.soldiers_milli_per_acre || 0 : 0) / 1000;
     $('d-x-info').textContent = price.have()
-      ? `${q.why ? `Can't: ${q.why}. ` : ''}Each acre costs ${fmt(price.exploreCost(1))} gold and ${fmt(per)} soldiers, spent settling it. You can explore up to ${fmt(price.exploreMax())} acres now (${fmt(h.gold)} gold, ${fmt(h.units[SOLDIER])} soldiers at home; ${fmt(price.exploreLimit())} per order). Land now ${fmt(h.land)}, ${fmt(h.incoming_land)} on the way.`
+      ? `${q.why ? `Can't: ${q.why}. ` : ''}Each acre costs ${fmt(price.exploreCost(1))} gold and ${fmt(per)} soldiers, spent settling it. You can explore up to ${fmt(price.exploreMax())} acres now (${fmt(h.gold)} gold, ${fmt(h.units[SOLDIER])} soldiers at home; ${fmt(price.exploreLimit())} per order).${h.explorable ? ` Explorable acres: ${fmt(h.explorable.acres)} of ${fmt(h.explorable.cap)}, +${(h.explorable.per_tick_milli / 1000).toLocaleString('en-US', { maximumFractionDigits: 2 })} a tick (fewer as you grow).` : ''} Land now ${fmt(h.land)}, ${fmt(h.incoming_land)} on the way.`
       : '';
     $('d-x-info').classList.toggle('short', !!q.why);
   }
@@ -377,6 +380,7 @@ export function actDetail(body, on, { goto, tab, report }) {
     $('d-a-q').title = qt.title;
     $('d-a-q').classList.toggle('short', probs.length > 0);
     $('d-a-hint').textContent = attackHint($('d-a-kind').value);
+    $('d-a-bld').hidden = $('d-a-bldl').hidden = !buildingChoice($('d-a-kind').value);
     fillPicker($('d-a-gen'));
     $('d-a-genl').textContent = generalLine($('d-a-gen').value);
   }
@@ -407,7 +411,8 @@ export function actDetail(body, on, { goto, tab, report }) {
     units[8] = x.mercs;
     const typed = $('d-a-target').value.trim();
     const t = store.target && typed === addr(store.target) ? store.target : typed;
-    const out = await act.attack({ target: t, kind: $('d-a-kind').value, units, general: $('d-a-gen').value, medics: x.medics, horses: x.horses, chariots: x.chariots, upgradedMercenaries: x.upmercs, doubleStrike: x.double }, { button: ev.submitter });
+    const building = buildingChoice($('d-a-kind').value) ? $('d-a-bld').value || null : null;
+    const out = await act.attack({ target: t, kind: $('d-a-kind').value, units, general: $('d-a-gen').value, medics: x.medics, horses: x.horses, chariots: x.chariots, upgradedMercenaries: x.upmercs, doubleStrike: x.double, building }, { button: ev.submitter });
     if (out) body.querySelectorAll('#d-a-troops input, #d-a-extra input').forEach((inp) => { if (inp.type === 'checkbox') inp.checked = false; else inp.value = '0'; });
     attack();
   });

@@ -9,6 +9,7 @@ import { STATS, pctBp } from './does.js';
 import { lastDelta } from './trend.js';
 import { tabState } from './tabs.js';
 import { waverHTML } from './waver.js';
+import { truthsPaneHTML } from './truthsui.js';
 
 
 export const CATS = ['economy', 'military', 'arcane'];
@@ -59,7 +60,7 @@ const RANK_NAMES = ['recruit', 'scholar', 'master', 'professor'];
 export const rankName = (i) => RANK_NAMES[i] || `rank ${i + 1}`;
 
 // ---------- the compact pane: SCIENCE, ACADEMICS, COLLOQUIUM tabs ----------
-export const SCI_TAB = tabState('realmstate.room.sci', ['science', 'academics', 'colloquium'], { science: 'SCIENCE', academics: 'ACADEMICS', colloquium: 'COLLOQUIUM' });
+export const SCI_TAB = tabState('realmstate.room.sci', ['science', 'academics', 'colloquium', 'truths'], { science: 'SCIENCE', academics: 'ACADEMICS', colloquium: 'COLLOQUIUM', truths: 'TRUTHS' });
 const attrName = (id) => store.rules.attributes?.find((a) => a.attribute === id)?.name || id;
 
 export function paneHTML(tab = SCI_TAB.get()) {
@@ -67,6 +68,7 @@ export function paneHTML(tab = SCI_TAB.get()) {
   if (!s) return '<p class="dim">No science data from the server.</p>';
   if (tab === 'academics') return paneAcademics(s);
   if (tab === 'colloquium') return paneColloquium(s);
+  if (tab === 'truths') return truthsPaneHTML();
   const per = lastDelta('books');
   const on = s.sciences.map((r) => [defs().find((d) => d.science === r.science), r]).filter(([d, r]) => d && r.invested);
   return `<table class="tbl"><tr><th>CAT</th><th class="num">BOOKS</th><th class="num">SCI</th><th>RANK</th><th class="num">/TICK</th></tr>${CATS.map((k, i) =>

@@ -19,7 +19,7 @@ async function run(cmd, { estimate, quote, button } = {}) {
     if (quote != null && Number.isFinite(quote)) {
       if (out.gold != null && out.gold !== quote) est = ` (Quoted ${fmt(quote)} gold; prices changed before the order landed.)`;
     } else if (estimate != null && Number.isFinite(estimate) && !havePrices()) est = ` (Estimated ≈${fmt(estimate)} before modifiers.)`;
-    say(describe(out) + est, outcomeTone(out));
+    say(describe(out, cmd) + est, outcomeTone(out));
     refreshMeSoon();
     return out;
   } catch (e) {
@@ -165,7 +165,7 @@ export async function resolveAddress(text) {
  * units: troops to send by slot (10 slots: soldiers 0, offense 1, elite 3, the upgrades 5, 7, 9
  * fight; slot 8 hires that many mercenaries for this attack). medics, horses, chariots: from home.
  */
-export async function attack({ target, kind, units, general, medics = 0, horses = 0, chariots = 0, upgradedMercenaries = 0, doubleStrike = false }, opts = {}) {
+export async function attack({ target, kind, units, general, medics = 0, horses = 0, chariots = 0, upgradedMercenaries = 0, doubleStrike = false, building = null }, opts = {}) {
   let h = target;
   if (typeof target === 'string') {
     try { h = await resolveAddress(target); } catch (e) { say(e.message, 'bad'); return null; }
@@ -182,6 +182,7 @@ export async function attack({ target, kind, units, general, medics = 0, horses 
   if (general != null && general !== '') cmd.general = Number(general);
   for (const [k, v] of [['medics', medics], ['horses', horses], ['chariots', chariots], ['upgraded_mercenaries', upgradedMercenaries]]) if (Number(v) > 0) cmd[k] = Math.floor(Number(v));
   if (doubleStrike) cmd.double_strike = true;
+  if (building) cmd.building = building;
   const out = await run(cmd, opts);
   if (out) loadRankings();
   return out;
@@ -230,6 +231,7 @@ export async function cast(rite, target, opts = {}) {
   const out = await run(cmd, opts);
   if (out) addLocalNews({ type: 'own_result', outcome: out, target: cmd.target != null ? store.target : null });
   if (out && out.intel) loadReports();
+  if (out && cmd.target != null) setTimeout(loadRelations, 400); // a hex or divination stirs hostility
   return out;
 }
 
@@ -260,6 +262,8 @@ export const donate = (material, amount, opts = {}) => run({ type: 'donate', hou
 export const setTax = (rateBp, opts = {}) => run({ type: 'set_tax', house: me(), rate_bp: Math.round(Number(rateBp)) }, opts).then(stateAfter);
 /** Leader only: rename the state (1-40 characters, at most once every state_rename_ticks). */
 export const renameState = (name, opts = {}) => run({ type: 'rename_state', house: me(), name: String(name) }, opts).then(stateAfter);
+/** Aid to a house of your state: gold, food, soldiers, horses, aether, explorable or material:<id>. */
+export const sendAid = (to, what, amount, opts = {}) => run({ type: 'send_aid', house: me(), to: Number(to), what, amount: Math.floor(Number(amount)) }, opts).then((o) => { if (o) stateAfter(o); return o; });
 /** Leader only: treasury gold (material null) or a material to a house of the state. */
 export const grant = (to, material, amount, opts = {}) => run({ type: 'grant', house: me(), to: Number(to), material: material || null, amount: Number(amount) }, opts).then(stateAfter);
 /** Leader only: open a state vigil. */
@@ -267,6 +271,21 @@ export const openVigil = (vigil, opts = {}) => run({ type: 'open_vigil', house: 
 export const giveToVigil = (aether, incense, opts = {}) => run({ type: 'give_to_vigil', house: me(), aether: Number(aether) || 0, incense: Number(incense) || 0 }, opts).then(stateAfter);
 /** Steady a wavering general or academic: character = { kind, id }. */
 export const reassure = (character, opts = {}) => run({ type: 'reassure', house: me(), character }, opts);
+
+// ---------- Truths, realm works and World Wonders ----------
+/** Answer your quest's ask: commit (pay it) or decline (the quest ends). */
+export const answerQuest = (commit, opts = {}) => run({ type: 'answer_quest', house: me(), commit: !!commit }, opts);
+/** Transmutation Rite: make `amount` of `to` from `from`. */
+export const transmute = (from, to, amount, opts = {}) => run({ type: 'transmute', house: me(), from, to, amount: Number(amount) }, opts);
+/** Your realm's work: propose it or vote (leaders), fund it (any house of the realm). */
+export const proposeWork = (opts = {}) => run({ type: 'propose_work', house: me() }, opts);
+export const voteWork = (yes, opts = {}) => run({ type: 'vote_work', house: me(), yes: !!yes }, opts);
+export const fundWork = (gold, material, opts = {}) => run({ type: 'fund_work', house: me(), gold: Number(gold) || 0, material: Number(material) || 0 }, opts);
+/** World Wonders: start one whose plan you know; fund a build of your state; the Halls of the Dead's revive. */
+export const startWonder = (wonder, opts = {}) => run({ type: 'start_wonder', house: me(), wonder }, opts);
+export const fundWonder = (builder, gold, material, amount, opts = {}) =>
+  run({ type: 'fund_wonder', house: me(), builder: Number(builder), gold: Number(gold) || 0, material: material || null, amount: Number(amount) || 0 }, opts);
+export const revive = (opts = {}) => run({ type: 'revive', house: me() }, opts);
 
 // ---------- war (leader only) ----------
 const warAfter = (o) => { if (o) setTimeout(() => { loadWars(); loadRelations(); loadState(); }, 400); return o; };

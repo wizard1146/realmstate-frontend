@@ -75,6 +75,7 @@ const res = {
     });
     const plain = [['Chariots', h.chariots], ['Aether', h.aether], ['Adepts', h.adepts]].map(([k, v]) => `<tr><td>${esc(k)}</td>${td(v)}<td></td><td></td></tr>`);
     box.innerHTML = table('<th>ITEM</th><th class="num">HELD</th><th class="num"><abbr title="Change over the last tick (one tick is an hour of game time)">/HR</abbr></th><th class="num"><abbr title="Mean change a tick over the last 12 ticks">AVG 12</abbr></th>', rows.join('') + plain.join(''))
+      + mkt.spoilNote(h)
       + `<p class="dim small">${n ? `From ${n} tick report${n === 1 ? '' : 's'}. Select a row for its graph.` : 'No tick reports yet: changes and graphs fill in as ticks pass.'}</p>`;
     if (focused) box.querySelector(`[data-graph="${CSS.escape(focused)}"]`)?.focus();
   },
