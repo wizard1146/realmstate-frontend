@@ -64,8 +64,11 @@ export async function liveUrl() {
   return base.href;
 }
 
-/** GET when body is undefined, otherwise POST it as JSON. Throws ApiError with the server's message. */
-export async function api(path, body) {
+/**
+ * GET when body is undefined, otherwise POST it as JSON (or `method`, e.g. 'DELETE', with the body).
+ * Throws ApiError with the server's message (and its status, and `data`: the whole reply).
+ */
+export async function api(path, body, method) {
   const headers = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   const t = connected ? currentToken() : null;
@@ -73,7 +76,7 @@ export async function api(path, body) {
   let res;
   try {
     res = await fetch(url(path), {
-      method: body === undefined ? 'GET' : 'POST',
+      method: method || (body === undefined ? 'GET' : 'POST'),
       credentials: connected ? 'omit' : 'include',
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -83,7 +86,7 @@ export async function api(path, body) {
   }
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 && t) token.clear(); // the connection ended: connect again
-  if (!res.ok) throw new ApiError(data.error || `${res.status} ${res.statusText}`, res.status);
+  if (!res.ok) { const e = new ApiError(data.error || `${res.status} ${res.statusText}`, res.status); e.data = data; throw e; }
   return data;
 }
 

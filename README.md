@@ -49,6 +49,7 @@ this computer, `config.js` points it at a game server on the player's own comput
 | `config.js` | Which game the page plays |
 | `core/` | The store, the API and `/live` clients, commands, exact prices, wording |
 | `views/room/` | The War Room: panes, detail views, the font and palette labs |
+| `views/ages/` | The age bar (countdown, time left, the result) and the ages window: recap, results, staff age controls |
 | `dev/` | The dev server and the check script |
 
 No build step and no dependencies: the browser loads the ES modules as they are.

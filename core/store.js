@@ -168,11 +168,23 @@ export function countdown() {
 export async function loadAge() {
   try {
     const a = await api('/age');
+    const was = store.age?.age;
     store.age = a;
+    // A new age (the server started again as the next one): read everything again.
+    if (was !== undefined && a.age !== was) { newAge(); return; }
     store.tick = Math.max(store.tick, a.ticks);
     if (a.next_tick_at) store.nextAt = a.next_tick_at;
     notify('age');
   } catch (e) { complain(e); }
+}
+/** The world changed under us (a new age opened): new rules, a new world, no house yet. */
+async function newAge() {
+  store.tick = store.age.ticks;
+  store.nextAt = store.age.next_tick_at || null;
+  notify('age'); notify('age:changed');
+  try { await loadRules(); } catch (e) { complain(e); }
+  await refreshMe();
+  say(`${store.age.name || `Age ${store.age.age}`} is open.`, 'good');
 }
 
 // ---------- news and chat ----------
@@ -377,7 +389,10 @@ export async function start() {
   try { await loadRules(); } catch (e) { started = false; throw e; } // let the caller retry
   loadRealms().catch(() => {});
   await refreshMe();
+  loadAge();
   setInterval(() => notify('clock'), 1000);
+  // Without a house nothing else reads the age: keep its countdown and a new age in view.
+  setInterval(() => { if (!store.house) loadAge(); }, 30000);
   setInterval(() => { if (store.house) refreshMe(); }, 20000);
   // Without the live socket, nothing tells us about ticks: poll instead.
   setInterval(() => { if (store.house && store.live !== 'on') { loadAge(); loadState(); loadRankings(); loadWars(); } }, 60000);
