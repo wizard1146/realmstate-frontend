@@ -127,7 +127,7 @@ export function newsLine(n) {
     case 'army_returned': return [`Our army came home${n.land ? ` with ${fmt(n.land)} acres` : ''}.`, 'good'];
     case 'leader_chosen': return [`${where(n.leader)} was chosen to lead the state.`, ''];
     case 'leader_removed': return [`${where(n.was)} lost the leadership.`, ''];
-    case 'order_filled': return [`${n.side === 'buy' ? 'Bought' : 'Sold'} ${fmt(n.quantity)} ${n.material} at ${fmt(n.price)}${n.fee ? `, less a ${fmt(n.fee)} gold fee` : ''}${n.left ? ` (${fmt(n.left)} still open)` : ''}.`, ''];
+    case 'order_filled': return [`${n.side === 'buy' ? 'Bought' : 'Sold'} ${fmt(n.quantity)} ${n.material} at ${fmt(n.price)}${n.fee ? `, ${n.side === 'buy' ? 'plus' : 'less'} a ${fmt(n.fee)} gold fee` : ''}${n.left ? ` (${fmt(n.left)} still open)` : ''}.`, ''];
     case 'granted': return [`${where(n.by)} granted us ${fmt(n.amount)} ${n.material || 'gold'}.`, 'good'];
     case 'medics_trained': return [`${fmt(n.count)} medics are ready.`, 'good'];
     case 'general_killed': return [`Our general ${n.name} fell in battle.`, 'bad'];
@@ -170,8 +170,8 @@ export function newsLine(n) {
 export const newsText = (n) => newsLine(n)[0];
 export const isBad = (n) => newsLine(n)[1] === 'bad';
 
-/** A command's outcome as a sentence. Gold figures here are the real amounts the server charged. */
-export function describe(o) {
+/** A command's outcome as a sentence (cmd: the command sent, when known). Gold figures here are the real amounts the server charged. */
+export function describe(o, cmd) {
   switch (o.type) {
     case 'created': return `House founded at ${o.realm}:${o.state}:${o.seat}.`;
     case 'protection_left': return 'You left protection. Others can now attack you, and you them.';
@@ -184,7 +184,11 @@ export function describe(o) {
     case 'refined': return `Refined ${fmt(o.quantity)} ${o.material}.`;
     case 'chariots_built': return `${plural(o.count, 'chariot', 'chariots')} built and ready.`;
     case 'voted': return 'Vote cast. It stands until you change it; leadership is counted each tick.';
-    case 'order_placed': return `Order #${o.order} placed; it clears at the next tick. What it needs is held in escrow until then.`;
+    case 'order_placed': {
+      // filled: units traded at once; gold: paid (a buy, with the fee) or received (a sale, after it).
+      const done = o.filled ? `${fmt(o.filled)} filled at once ${cmd?.side === 'sell' ? `for ${fmt(o.gold)} gold` : cmd?.side === 'buy' ? `costing ${fmt(o.gold)} gold` : `(${fmt(o.gold)} gold)`}${o.fee ? `, fee ${fmt(o.fee)}` : ''}` : 'nothing filled at once';
+      return `Order #${o.order}: ${done}.${o.left ? ` ${fmt(o.left)} wait in the book${o.filled ? '' : ', holding what they need'}.` : ''}`;
+    }
     case 'order_cancelled': return `Order #${o.order} cancelled; its escrow went back.`;
     case 'donated': return 'Given to the state treasury.';
     case 'granted': return 'Granted from the treasury.';

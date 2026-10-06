@@ -1,15 +1,16 @@
 // The market (RES › MARKET, pane and detail). Books per material from /market, your orders and
-// your state's treasury orders from /orders. Orders clear once a tick at one price per material.
-// Escrow when placing (economy.rs place_order): a buy holds quantity × price gold (the difference
-// comes back if it clears lower); a sell holds the goods. A sale pays the market fee (the house's
-// market_fee_bp from /me, after trading houses; a treasury sale pays the age's full fee), which is
-// destroyed. Leaders may trade from the treasury.
-// Nobody trades with themselves: a trader may quote both sides of a material, but the server
-// refuses a buy at or above its own sell (or a sell at or below its own buy), which could fill
-// against it at the one clearing price. A leader and the treasury count as one trader.
+// your state's treasury orders from /orders. Matching is continuous (economy.rs place_order): an
+// order fills at once against waiting orders that meet its price, best price then oldest, each at
+// the waiting order's price; the rest waits in the book. The side that fills at once (the taker)
+// pays the market fee (the house's market_fee_bp from /me, after trading houses; the treasury pays
+// the age's full fee); a waiting order pays none when it fills. A buy holds quantity × price gold
+// plus the most fee it could pay, and unused gold comes back at once; a sell holds the goods. An
+// order can't be cancelled for order_min_life_ms after it's placed. Leaders may trade from the
+// treasury. Nobody trades with themselves: the server refuses a buy at or above its own sell (or a
+// sell at or below its own buy). A leader and the treasury count as one trader.
 import { store, say, loadMarket } from '../../core/store.js';
 import * as act from '../../core/actions.js';
-import { fmt, esc, when } from '../../core/words.js';
+import { fmt, esc, when, dayTime } from '../../core/words.js';
 import { tabState } from './tabs.js';
 
 /** RES pane and detail tabs. */
@@ -24,10 +25,26 @@ export const isLeader = () => !!(store.house && leaderId() != null && leaderId()
 const book = (m) => (store.market || []).find((x) => x.material === m);
 const best = (b, side) => (side === 'buy' ? b?.bids?.[0] : b?.asks?.[0]);
 
-/** The market fee on a sale, basis points: yours from /me, or the age's for the treasury. */
+/** The market fee on what an order fills at once, basis points: yours from /me, or the age's for the treasury. */
 const feeBp = (treasury) => (treasury ? store.rules?.params?.market_fee_bp : store.house?.market_fee_bp) ?? 0;
-/** What a sale of `gold` pays after the fee. */
-const afterFee = (gold, treasury) => gold - Math.floor(gold * feeBp(treasury) / 10000);
+/** Minutes an order stands before it can be cancelled. */
+const lockMin = () => Math.round((store.rules?.params?.order_min_life_ms ?? 0) / 60000);
+/** Gold a buy holds: its value at its own price plus the most fee it could pay. */
+const buyHold = (q, pr, treasury) => q * pr + Math.floor(q * pr * feeBp(treasury) / 10000);
+/** The most units `gold` can buy at `pr`, with room for the fee. */
+const buyMax = (gold, pr, treasury) => (pr ? Math.floor(gold * 10000 / (pr * (10000 + feeBp(treasury)))) : 0);
+/** What an order would fill at once against the book shown (best price first, each at the waiting
+ * order's price), and the fee on it: { k, value, fee }. An estimate: the book can change first. */
+function fillNow(m, s, q, pr, treasury) {
+  const rate = feeBp(treasury);
+  let k = 0, value = 0, fee = 0;
+  for (const l of (s === 'buy' ? book(m)?.asks : book(m)?.bids) || []) {
+    if (k >= q || (s === 'buy' ? l.price > pr : l.price < pr)) break;
+    const n = Math.min(q - k, l.quantity);
+    k += n; value += n * l.price; fee += Math.floor(n * l.price * rate / 10000);
+  }
+  return { k, value, fee };
+}
 
 /** What a party holds: { gold, mat(m) } for you, or for the treasury. */
 function holder(treasury) {
@@ -78,7 +95,7 @@ export function formHTML(p, full = false) {
     <span class="quote num span" id="${p}-cost"></span>
     <p class="small span" id="${p}-hold"></p>
     <span class="btns span"><button class="btn primary">PLACE ORDER</button></span>
-    <p class="dim small span">Orders clear at the next tick, all at one price per material: buyers pay that price and get the rest of their escrow back. Sellers pay the market fee on what they receive; trading houses cut it. You may buy and sell one material at once, but your buy must be below your own sell (and the treasury's, if you lead): you can't trade with yourself.</p>
+    <p class="dim small span">An order fills at once against waiting orders that meet your price, best price first, each at the waiting order's price; the rest waits in the book. What fills at once pays the market fee (<span id="${p}-fee">your fee</span> here; trading houses cut it); a waiting order pays no fee when it fills. An order stands <span id="${p}-lock">a few</span> minutes before you can cancel it. You may buy and sell one material at once, but your buy must be below your own sell (and the treasury's, if you lead): you can't trade with yourself.</p>
   </form>`;
 }
 
@@ -97,7 +114,7 @@ export function wireForm(box, on, p, full = false) {
       if (mats.includes(v)) sel.value = v;
     }
   }
-  /** A starting price: the other side's best, else the last clearing. */
+  /** A starting price: the other side's best, else the last trade. */
   function suggest() {
     if (priceTouched) return;
     const b = book($('m').value);
@@ -113,20 +130,28 @@ export function wireForm(box, on, p, full = false) {
     const hd = holder(tr);
     const lead = isLeader();
     if (full) {
+      $('fee').textContent = `${feeBp(tr) / 100}%`; // the treasury pays the age's full fee
+      $('lock').textContent = String(lockMin());
       $('tr').disabled = !lead;
       if (!lead) $('tr').checked = false;
       $('trwhy').textContent = lead ? 'you lead the state' : 'leader only';
     }
-    const need = s === 'buy' ? q * pr : q;
+    const need = s === 'buy' ? buyHold(q, pr, tr) : q;
     const have = s === 'buy' ? hd.gold : hd.mat(m);
     const crosses = (o) => (s === 'buy' ? o.price <= pr : o.price >= pr);
     const mine = (store.orders || []).find((o) => o.material === m && o.side !== s && (tr ? o.treasury || lead : !o.treasury || lead) && crosses(o));
     const why = !q ? 'choose a quantity' : !pr ? 'choose a price' : q > MAX_Q ? `at most ${fmt(MAX_Q)}` : mine ? `would fill your own ${mine.side} #${mine.order} at ${fmt(mine.price)}: ${s === 'buy' ? 'buy below' : 'sell above'} ${fmt(mine.price)} (no trading with yourself)` : need > have ? `${hd.who === 'you' ? 'you have' : 'the treasury has'} ${fmt(have)} ${s === 'buy' ? 'gold' : m}`
       : '';
     const c = $('cost');
-    const fee = feeBp(tr), net = afterFee(q * pr, tr);
-    c.textContent = `${s === 'buy' ? `escrow ${fmt(need)}g` : `escrow ${fmt(q)} ${m} → ≥${fmt(net)}g${fee ? ` after ${fee / 100}% fee` : ''}`}${full && why ? ` · ${why}` : ''}`;
-    c.title = why ? `Can't: ${why}` : s === 'buy' ? `Holds ${fmt(need)} gold until it clears; any gold above the clearing price comes back.` : `Holds ${fmt(q)} ${m}; pays at least ${fmt(net)} gold if it all clears (${fmt(q * pr)} less the ${fee / 100}% market fee, which is destroyed).`;
+    const { k, value, fee } = fillNow(m, s, q, pr, tr), rest = q - k;
+    const now = k ? `≈${fmt(k)} now ${s === 'buy' ? `for ${fmt(value + fee)}g` : `→ ${fmt(value - fee)}g`}` : 'none fills now';
+    c.textContent = `holds ${s === 'buy' ? `${fmt(need)}g` : `${fmt(q)} ${m}`} · ${now}${k && rest ? ` · ${fmt(rest)} wait` : ''}${full && why ? ` · ${why}` : ''}`;
+    c.title = why ? `Can't: ${why}` : [
+      s === 'buy' ? `Holds ${fmt(need)} gold: ${fmt(q * pr)} at your price, plus room for the ${feeBp(tr) / 100}% fee; unused gold comes back at once.` : `Holds ${fmt(q)} ${m}.`,
+      k ? `About ${fmt(k)} fill at once against waiting ${s === 'buy' ? 'asks' : 'bids'}, each at its own price: ${fmt(value)} gold ${s === 'buy' ? 'plus' : 'less'} a ${fmt(fee)} gold fee.` : `Nothing waits at ${fmt(pr)} or ${s === 'buy' ? 'less' : 'more'}, so nothing fills at once.`,
+      rest ? `${fmt(rest)} wait in the book at ${fmt(pr)}; filled later, they pay no fee.` : '',
+      `An order stands ${lockMin()} minutes before you can cancel it.`,
+    ].filter(Boolean).join(' ');
     c.classList.toggle('short', !!why);
     const b = book(m);
     $('hold').innerHTML = `${tr ? 'Treasury' : 'You'}: <b class="num">${fmt(hd.gold)}</b> gold · <b class="num">${fmt(hd.mat(m))}</b> ${esc(m)}`
@@ -141,7 +166,7 @@ export function wireForm(box, on, p, full = false) {
     if (!ev.target.closest('[data-mktmax]')) return;
     const m = $('m').value, hd = holder(treasury());
     const pr = num($('p').value);
-    const n = side() === 'buy' ? (pr ? Math.floor(hd.gold / pr) : 0) : hd.mat(m);
+    const n = side() === 'buy' ? buyMax(hd.gold, pr, treasury()) : hd.mat(m);
     $('q').value = String(Math.min(MAX_Q, n));
     if (!n) say(`MAX is 0: ${side() === 'buy' ? (pr ? 'not enough gold at that price' : 'choose a price first') : `no ${m} to sell`}.`, 'bad');
     update();
@@ -162,13 +187,16 @@ export function ordersHTML(compact = false) {
   const list = store.orders || [];
   if (!list.length) return `<p class="dim small">No open orders${isLeader() ? ', for you or the treasury' : ''}.</p>`;
   const lead = isLeader();
+  const life = store.rules?.params?.order_min_life_ms ?? 0;
   return `<table class="tbl"><tr><th class="num">#</th><th>SIDE</th><th>MATERIAL</th><th class="num">QTY</th><th class="num">PRICE</th>${compact ? '' : '<th class="num">ESCROW</th><th>FOR</th><th>PLACED</th>'}<th></th></tr>`
     + list.map((o) => {
       const can = !o.treasury || lead;
+      // The server decides; this only says when the lock lifts (the clocks may differ a little).
+      const locked = life && o.placed_at + life > Date.now() ? ` title="An order stands ${lockMin()} minutes: cancel from ${esc(dayTime(o.placed_at + life))}"` : '';
       const esc2 = o.side === 'buy' ? `${fmt(o.quantity * o.price)}g` : `${fmt(o.quantity)} ${o.material}`;
       return `<tr><td class="num dim">${o.order}</td><td class="${o.side === 'buy' ? 'up' : 'down'}">${o.side.toUpperCase()}</td><td>${esc(o.material)}${compact && o.treasury ? ' <span class="dim">T</span>' : ''}</td><td class="num">${fmt(o.quantity)}</td><td class="num">${fmt(o.price)}</td>`
         + `${compact ? '' : `<td class="num dim">${esc2}</td><td>${o.treasury ? 'treasury' : 'you'}</td><td class="small dim">${esc(when(o.placed_at))}</td>`}`
-        + `<td><button type="button" class="btn mini" data-cancel="${o.order}"${can ? '' : ' disabled title="Treasury orders: the leader only"'} aria-label="Cancel order ${o.order}">CANCEL</button></td></tr>`;
+        + `<td><button type="button" class="btn mini" data-cancel="${o.order}"${can ? '' : ' disabled title="Treasury orders: the leader only"'}${can ? locked : ''} aria-label="Cancel order ${o.order}">CANCEL</button></td></tr>`;
     }).join('') + '</table>';
 }
 export function wireOrders(scope, on) {
@@ -179,11 +207,11 @@ export function wireOrders(scope, on) {
 }
 
 // ---------- the books ----------
-/** One row per material: held, best bid and ask, last clearing. Rows pick the material in the form. */
+/** One row per material: held, best bid and ask, last trade. Rows pick the material in the form. */
 export function booksHTML() {
   const h = store.house;
   if (!store.market) return '<p class="dim">Loading the market…</p>';
-  return `<table class="tbl"><tr><th>MATERIAL</th><th class="num">HELD</th><th class="num"><abbr title="Best bid: price × quantity">BID</abbr></th><th class="num"><abbr title="Best ask: price × quantity">ASK</abbr></th><th class="num"><abbr title="Last clearing price">LAST</abbr></th><th></th></tr>`
+  return `<table class="tbl"><tr><th>MATERIAL</th><th class="num">HELD</th><th class="num"><abbr title="Best bid: price × quantity">BID</abbr></th><th class="num"><abbr title="Best ask: price × quantity">ASK</abbr></th><th class="num"><abbr title="Last trade price">LAST</abbr></th><th></th></tr>`
     + store.market.map((m) => {
       const bd = m.bids[0], ak = m.asks[0];
       return `<tr><td title="${esc(m.description)}">${esc(cap(m.material))}</td><td class="num${h.materials[m.material] ? '' : ' zero'}">${fmt(h.materials[m.material] || 0)}</td>`
@@ -194,12 +222,12 @@ export function booksHTML() {
 }
 /** The detail's full books: each material's bids and asks (10 levels each). A level's button
  * trades against it at once: SELL into a bid, BUY from an ask, at that price, as much as the level
- * shows and you hold (or can pay for). It's an ordinary order, so it fills at the next clearing,
- * at that price or better, and can be cancelled until then. */
+ * shows and you hold (or can pay for, with the fee). It's an ordinary order, so it fills at once,
+ * at that price or better, paying the market fee; anything left waits in the book. */
 /** How much one click can trade against a level: { q, why } (why: the reason it's 0). */
 function hitSize(side, m, price, quantity) {
   const h = store.house;
-  const can = side === 'sell' ? (h.materials[m] || 0) : Math.floor(h.gold / price);
+  const can = side === 'sell' ? (h.materials[m] || 0) : buyMax(h.gold, price, false);
   const q = Math.min(quantity, can, MAX_Q);
   return { q, why: q ? '' : side === 'sell' ? `you have no ${m}` : 'not enough gold' };
 }
@@ -216,7 +244,7 @@ export function depthHTML() {
     const { q, why } = hitSize(side, m, r.price, r.quantity);
     const verb = side === 'buy' ? 'BUY' : 'SELL';
     const label = q ? `${verb} ${fmt(q)}` : verb;
-    const tip = q ? `${side === 'buy' ? 'Buy' : 'Sell'} ${fmt(q)} ${m} at ${fmt(r.price)} now: fills at the next clearing, at this price or better` : `Can't: ${why}`;
+    const tip = q ? `${side === 'buy' ? 'Buy' : 'Sell'} ${fmt(q)} ${m} at ${fmt(r.price)} now: fills at once, at this price or better, and pays the ${feeBp(false) / 100}% market fee` : `Can't: ${why}`;
     return `<tr><td class="num ${cls}">${fmt(r.price)}</td><td class="num">${fmt(r.quantity)}</td><td><button type="button" class="btn mini" data-hit-mat="${esc(m)}" data-side="${side}" data-price="${r.price}" data-qty="${r.quantity}"${q ? '' : ' disabled'} title="${esc(tip)}" aria-label="${esc(tip)}">${label}</button></td></tr>`;
   }).join('') : '<tr><td colspan="3" class="dim">none</td></tr>';
   return `<div class="dgrid">${store.market.map((m) => `<section><h4 class="sub">${esc(m.name || cap(m.material))} <span class="dim">${m.realms.length ? `realms ${m.realms.join(', ')} · ${outputNow(m)}` : 'refined'} · last ${m.last.volume ? `${fmt(m.last.price)} ×${fmt(m.last.volume)} at T${m.last.tick}` : 'none'}</span></h4>
@@ -250,10 +278,10 @@ export function wirePane(sec, on) {
 // ---------- the RES detail's MARKET tab ----------
 export function detailHTML() {
   return `<div class="dgrid">
-    <section><h3 class="sub">PLACE AN ORDER <span class="dim">cleared at the next tick</span></h3>${formHTML('d-mo', true)}</section>
+    <section><h3 class="sub">PLACE AN ORDER <span class="dim">fills at once against the book; the rest waits</span></h3>${formHTML('d-mo', true)}</section>
     <section><h3 class="sub">OPEN ORDERS <span class="dim">yours and your state's treasury's</span> <button type="button" class="btn mini" id="d-mk-reload">RELOAD</button></h3><div id="d-mk-orders"></div>
       <h3 class="sub gap">BOOKS <span class="dim">best bid and ask</span></h3><div id="d-mk-books"></div></section>
-    <section class="wide"><h3 class="sub">DEPTH <span class="dim">every material's bids and asks; a level's button sells into that bid or buys from that ask at once (it fills at the next clearing, at that price or better)</span></h3><div id="d-mk-depth"></div></section>
+    <section class="wide"><h3 class="sub">DEPTH <span class="dim">every material's bids and asks; a level's button sells into that bid or buys from that ask at once (at that price or better, paying the market fee)</span></h3><div id="d-mk-depth"></div></section>
   </div>`;
 }
 export function wireDetail(sec, on) {

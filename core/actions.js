@@ -19,7 +19,7 @@ async function run(cmd, { estimate, quote, button } = {}) {
     if (quote != null && Number.isFinite(quote)) {
       if (out.gold != null && out.gold !== quote) est = ` (Quoted ${fmt(quote)} gold; prices changed before the order landed.)`;
     } else if (estimate != null && Number.isFinite(estimate) && !havePrices()) est = ` (Estimated ≈${fmt(estimate)} before modifiers.)`;
-    say(describe(out) + est, outcomeTone(out));
+    say(describe(out, cmd) + est, outcomeTone(out));
     refreshMeSoon();
     return out;
   } catch (e) {
