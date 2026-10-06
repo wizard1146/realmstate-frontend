@@ -127,7 +127,8 @@ export function newsLine(n) {
     case 'army_returned': return [`Our army came home${n.land ? ` with ${fmt(n.land)} acres` : ''}.`, 'good'];
     case 'leader_chosen': return [`${where(n.leader)} was chosen to lead the state.`, ''];
     case 'leader_removed': return [`${where(n.was)} lost the leadership.`, ''];
-    case 'order_filled': return [`${n.side === 'buy' ? 'Bought' : 'Sold'} ${fmt(n.quantity)} ${n.material} at ${fmt(n.price)}${n.fee ? `, ${n.side === 'buy' ? 'plus' : 'less'} a ${fmt(n.fee)} gold fee` : ''}${n.left ? ` (${fmt(n.left)} still open)` : ''}.`, ''];
+    case 'order_filled': return [`${n.side === 'buy' ? 'Bought' : 'Sold'} ${fmt(n.quantity)} ${n.material} at ${fmt(n.price)}${n.fee ? `, ${n.side === 'buy' ? 'plus' : 'less'} a ${fmt(n.fee)} gold fee` : ''}${n.cross_fee ? `${n.fee ? ' and' : ', plus'} a ${fmt(n.cross_fee)} gold cross-realm fee (from another realm)` : ''}${n.left ? ` (${fmt(n.left)} still open)` : ''}.`, ''];
+    case 'treasury_share': return [`Our treasury's overflow: ${Object.entries(n.materials || {}).map(([m, q]) => `${fmt(q)} ${m}`).join(', ')}, shared among the state's houses instead of spoiling.`, 'good'];
     case 'granted': return [`${where(n.by)} granted us ${fmt(n.amount)} ${n.material || 'gold'}.`, 'good'];
     case 'medics_trained': return [`${fmt(n.count)} medics are ready.`, 'good'];
     case 'general_killed': return [`Our general ${n.name} fell in battle.`, 'bad'];
@@ -186,7 +187,8 @@ export function describe(o, cmd) {
     case 'voted': return 'Vote cast. It stands until you change it; leadership is counted each tick.';
     case 'order_placed': {
       // filled: units traded at once; gold: paid (a buy, with the fee) or received (a sale, after it).
-      const done = o.filled ? `${fmt(o.filled)} filled at once ${cmd?.side === 'sell' ? `for ${fmt(o.gold)} gold` : cmd?.side === 'buy' ? `costing ${fmt(o.gold)} gold` : `(${fmt(o.gold)} gold)`}${o.fee ? `, fee ${fmt(o.fee)}` : ''}` : 'nothing filled at once';
+      // cross_fee: the cross-realm fee a buy paid (part of gold), the seller being in another realm.
+      const done = o.filled ? `${fmt(o.filled)} filled at once ${cmd?.side === 'sell' ? `for ${fmt(o.gold)} gold` : cmd?.side === 'buy' ? `costing ${fmt(o.gold)} gold` : `(${fmt(o.gold)} gold)`}${o.fee ? `, fee ${fmt(o.fee)}` : ''}${o.cross_fee ? `, cross-realm fee ${fmt(o.cross_fee)}` : ''}` : 'nothing filled at once';
       return `Order #${o.order}: ${done}.${o.left ? ` ${fmt(o.left)} wait in the book${o.filled ? '' : ', holding what they need'}.` : ''}`;
     }
     case 'order_cancelled': return `Order #${o.order} cancelled; its escrow went back.`;

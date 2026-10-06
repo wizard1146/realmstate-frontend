@@ -3,8 +3,11 @@
 // order fills at once against waiting orders that meet its price, best price then oldest, each at
 // the waiting order's price; the rest waits in the book. The side that fills at once (the taker)
 // pays the market fee (the house's market_fee_bp from /me, after trading houses; the treasury pays
-// the age's full fee); a waiting order pays none when it fills. A buy holds quantity × price gold
-// plus the most fee it could pay, and unused gold comes back at once; a sell holds the goods. An
+// the age's full fee); a waiting order pays none when it fills. A buyer whose realm isn't the
+// seller's also pays the cross-realm fee (cross_realm_fee_bp from /rules; trading houses don't cut
+// it), taker or not. The book doesn't say which realm a waiting order is from, so a buy holds
+// quantity × price gold plus the most fees it could pay (market and cross-realm), as the server's
+// escrow does, and unused gold comes back at once; a sell holds the goods. An
 // order can't be cancelled for order_min_life_ms after it's placed. Leaders may trade from the
 // treasury. Nobody trades with themselves: the server refuses a buy at or above its own sell (or a
 // sell at or below its own buy). A leader and the treasury count as one trader.
@@ -29,21 +32,36 @@ const best = (b, side) => (side === 'buy' ? b?.bids?.[0] : b?.asks?.[0]);
 const feeBp = (treasury) => (treasury ? store.rules?.params?.market_fee_bp : store.house?.market_fee_bp) ?? 0;
 /** Minutes an order stands before it can be cancelled. */
 const lockMin = () => Math.round((store.rules?.params?.order_min_life_ms ?? 0) / 60000);
-/** Gold a buy holds: its value at its own price plus the most fee it could pay. */
-const buyHold = (q, pr, treasury) => q * pr + Math.floor(q * pr * feeBp(treasury) / 10000);
-/** The most units `gold` can buy at `pr`, with room for the fee. */
-const buyMax = (gold, pr, treasury) => (pr ? Math.floor(gold * 10000 / (pr * (10000 + feeBp(treasury)))) : 0);
+/** The cross-realm fee a buyer pays when the seller is in another realm, basis points (the age's). */
+export const crossBp = () => store.rules?.params?.cross_realm_fee_bp ?? 0;
+/** Gold a waiting buy holds: its price and room for the cross-realm fee (the server's buy_hold). */
+const waitHold = (q, pr) => q * pr + Math.floor(q * pr * crossBp() / 10000);
+/** Gold a buy holds when placed: its value at its own price plus the most fees it could pay. */
+const buyHold = (q, pr, treasury) => waitHold(q, pr) + Math.floor(q * pr * feeBp(treasury) / 10000);
+/** The most units `gold` can buy at `pr`, with room for the fees. */
+const buyMax = (gold, pr, treasury) => {
+  if (!pr) return 0;
+  let n = Math.floor(gold * 10000 / (pr * (10000 + feeBp(treasury) + crossBp())));
+  while (n > 0 && buyHold(n + 1, pr, treasury) <= gold) n++; // rounding down each fee can leave room for one more
+  return n;
+};
+/** Where the cross-realm fee may apply to a buy of `m`: { you, makers, home } (home: your realm makes it). */
+function crossWhere(m) {
+  const you = store.house?.realm, makers = book(m)?.realms || [];
+  return { you, makers, home: makers.includes(you) };
+}
 /** What an order would fill at once against the book shown (best price first, each at the waiting
- * order's price), and the fee on it: { k, value, fee }. An estimate: the book can change first. */
+ * order's price), the fee on it, and the most cross-realm fee a buy could pay on it (if every
+ * seller is in another realm): { k, value, fee, cross }. An estimate: the book can change first. */
 function fillNow(m, s, q, pr, treasury) {
-  const rate = feeBp(treasury);
-  let k = 0, value = 0, fee = 0;
+  const rate = feeBp(treasury), xr = s === 'buy' ? crossBp() : 0;
+  let k = 0, value = 0, fee = 0, cross = 0;
   for (const l of (s === 'buy' ? book(m)?.asks : book(m)?.bids) || []) {
     if (k >= q || (s === 'buy' ? l.price > pr : l.price < pr)) break;
     const n = Math.min(q - k, l.quantity);
-    k += n; value += n * l.price; fee += Math.floor(n * l.price * rate / 10000);
+    k += n; value += n * l.price; fee += Math.floor(n * l.price * rate / 10000); cross += Math.floor(n * l.price * xr / 10000);
   }
-  return { k, value, fee };
+  return { k, value, fee, cross };
 }
 
 /** What a party holds: { gold, mat(m) } for you, or for the treasury. */
@@ -62,7 +80,17 @@ export function spoilNote(h = store.house) {
   if (!s) return '';
   const next = Object.entries(s.next);
   return `<p class="small ${next.length ? 'short' : 'dim'}">Spoilage: ${fmt(s.free)} of each material keep free (goods in sell orders count). `
-    + (next.length ? `Next tick loses ${next.map(([m, n]) => `${fmt(n)} ${esc(m)}`).join(', ')}: sell or use the excess.` : 'Nothing spoils next tick.') + '</p>';
+    + (next.length ? `Next tick loses ${next.map(([m, n]) => `${fmt(n)} ${esc(m)}`).join(', ')}: sell or use the excess.` : 'Nothing spoils next tick.')
+    + (store.rules?.params?.treasury_overflow ? " Your state's treasury overflow is shared among its houses before this." : '') + '</p>';
+}
+/** One line on what happens to a treasury's materials beyond its allowance (treasury overflow, or spoilage). */
+export function treasuryNote() {
+  const p = store.rules?.params;
+  if (!p || !(p.spoil_max_bp > 0)) return '';
+  const free = fmt(p.spoil_treasury_free || 0);
+  return `<p class="small dim">${p.treasury_overflow
+    ? `Treasury overflow: each tick, materials beyond ${free} of each are shared equally among the state's houses instead of spoiling (goods in its sell orders count toward the ${free}).`
+    : `Spoilage: the treasury keeps ${free} of each material free (goods in its sell orders count); beyond that, some spoils each tick.`}</p>`;
 }
 
 // ---------- the order form ----------
@@ -95,7 +123,7 @@ export function formHTML(p, full = false) {
     <span class="quote num span" id="${p}-cost"></span>
     <p class="small span" id="${p}-hold"></p>
     <span class="btns span"><button class="btn primary">PLACE ORDER</button></span>
-    <p class="dim small span">An order fills at once against waiting orders that meet your price, best price first, each at the waiting order's price; the rest waits in the book. What fills at once pays the market fee (<span id="${p}-fee">your fee</span> here; trading houses cut it); a waiting order pays no fee when it fills. An order stands <span id="${p}-lock">a few</span> minutes before you can cancel it. You may buy and sell one material at once, but your buy must be below your own sell (and the treasury's, if you lead): you can't trade with yourself.</p>
+    <p class="dim small span">An order fills at once against waiting orders that meet your price, best price first, each at the waiting order's price; the rest waits in the book. What fills at once pays the market fee (<span id="${p}-fee">your fee</span> here; trading houses cut it); a waiting order pays no fee when it fills. A buyer from another realm than the seller's also pays the cross-realm fee (<span id="${p}-xfee">some</span> more, taker or not; trading houses don't cut it), so a buy holds room for it and gets it back for what comes from its own realm. An order stands <span id="${p}-lock">a few</span> minutes before you can cancel it. You may buy and sell one material at once, but your buy must be below your own sell (and the treasury's, if you lead): you can't trade with yourself.</p>
   </form>`;
 }
 
@@ -131,6 +159,7 @@ export function wireForm(box, on, p, full = false) {
     const lead = isLeader();
     if (full) {
       $('fee').textContent = `${feeBp(tr) / 100}%`; // the treasury pays the age's full fee
+      $('xfee').textContent = `${crossBp() / 100}%`;
       $('lock').textContent = String(lockMin());
       $('tr').disabled = !lead;
       if (!lead) $('tr').checked = false;
@@ -143,18 +172,21 @@ export function wireForm(box, on, p, full = false) {
     const why = !q ? 'choose a quantity' : !pr ? 'choose a price' : q > MAX_Q ? `at most ${fmt(MAX_Q)}` : mine ? `would fill your own ${mine.side} #${mine.order} at ${fmt(mine.price)}: ${s === 'buy' ? 'buy below' : 'sell above'} ${fmt(mine.price)} (no trading with yourself)` : need > have ? `${hd.who === 'you' ? 'you have' : 'the treasury has'} ${fmt(have)} ${s === 'buy' ? 'gold' : m}`
       : '';
     const c = $('cost');
-    const { k, value, fee } = fillNow(m, s, q, pr, tr), rest = q - k;
-    const now = k ? `≈${fmt(k)} now ${s === 'buy' ? `for ${fmt(value + fee)}g` : `→ ${fmt(value - fee)}g`}` : 'none fills now';
+    const { k, value, fee, cross } = fillNow(m, s, q, pr, tr), rest = q - k;
+    const xb = crossBp(), xw = crossWhere(m);
+    const now = k ? `≈${fmt(k)} now ${s === 'buy' ? `for ${fmt(value + fee)}g${cross ? ` (+≤${fmt(cross)}g cross-realm)` : ''}` : `→ ${fmt(value - fee)}g`}` : 'none fills now';
     c.textContent = `holds ${s === 'buy' ? `${fmt(need)}g` : `${fmt(q)} ${m}`} · ${now}${k && rest ? ` · ${fmt(rest)} wait` : ''}${full && why ? ` · ${why}` : ''}`;
     c.title = why ? `Can't: ${why}` : [
-      s === 'buy' ? `Holds ${fmt(need)} gold: ${fmt(q * pr)} at your price, plus room for the ${feeBp(tr) / 100}% fee; unused gold comes back at once.` : `Holds ${fmt(q)} ${m}.`,
-      k ? `About ${fmt(k)} fill at once against waiting ${s === 'buy' ? 'asks' : 'bids'}, each at its own price: ${fmt(value)} gold ${s === 'buy' ? 'plus' : 'less'} a ${fmt(fee)} gold fee.` : `Nothing waits at ${fmt(pr)} or ${s === 'buy' ? 'less' : 'more'}, so nothing fills at once.`,
-      rest ? `${fmt(rest)} wait in the book at ${fmt(pr)}; filled later, they pay no fee.` : '',
+      s === 'buy' ? `Holds ${fmt(need)} gold: ${fmt(q * pr)} at your price, plus room for the ${feeBp(tr) / 100}% market fee${xb ? ` and the ${xb / 100}% cross-realm fee` : ''}; unused gold comes back at once.` : `Holds ${fmt(q)} ${m}.`,
+      k ? `About ${fmt(k)} fill at once against waiting ${s === 'buy' ? 'asks' : 'bids'}, each at its own price: ${fmt(value)} gold ${s === 'buy' ? 'plus' : 'less'} a ${fmt(fee)} gold fee${s === 'buy' && cross ? `, and up to ${fmt(cross)} gold cross-realm fee for what comes from another realm` : ''}.` : `Nothing waits at ${fmt(pr)} or ${s === 'buy' ? 'less' : 'more'}, so nothing fills at once.`,
+      rest ? `${fmt(rest)} wait in the book at ${fmt(pr)}; filled later, they pay no market fee${s === 'buy' && xb ? `, but up to ${xb / 100}% cross-realm fee` : ''}.` : '',
+      s === 'buy' && xb ? `The cross-realm fee: up to ${xb / 100}% more if bought from another realm than yours (realm ${xw.you}). ${cap(m)} is made in realm${xw.makers.length === 1 ? '' : 's'} ${xw.makers.join(', ') || 'none'}${xw.home ? ', yours among them' : ''}, but anyone may resell it, and the book doesn't say who; what comes from your own realm gives the held fee back.` : '',
       `An order stands ${lockMin()} minutes before you can cancel it.`,
     ].filter(Boolean).join(' ');
     c.classList.toggle('short', !!why);
     const b = book(m);
     $('hold').innerHTML = `${tr ? 'Treasury' : 'You'}: <b class="num">${fmt(hd.gold)}</b> gold · <b class="num">${fmt(hd.mat(m))}</b> ${esc(m)}`
+      + (s === 'buy' && xb ? ` <span class="dim">· up to ${xb / 100}% more if bought from another realm${xw.home ? '' : ` (${esc(m)} isn't made in yours)`}</span>` : '')
       + ` <span class="dim">· best bid ${b?.bids?.[0] ? `${fmt(b.bids[0].price)}×${fmt(b.bids[0].quantity)}` : '–'} · best ask ${b?.asks?.[0] ? `${fmt(b.asks[0].price)}×${fmt(b.asks[0].quantity)}` : '–'} · last ${b?.last?.volume ? `${fmt(b.last.price)} (T${b.last.tick}, ${fmt(b.last.volume)})` : 'none'}</span>`;
   }
   on(box.querySelector(`#${p}-f`), 'input', (ev) => {
@@ -193,7 +225,8 @@ export function ordersHTML(compact = false) {
       const can = !o.treasury || lead;
       // The server decides; this only says when the lock lifts (the clocks may differ a little).
       const locked = life && o.placed_at + life > Date.now() ? ` title="An order stands ${lockMin()} minutes: cancel from ${esc(dayTime(o.placed_at + life))}"` : '';
-      const esc2 = o.side === 'buy' ? `${fmt(o.quantity * o.price)}g` : `${fmt(o.quantity)} ${o.material}`;
+      // A waiting buy holds its price and room for the cross-realm fee (orders placed before the fee held none).
+      const esc2 = o.side === 'buy' ? `${fmt(waitHold(o.quantity, o.price))}g` : `${fmt(o.quantity)} ${o.material}`;
       return `<tr><td class="num dim">${o.order}</td><td class="${o.side === 'buy' ? 'up' : 'down'}">${o.side.toUpperCase()}</td><td>${esc(o.material)}${compact && o.treasury ? ' <span class="dim">T</span>' : ''}</td><td class="num">${fmt(o.quantity)}</td><td class="num">${fmt(o.price)}</td>`
         + `${compact ? '' : `<td class="num dim">${esc2}</td><td>${o.treasury ? 'treasury' : 'you'}</td><td class="small dim">${esc(when(o.placed_at))}</td>`}`
         + `<td><button type="button" class="btn mini" data-cancel="${o.order}"${can ? '' : ' disabled title="Treasury orders: the leader only"'}${can ? locked : ''} aria-label="Cancel order ${o.order}">CANCEL</button></td></tr>`;

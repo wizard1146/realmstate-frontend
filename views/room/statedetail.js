@@ -6,7 +6,7 @@ import * as act from '../../core/actions.js';
 import { api } from '../../core/api.js';
 import { fmt, esc, addr, empty } from '../../core/words.js';
 import { tabState, tabButtons, panelAttrs, wireTabs } from './tabs.js';
-import { isLeader, leaderId } from './market.js';
+import { isLeader, leaderId, treasuryNote } from './market.js';
 
 export const STATE_TAB = tabState('realmstate.room.state', ['members', 'leadership', 'vigils', 'war'], { members: 'MEMBERS', leadership: 'LEADERSHIP', vigils: 'VIGILS', war: 'WAR' });
 const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
@@ -234,7 +234,7 @@ export function stateDetail(b, on) {
       $('v').innerHTML = '<option value="abstain">Abstain</option><option value="against">Against any leader</option>' + s.members.map((m) => `<option value="for:${m.id}">For ${esc(m.name)} (${addr(m)})${m.id === h.id ? ' (you)' : ''}</option>`).join('');
       $('v').value = mv.type === 'for' ? `for:${mv.house}` : mv.type || 'abstain';
     }
-    $('treas').innerHTML = kv([['Gold', s.treasury.gold], ...Object.entries(s.treasury.materials).filter(([, n]) => n).map(([m, n]) => [cap(m), n]), ['Tax', `${pct(s.tax.rate_bp)} (band ${pct(s.tax.min_bp)}–${pct(s.tax.max_bp)})`], ['Share of realm output', pct(s.share_bp)]]);
+    $('treas').innerHTML = kv([['Gold', s.treasury.gold], ...Object.entries(s.treasury.materials).filter(([, n]) => n).map(([m, n]) => [cap(m), n]), ['Tax', `${pct(s.tax.rate_bp)} (band ${pct(s.tax.min_bp)}–${pct(s.tax.max_bp)})`], ['Share of realm output', pct(s.share_bp)]]) + treasuryNote();
     const dm = $('dm').value, dn = num($('dn').value);
     const dHave = dm ? h.materials[dm] || 0 : h.gold;
     $('dq').textContent = `You hold ${fmt(dHave)} ${dm || 'gold'}${dn > dHave ? ' · not that much' : ''}`;
