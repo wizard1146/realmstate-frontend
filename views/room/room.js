@@ -26,6 +26,7 @@ import * as ax from './atkextra.js';
 import * as mk from './milacts.js';
 import * as mkt from './market.js';
 import { STATE_TAB, leadPaneHTML, vigilPaneHTML, warPaneHTML } from './statedetail.js';
+import { workPaneHTML, wondersPaneHTML, buildingChoice, buildingOptions } from './truthsui.js';
 import { noticeHTML, wireReassure } from './waver.js';
 
 const PANES = ['act', 'res', 'mil', 'news', 'chat', 'roster', 'rank', 'sci'];
@@ -108,6 +109,7 @@ const TEMPLATE = (view) => `
         <span class="args">
           <label for="r-a-target" title="Target house, as realm:state:seat">TGT</label> <input id="r-a-target" name="target" placeholder="r:s:seat" pattern="\\s*\\d+\\s*:\\s*\\d+\\s*:\\s*\\d+\\s*" required class="w8" autocomplete="off">
           <label for="r-a-kind">KIND</label> <select id="r-a-kind" name="kind"></select>
+          <span id="r-a-bldw" hidden><label for="r-a-bld" title="The building type the land comes from first">FROM</label> <select id="r-a-bld" name="building"></select></span>
           <label for="r-a-gen" title="A general at home to lead the army (optional)">GEN</label> <select id="r-a-gen" name="general" aria-describedby="r-a-gen-line"></select>
         </span>
         <span class="troops" id="r-a-troops"></span>
@@ -182,6 +184,8 @@ const TEMPLATE = (view) => `
       <div ${panelAttrs(STATE_TAB, 'r-st', 'leadership')}></div>
       <div ${panelAttrs(STATE_TAB, 'r-st', 'vigils')}></div>
       <div ${panelAttrs(STATE_TAB, 'r-st', 'war')}></div>
+      <div ${panelAttrs(STATE_TAB, 'r-st', 'work')}></div>
+      <div ${panelAttrs(STATE_TAB, 'r-st', 'wonders')}></div>
     </div>
   </section>
 
@@ -197,7 +201,7 @@ const TEMPLATE = (view) => `
   <section class="pane" id="r-p-sci" data-pane="sci" aria-labelledby="r-h-sci" tabindex="-1">
     <h2 class="pane-h" id="r-h-sci"><span class="key">8</span>SCI
       <span class="seg" role="tablist" aria-label="SCI sections" id="r-sci-tabs">${tabButtons(SCI_TAB, 'r-sci')}</span><button type="button" class="xp" data-expand="sci" title="Open SCI in detail (Shift+Alt+8, or Enter on the pane)" aria-label="Open SCI detail view"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1 4.5V1h3.5M7.5 1H11v3.5M11 7.5V11H7.5M4.5 11H1V7.5"/></svg></button></h2>
-    <div class="pane-b"><div ${panelAttrs(SCI_TAB, 'r-sci', 'science')}></div><div ${panelAttrs(SCI_TAB, 'r-sci', 'academics')}></div><div ${panelAttrs(SCI_TAB, 'r-sci', 'colloquium')}></div></div>
+    <div class="pane-b"><div ${panelAttrs(SCI_TAB, 'r-sci', 'science')}></div><div ${panelAttrs(SCI_TAB, 'r-sci', 'academics')}></div><div ${panelAttrs(SCI_TAB, 'r-sci', 'colloquium')}></div><div ${panelAttrs(SCI_TAB, 'r-sci', 'truths')}></div></div>
   </section>
 </main>
 </div>`;
@@ -242,6 +246,7 @@ export function mount(root) {
     $('b-bld').value = 'homes';
     $('t-unit').innerHTML = trainOptions(race);
     $('a-kind').innerHTML = P.attacks.map((k) => `<option value="${esc(k.id)}">${esc(k.name)}</option>`).join('');
+    $('a-bld').innerHTML = buildingOptions();
     $('a-extra').innerHTML = ax.extrasHTML('r-a', race, true);
     $('a-troops').innerHTML = attackSlots(race).map((slot) => {
       const u = race.units[slot] || { name: `unit ${slot}`, off: 0 };
@@ -444,7 +449,7 @@ export function mount(root) {
   /** The STATE pane's other tabs: only the one showing is drawn. */
   function renderStateTabs() {
     const t = STATE_TAB.get();
-    const html = t === 'leadership' ? leadPaneHTML : t === 'vigils' ? vigilPaneHTML : t === 'war' ? warPaneHTML : null;
+    const html = { leadership: leadPaneHTML, vigils: vigilPaneHTML, war: warPaneHTML, work: workPaneHTML, wonders: wondersPaneHTML }[t] || null;
     if (html) $(`st-sec-${t}`).innerHTML = html();
   }
   wireTabs($('st-tabs'), $('p-roster'), on, STATE_TAB, renderStateTabs);
@@ -542,11 +547,14 @@ export function mount(root) {
     units[8] = x.mercs;
     const typed = $('a-target').value.trim();
     const t = store.target && typed === addr(store.target) ? store.target : typed;
-    const out = await act.attack({ target: t, kind: $('a-kind').value, units, general: $('a-gen').value, medics: x.medics, horses: x.horses, chariots: x.chariots, upgradedMercenaries: x.upmercs, doubleStrike: x.double }, { button: ev.submitter });
+    const building = buildingChoice($('a-kind').value) ? $('a-bld').value || null : null;
+    const out = await act.attack({ target: t, kind: $('a-kind').value, units, general: $('a-gen').value, medics: x.medics, horses: x.horses, chariots: x.chariots, upgradedMercenaries: x.upmercs, doubleStrike: x.double, building }, { button: ev.submitter });
     if (out) root.querySelectorAll('#r-a-troops input, #r-a-extra input').forEach((inp) => { if (inp.type === 'checkbox') inp.checked = false; else inp.value = 0; });
     costs();
   });
   for (const id of ['x-acres', 'b-bld', 'b-n', 't-unit', 't-n', 't-src', 'a-kind']) on($(id), 'input', costs);
+  const showBld = () => { $('a-bldw').hidden = !buildingChoice($('a-kind').value); };
+  on($('a-kind'), 'input', showBld);
   on($('a-troops'), 'input', costs);
   on($('a-extra'), 'input', costs);
   on($('a-gen'), 'input', () => { $('a-gen-line').textContent = generalLine($('a-gen').value); });
@@ -694,7 +702,7 @@ export function mount(root) {
     intrigue.update(c);
     if (c.has('ticks') || c.has('timemode')) renderNews([]);
     if (c.has('state')) renderRoster();
-    if (c.has('state') || c.has('wars') || c.has('relations')) renderStateTabs();
+    if (c.has('state') || c.has('wars') || c.has('relations') || c.has('house')) renderStateTabs();
     if (c.has('rankings') || (c.has('age') && rankMode === 'states')) renderRank();
     if (c.has('target')) renderTarget();
     if (c.has('house') || c.has('colloquium') || c.has('ticks')) renderSci();

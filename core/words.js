@@ -35,6 +35,18 @@ export const baseOf = (slot) => (slot === ELITE_PP ? 3 : slot >= 5 && slot <= 7 
 export const upgradeOf = (slot, plusPlus = false) => ({ 1: 5, 2: 6, 3: 7, 7: plusPlus ? ELITE_PP : null }[slot] ?? null);
 export const where = (h) => (h ? `${h.name} (${addr(h)})` : 'someone');
 const st = (s) => `${s.realm}:${s.state}`;
+const cap = (t) => (t ? t[0].toUpperCase() + t.slice(1) : t);
+const QUEST_END = { declined: 'we declined', lapsed: 'an ask went unanswered', out_of_time: 'it ran out of time', cold: 'the trail went cold', died: 'the seeker died', nothing: 'it found nothing', lost: 'the seeker left our house' };
+/** A quest's ask as words: "40,000 gold + 150 timber + 3,000 military books". */
+export function askText(a) {
+  if (!a) return 'nothing';
+  const parts = [];
+  if (a.gold) parts.push(`${fmt(a.gold)} gold`);
+  if (a.material && a.amount) parts.push(`${fmt(a.amount)} ${a.material}`);
+  if (a.books) parts.push(`${fmt(a.books)} ${a.books_category || 'arcane'} books`);
+  if (a.aether) parts.push(`${fmt(a.aether)} aether`);
+  return parts.join(' + ') || 'nothing';
+}
 
 // ---------- clock times: UTC by default, or the browser's local time (remembered per browser) ----------
 const TIME_KEY = 'realmstate.time';
@@ -169,6 +181,19 @@ export function newsLine(n) {
       return [ours ? `Second strike on ${where(n.target)}: ${n.success ? `${killed} specialists killed` : 'repulsed'}.` : `${where(n.attacker)} struck us a second time: ${n.success ? `${killed} specialists lost` : 'driven off'}.`, ours === n.success ? 'good' : 'bad'];
     }
     case 'land_retaken': return [myHouseId === n.by?.id ? `We took back ${fmt(n.acres)} acres from ${where(n.from)}'s army.` : `${where(n.by)} took back ${fmt(n.acres)} acres from our army on its way home.`, myHouseId === n.by?.id ? 'good' : 'bad'];
+    case 'quest_invited': return [`${cap(n.seeker)} ${n.seeker.startsWith('your ') ? 'are' : 'is'} invited to seek an unnamed Truth: ${n.episodes} episodes, to finish by tick ${n.until_tick}.`, 'good'];
+    case 'quest_asks': return [`${cap(n.seeker)} ask${n.seeker.startsWith('your ') ? '' : 's'} for ${askText(n.ask)} (episode ${n.episode} of ${n.of}). Answer by tick ${n.until_tick}.`, ''];
+    case 'quest_ended': return [`The quest of ${n.seeker || 'our seeker'} ended: ${QUEST_END[n.why] || n.why}.`, n.why === 'nothing' || n.why === 'declined' ? '' : 'bad'];
+    case 'truth_uncovered': return [`${where(n.by)} uncovered a Truth: ${n.truth}. Our state may use it now; the world hears in a few ticks.`, 'good'];
+    case 'truth_announced': return [`A Truth is uncovered: ${n.truth}, by state ${st(n.by)}. Every house may use it now.`, ''];
+    case 'realm_work': return [`Our realm's ${n.work} ${n.step === 'proposed' ? `was proposed by state ${n.by ? st(n.by) : '?'}; the realm's leaders vote` : n.step === 'passed' ? 'passed its vote: every house of the realm may fund it' : 'is done: the realm makes more of its material'}.`, n.step === 'proposed' ? '' : 'good'];
+    case 'dragon_raid': return n.driven_off ? [`A dragon raided us and was driven off. +${fmt(n.renown)} renown.`, 'good']
+      : [`A dragon raided us: ${fmt(n.buildings)} buildings, ${fmt(n.troops)} troops and ${fmt(n.peasants)} peasants lost.`, 'bad'];
+    case 'dragon_sighted': return [`A dragon struck in realm ${n.realm}.`, ''];
+    case 'wonder_started': return [`${where(n.by)} began the ${n.wonder}; our state's houses may fund it.`, ''];
+    case 'wonder_funded': return [`The ${n.wonder} of ${where(n.by)} is fully funded; it finishes at tick ${n.done_tick}.`, 'good'];
+    case 'wonder_lost': return [`Another house finished the ${n.wonder} first; ${n.refund_bp / 100}% of what our build was given came back.`, 'bad'];
+    case 'wonder_built': return [`The ${n.wonder} stands: ${where(n.by)} of state ${st(n.state)} finished it.`, myHouseId === n.by?.id ? 'good' : ''];
     default: return [`${String(n.type || 'Something').replace(/_/g, ' ')} happened.`, ''];
   }
 }
@@ -201,6 +226,21 @@ export function describe(o, cmd) {
     case 'tax_set': return 'Tax set. It applies from the next tick.';
     case 'reassured': return `Reassured for ${fmt(o.gold)} gold: they are loyal again.`;
     case 'vigil_opened': return 'Vigil opened. Houses of the state can now give aether and incense to it.';
+    case 'quest_answered': return {
+      continues: 'Paid. The quest goes on; the next ask comes later.',
+      declined: 'You declined. The quest is over.',
+      cold: 'Paid, but the trail went cold. The quest is over.',
+      died: 'Paid, but the seeker died. The quest is over.',
+      nothing: 'Paid, but the quest found nothing. The Truth stays hidden.',
+      uncovered: `Uncovered: ${o.truth}. Your state may use it now; every house hears in a few ticks.`,
+    }[o.result] || 'Answered.';
+    case 'subscriber_set': return 'Subscriber flag set.';
+    case 'transmuted': return `Transmuted ${fmt(cmd?.amount)} ${cmd?.to || ''} from ${fmt(o.spent)} ${cmd?.from || ''} and ${fmt(o.aether)} aether.`;
+    case 'work_voted': return o.passed ? "Recorded. The realm's work has passed: every house of the realm may fund it." : 'Recorded. The work needs more states to vote yes.';
+    case 'work_funded': return `Gave ${[o.gold && `${fmt(o.gold)} gold`, o.material && `${fmt(o.material)} material`].filter(Boolean).join(' and ') || 'nothing (already covered)'} to the realm's work${o.done ? '. It is done: the realm makes more of its material.' : '.'}`;
+    case 'wonder_started': return 'Wonder begun. Houses of your state may fund it.';
+    case 'wonder_funded': return `Gave ${[o.gold && `${fmt(o.gold)} gold`, o.material && `${fmt(o.material)} ${cmd?.material || 'material'}`].filter(Boolean).join(' and ') || 'nothing (already covered)'} to the wonder${o.funded ? '. It is fully funded and now being built.' : '.'}`;
+    case 'revived': return `The Halls of the Dead returned ${fmt(o.troops)} troops to your army.`;
     case 'gave_to_vigil': return o.begun ? 'Given. The vigil is complete and now in force.' : 'Given to the vigil.';
     case 'war_declared': return 'War declared.';
     case 'peace_offered': return o.ended ? 'Peace: they had offered too, so the war is over.' : 'Peace offered. If they offer too, the war ends in peace. Offer again to take it back.';

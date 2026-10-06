@@ -10,6 +10,7 @@ import { lastDelta } from './trend.js';
 import { academicsBuild, colloqBuild, colloqUpdate, colloqWire } from './colloq.js';
 import { tabButtons, panelAttrs, wireTabs } from './tabs.js';
 import { waverHTML } from './waver.js';
+import { truthsDetailHTML, truthsDetailUpdate, truthsDetailWire } from './truthsui.js';
 
 
 const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
@@ -36,7 +37,7 @@ export function sciDetail(b, on) {
   if (!s0) { b.innerHTML = '<p class="dim">No science data from the server.</p>'; return { update() {} }; }
   const opts = S.CATS.map((k) => `<optgroup label="${k}">${S.defs().filter((d) => d.category === k).map((d) => `<option value="${esc(d.science)}">${esc(d.name)}</option>`).join('')}</optgroup>`).join('');
   const T = S.SCI_TAB;
-  b.innerHTML = `<div class="acttabs seg2" role="tablist" aria-label="SCI sections" id="d-sci-tabs">${tabButtons(T, 'd-sci')}<span class="dim small">books, ranks and sciences · academics and heirs · the state's shared research</span></div>
+  b.innerHTML = `<div class="acttabs seg2" role="tablist" aria-label="SCI sections" id="d-sci-tabs">${tabButtons(T, 'd-sci')}<span class="dim small">books, ranks and sciences · academics and heirs · the state's shared research · quests and Truths</span></div>
   <div ${panelAttrs(T, 'd-sci', 'science')}><div class="dgrid">
     <section><h3 class="sub">BOOKS AND SCIENTISTS <span class="dim" id="d-sc-rate"></span></h3><div id="d-sc-cats"></div>
       <form id="d-sc-set" class="dform">
@@ -64,7 +65,8 @@ export function sciDetail(b, on) {
     <section class="wide"><h3 class="sub">SCIENCES <span class="dim" id="d-sc-eff"></span></h3><div id="d-sc-list"></div></section>
   </div></div>
   <div ${panelAttrs(T, 'd-sci', 'academics')}><div class="dgrid">${academicsBuild()}</div></div>
-  <div ${panelAttrs(T, 'd-sci', 'colloquium')}><div class="dgrid">${colloqBuild()}</div></div>`;
+  <div ${panelAttrs(T, 'd-sci', 'colloquium')}><div class="dgrid">${colloqBuild()}</div></div>
+  <div ${panelAttrs(T, 'd-sci', 'truths')}>${truthsDetailHTML()}</div>`;
   const $ = (id) => b.querySelector(`#d-sc-${id}`);
   const s = () => S.sci();
   const defOf = () => S.defs().find((d) => d.science === $('sci').value);
@@ -81,6 +83,7 @@ export function sciDetail(b, on) {
     $('curve').innerHTML = curve(d, r.invested, r.invested + n, eff);
   }
   function update() {
+    truthsDetailUpdate(b);
     const wv = b.querySelector('#d-ac-waver');
     if (wv) wv.innerHTML = waverHTML('academic');
     const x = s();
@@ -122,6 +125,7 @@ export function sciDetail(b, on) {
   on(b, 'click', (ev) => { const r = ev.target.closest('tr[data-sci]'); if (r) pick(r); });
   on(b, 'keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches?.('tr[data-sci]')) { ev.preventDefault(); pick(ev.target); } });
   colloqWire(b, on);
+  truthsDetailWire(b, on);
   wireTabs(b.querySelector('#d-sci-tabs'), b, on, T);
   update();
   return { update };

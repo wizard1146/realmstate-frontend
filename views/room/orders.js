@@ -8,6 +8,7 @@ import * as price from '../../core/prices.js';
 import { fmt, esc, addr, names, when, UNIT_ORDER, TRAINABLE, THIEF, SOLDIER } from '../../core/words.js';
 import { detailIntrigue, detailRites } from './intrigue.js';
 import * as ax from './atkextra.js';
+import { buildingChoice, buildingOptions } from './truthsui.js';
 
 const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
 const matText = (mats) => Object.entries(mats).map(([m, q]) => `${fmt(q)} ${m}`).join(', ');
@@ -189,6 +190,8 @@ export function actDetail(body, on, { goto, tab, report }) {
         <span class="field"><input id="d-a-target" placeholder="r:s:seat" required autocomplete="off" pattern="\\s*\\d+\\s*:\\s*\\d+\\s*:\\s*\\d+\\s*"><button type="button" class="btn mini" id="d-a-pick">PICK FROM RANK</button></span>
         <label for="d-a-kind">Kind</label>
         <select id="d-a-kind">${P.attacks.map((k) => `<option value="${esc(k.id)}">${esc(k.name)}</option>`).join('')}</select>
+        <label for="d-a-bld" id="d-a-bldl" title="The building type the land comes from first" hidden>From</label>
+        <select id="d-a-bld" hidden>${buildingOptions()}</select>
         <label for="d-a-gen">General</label>
         <select id="d-a-gen" aria-describedby="d-a-genl"></select>
         <p class="dim small span" id="d-a-genl"></p>
@@ -377,6 +380,7 @@ export function actDetail(body, on, { goto, tab, report }) {
     $('d-a-q').title = qt.title;
     $('d-a-q').classList.toggle('short', probs.length > 0);
     $('d-a-hint').textContent = attackHint($('d-a-kind').value);
+    $('d-a-bld').hidden = $('d-a-bldl').hidden = !buildingChoice($('d-a-kind').value);
     fillPicker($('d-a-gen'));
     $('d-a-genl').textContent = generalLine($('d-a-gen').value);
   }
@@ -407,7 +411,8 @@ export function actDetail(body, on, { goto, tab, report }) {
     units[8] = x.mercs;
     const typed = $('d-a-target').value.trim();
     const t = store.target && typed === addr(store.target) ? store.target : typed;
-    const out = await act.attack({ target: t, kind: $('d-a-kind').value, units, general: $('d-a-gen').value, medics: x.medics, horses: x.horses, chariots: x.chariots, upgradedMercenaries: x.upmercs, doubleStrike: x.double }, { button: ev.submitter });
+    const building = buildingChoice($('d-a-kind').value) ? $('d-a-bld').value || null : null;
+    const out = await act.attack({ target: t, kind: $('d-a-kind').value, units, general: $('d-a-gen').value, medics: x.medics, horses: x.horses, chariots: x.chariots, upgradedMercenaries: x.upmercs, doubleStrike: x.double, building }, { button: ev.submitter });
     if (out) body.querySelectorAll('#d-a-troops input, #d-a-extra input').forEach((inp) => { if (inp.type === 'checkbox') inp.checked = false; else inp.value = '0'; });
     attack();
   });

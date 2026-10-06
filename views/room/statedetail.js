@@ -7,8 +7,9 @@ import { api } from '../../core/api.js';
 import { fmt, esc, addr, empty } from '../../core/words.js';
 import { tabState, tabButtons, panelAttrs, wireTabs } from './tabs.js';
 import { isLeader, leaderId, treasuryNote } from './market.js';
+import { workDetailHTML, wondersDetailHTML, stateTruthsUpdate, stateTruthsWire } from './truthsui.js';
 
-export const STATE_TAB = tabState('realmstate.room.state', ['members', 'leadership', 'vigils', 'war'], { members: 'MEMBERS', leadership: 'LEADERSHIP', vigils: 'VIGILS', war: 'WAR' });
+export const STATE_TAB = tabState('realmstate.room.state', ['members', 'leadership', 'vigils', 'war', 'work', 'wonders'], { members: 'MEMBERS', leadership: 'LEADERSHIP', vigils: 'VIGILS', war: 'WAR', work: 'WORK', wonders: 'WONDERS' });
 const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
 const pct = (bp) => `${(bp / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}%`;
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
@@ -184,7 +185,7 @@ const meter = (f, T) => {
 };
 
 export function stateDetail(b, on) {
-  b.innerHTML = `<div class="acttabs seg2" role="tablist" aria-label="STATE sections" id="d-st-tabs">${tabButtons(STATE_TAB, 'd-st')}<span class="dim small">houses · votes, treasury, tax and grants · vigils · war and relations</span></div>
+  b.innerHTML = `<div class="acttabs seg2" role="tablist" aria-label="STATE sections" id="d-st-tabs">${tabButtons(STATE_TAB, 'd-st')}<span class="dim small">houses · votes, treasury, tax and grants · vigils · war and relations · the realm's work · World Wonders</span></div>
     <div ${panelAttrs(STATE_TAB, 'd-st', 'members')}><p class="small" id="d-st-mline"></p><div id="d-st-members"></div>
       <section id="d-st-aidsec"><h3 class="sub">SEND AID <span class="dim" id="d-st-abal"></span></h3>
         <form id="d-st-aid" class="dform" novalidate>
@@ -197,7 +198,9 @@ export function stateDetail(b, on) {
         </form></section></div>
     <div ${panelAttrs(STATE_TAB, 'd-st', 'leadership')}>${leadershipHTML()}</div>
     <div ${panelAttrs(STATE_TAB, 'd-st', 'vigils')}>${vigilsHTML()}</div>
-    <div ${panelAttrs(STATE_TAB, 'd-st', 'war')}>${warHTML()}</div>`;
+    <div ${panelAttrs(STATE_TAB, 'd-st', 'war')}>${warHTML()}</div>
+    <div ${panelAttrs(STATE_TAB, 'd-st', 'work')}>${workDetailHTML()}</div>
+    <div ${panelAttrs(STATE_TAB, 'd-st', 'wonders')}>${wondersDetailHTML()}</div>`;
   const $ = (id) => b.querySelector(`#d-st-${id}`);
   const tabs = wireTabs($('tabs'), b, on, STATE_TAB);
   const dirty = new Set();
@@ -272,6 +275,7 @@ export function stateDetail(b, on) {
     $('ovwhy').textContent = !L ? leaderWhy() : busy ? 'your state already keeps a vigil' : v ? `replaces the ${v.name} being gathered` : '';
     b.querySelectorAll('[data-open-vigil]').forEach((x) => { x.disabled = !L || !!busy; x.title = !L ? leaderWhy() : busy ? 'already in force' : ''; });
     renderWar();
+    stateTruthsUpdate(b);
   }
 
   /** How much of `what` you hold. */
@@ -411,6 +415,7 @@ export function stateDetail(b, on) {
     if (await act.giveToVigil(a, i, { button: ev.submitter })) { $('ga').value = '0'; $('gi').value = '0'; }
   });
   on($('wf'), 'submit', (ev) => ev.preventDefault());
+  stateTruthsWire(b, on);
   render();
   return {
     update(c) { if (!c || ['state', 'house', 'wars', 'relations', 'age'].some((k) => c.has(k))) render(); },
