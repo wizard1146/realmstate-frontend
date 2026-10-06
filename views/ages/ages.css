@@ -1,7 +1,7 @@
 /* The age bar and the ages window (recap, results, staff). Phone first; wider screens spread out.
    Uses the War Room's tokens (views/room/room.css). */
 
-:root[data-view="room"] {
+:is(:root[data-view="room"], .room-scope) {
   /* ---------- the age bar: under the War Room's bar, over the gate ---------- */
   & .agebar {
     order: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 0;
@@ -141,5 +141,5 @@
   }
 }
 @media (prefers-color-scheme: dark) {
-  :root[data-view="room"] .rc-bar { background: hsl(var(--h) 45% 58%); }
+  :is(:root[data-view="room"], .room-scope) .rc-bar { background: hsl(var(--h) 45% 58%); }
 }

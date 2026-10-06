@@ -36,6 +36,7 @@ const MENU = [
     ['science', 'Science', 'sci', ['sci', 'science'], 'books and sciences'],
     ['academics', 'Academics', 'sci', ['sci', 'academics'], 'your scholars and their attributes'],
     ['colloquium', 'Colloquium', 'sci', ['sci', 'colloquium'], 'your state’s shared research'],
+    ['truths', 'Truths & Quests', 'sci', ['sci', 'truths'], 'your quest, the Truths you know, transmutation'],
   ]],
   ['Military', [
     ['military', 'Military', 'mil', ['mil', 'forces'], 'train troops; troops, draft, medics, upgrades', { top: 'train' }],
@@ -51,6 +52,8 @@ const MENU = [
     ['state', 'State', 'roster', ['state', 'members'], 'the houses of your state'],
     ['leadership', 'Leadership', 'roster', ['state', 'leadership'], 'votes, treasury, tax'],
     ['war', 'War', 'roster', ['state', 'war'], 'wars and relations'],
+    ['work', 'Realm Work', 'roster', ['state', 'work'], 'your realm’s Specialised Materials Production'],
+    ['wonders', 'World Wonders', 'roster', ['state', 'wonders'], 'start, fund and use wonders'],
     ['market', 'Market', 'res', ['res', 'market'], 'buy and sell materials'],
   ]],
   ['The world', [
@@ -253,6 +256,12 @@ export function mount(root) {
 
   const stopCards = watchCards([$('page'), $('pre')], on);
 
+  // The age bar (views/ages) lives above every view; Straightline fills the window, so while it's shown the bar
+  // sits inside its layout, under the header (and goes back where it was when the view changes).
+  const agebar = document.getElementById('agebar');
+  const agebarHome = agebar && [agebar.parentNode, agebar.nextSibling];
+  if (agebar) root.querySelector('.line-top').after(agebar);
+
   const unsub = subscribe((c) => {
     if (c.has('news') && current !== 'news') for (const d of c.get('news')) if (d.added) toast(d.added);
     // Messages from orders ("Built 10 Homes", errors) come as cards too: Straightline has no message line
@@ -280,6 +289,7 @@ export function mount(root) {
       clearLook();
       document.documentElement.classList.remove('line-drawer');
       stopCards();
+      if (agebarHome) agebarHome[0].insertBefore(agebar, agebarHome[1]);
       if (location.hash) history.replaceState(null, '', location.pathname + location.search);
       root.replaceChildren();
     },

@@ -72,6 +72,15 @@
   & .vswitch select { background: var(--l-nav); color: var(--l-nav-ink); border-color: color-mix(in srgb, var(--l-nav-ink) 40%, transparent); }
   & .vswitch kbd { color: var(--l-nav-muted); border-color: color-mix(in srgb, var(--l-nav-ink) 30%, transparent); }
   & .line-res { display: flex; flex-wrap: wrap; gap: 4px 26px; margin: 0; padding: 8px 18px; background: var(--l-page); border-bottom: 1px solid var(--l-line); }
+  /* The age bar (views/ages), moved under the header by line.js: a slim strip in the page's colours. */
+  & .line > .agebar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 16px; padding: 3px 18px; background: var(--l-rule); border-bottom: 1px solid var(--l-line); font-size: .9em; }
+  & .line > .agebar[hidden] { display: none; }
+  & .agebar .ab-k { font-family: var(--l-head-font); font-weight: 700; letter-spacing: .06em; color: var(--l-gold); }
+  & .agebar .ab-k.end { color: var(--l-bad); }
+  & .agebar .ab-note { color: var(--l-muted); flex: 1 1 18ch; }
+  & .agebar .ab-btns { margin-left: auto; display: inline-flex; gap: 6px; }
+  & .agebar .btn { background: transparent; color: var(--l-ink); border: 1px solid var(--l-line); border-radius: 6px; padding: 1px 10px; cursor: pointer; font: inherit; }
+  & .agebar .btn:hover { border-color: var(--l-gold); }
   & .line-res div { display: flex; gap: 6px; align-items: baseline; }
   & .line-res dt { color: var(--l-muted); font-size: .85em; font-variant-caps: all-small-caps; letter-spacing: .06em; font-size: 1em; }
   & .line-res dd { margin: 0; font-weight: 600; font-variant-numeric: lining-nums tabular-nums; }
