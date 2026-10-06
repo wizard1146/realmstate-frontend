@@ -10,6 +10,8 @@ import { isLeader, leaderId, treasuryNote } from './market.js';
 import { workDetailHTML, wondersDetailHTML, stateTruthsUpdate, stateTruthsWire } from './truthsui.js';
 
 export const STATE_TAB = tabState('realmstate.room.state', ['members', 'leadership', 'vigils', 'war', 'work', 'wonders'], { members: 'MEMBERS', leadership: 'LEADERSHIP', vigils: 'VIGILS', war: 'WAR', work: 'WORK', wonders: 'WONDERS' });
+/** The STATE pane's header holds six tabs: these fit them on one row (the detail keeps the full names). */
+export const STATE_SHORT = { members: 'HOUSES', leadership: 'LEAD', vigils: 'VIGIL', war: 'WAR', work: 'WORK', wonders: 'WONDER' };
 const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
 const pct = (bp) => `${(bp / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}%`;
 const cap = (s) => s[0].toUpperCase() + s.slice(1);

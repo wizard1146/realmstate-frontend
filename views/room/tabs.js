@@ -28,8 +28,14 @@ export function tabState(key, list, labels) {
   return st;
 }
 
-/** The tab buttons (role=tab). `p` prefixes ids: panels are `${p}-sec-${t}`. */
-export const tabButtons = (st, p) => st.list.map((t) => `<button type="button" role="tab" data-tab="${t}" id="${p}-tab-${t}" aria-controls="${p}-sec-${t}">${st.labels[t]}</button>`).join('');
+/**
+ * The tab buttons (role=tab). `p` prefixes ids: panels are `${p}-sec-${t}`. `short` (optional) gives
+ * narrower labels for a crowded pane header; the full label stays as the button's title and name.
+ */
+export const tabButtons = (st, p, short = null) => st.list.map((t) => {
+  const s = short?.[t];
+  return `<button type="button" role="tab" data-tab="${t}" id="${p}-tab-${t}" aria-controls="${p}-sec-${t}"${s ? ` title="${st.labels[t]}" aria-label="${st.labels[t]}"` : ''}>${s || st.labels[t]}</button>`;
+}).join('');
 /** A panel's attributes: `<div ${panelAttrs(st, p, t)}>`. */
 export const panelAttrs = (st, p, t) => `id="${p}-sec-${t}" role="tabpanel" aria-labelledby="${p}-tab-${t}" data-tabsec="${t}"${st.get() === t ? '' : ' hidden'}`;
 

@@ -185,6 +185,8 @@
   & .seg { margin-left: auto; display: inline-flex; }
   & .seg button { background: transparent; border: 1px solid color-mix(in srgb, var(--head-ink) 40%, transparent); color: var(--head-ink); font-size: calc(11px * var(--room-scale)); padding: 0 6px; min-height: 20px; cursor: pointer; border-radius: 0; }
   & .seg button[aria-pressed=true] { background: var(--key); color: var(--head); border-color: var(--key); }
+  /* STATE holds six tabs: a little less padding keeps them on one row. */
+  & #r-st-tabs button { padding: 0 4px; }
 
   /* Tables */
   & .tbl { width: 100%; border-collapse: collapse; }

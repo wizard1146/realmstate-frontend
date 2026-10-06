@@ -25,7 +25,7 @@ import { draftHTML, wireDraft } from './draft.js';
 import * as ax from './atkextra.js';
 import * as mk from './milacts.js';
 import * as mkt from './market.js';
-import { STATE_TAB, leadPaneHTML, vigilPaneHTML, warPaneHTML } from './statedetail.js';
+import { STATE_TAB, STATE_SHORT, leadPaneHTML, vigilPaneHTML, warPaneHTML } from './statedetail.js';
 import { workPaneHTML, wondersPaneHTML, buildingChoice, buildingOptions } from './truthsui.js';
 import { noticeHTML, wireReassure } from './waver.js';
 
@@ -175,7 +175,7 @@ const TEMPLATE = (view) => `
 
   <section class="pane" id="r-p-roster" data-pane="roster" aria-labelledby="r-h-roster" tabindex="-1">
     <h2 class="pane-h" id="r-h-roster"><span class="key">6</span>STATE
-      <span class="seg" role="tablist" aria-label="STATE sections" id="r-st-tabs">${tabButtons(STATE_TAB, 'r-st')}</span><button type="button" class="xp" data-expand="roster" title="Open STATE in detail (Shift+Alt+6, or Enter on the pane)" aria-label="Open STATE detail view"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1 4.5V1h3.5M7.5 1H11v3.5M11 7.5V11H7.5M4.5 11H1V7.5"/></svg></button></h2>
+      <span class="seg" role="tablist" aria-label="STATE sections" id="r-st-tabs">${tabButtons(STATE_TAB, 'r-st', STATE_SHORT)}</span><button type="button" class="xp" data-expand="roster" title="Open STATE in detail (Shift+Alt+6, or Enter on the pane)" aria-label="Open STATE detail view"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1 4.5V1h3.5M7.5 1H11v3.5M11 7.5V11H7.5M4.5 11H1V7.5"/></svg></button></h2>
     <div class="pane-b">
       <div ${panelAttrs(STATE_TAB, 'r-st', 'members')}>
         <p class="small" id="r-roster-line"></p>
