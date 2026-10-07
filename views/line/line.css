@@ -319,6 +319,8 @@
   & .lpart .lform { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
   & .lpart .lform .field { display: inline-flex; gap: 4px; }
   & .lpart .lform input[type=number] { width: 9ch; text-align: right; }
+  /* Active: one gold edge (the box's own border, with a faint glow), not a focus ring around the border. */
+  & .lpart .lform :is(input, select):focus { outline: none; border-color: var(--l-gold); box-shadow: 0 0 0 2px color-mix(in srgb, var(--l-gold) 28%, transparent); }
   /* A form's secondary buttons (Max) beside its blue one: a firmer edge and the same small shadow, so they read as the same size. */
   & .lpart .lform .btn:not(.primary) { border-color: color-mix(in srgb, var(--l-muted) 55%, var(--l-page)); box-shadow: 0 1px 2px rgba(0, 0, 0, .14); }
   & .lpart .lfoot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
