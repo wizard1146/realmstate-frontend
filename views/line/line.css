@@ -169,8 +169,8 @@
     border-bottom: 3px double var(--l-line); display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; }
   & .line-page-h h1 { margin: 0; font: 600 1.4rem/1.2 var(--l-head-font); letter-spacing: .02em; }
   & .line-page-h .line-what { margin: 0; color: var(--l-muted); }
-  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"]) .line-page-h { justify-content: center; }
-  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"]) .line-what { display: none; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"]) .line-page-h { justify-content: center; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"]) .line-what { display: none; }
   & .line-main[data-page="throne"] .line-page-h h1 { display: flex; flex-direction: column; align-items: center; text-align: center; }
   & .line-page-h h1 .h-house { font-size: .78em; }
   & .line-page-h h1 .h-of { color: color-mix(in srgb, var(--l-muted) 92%, var(--l-page)); }   /* a shade past muted, still 4.5:1 on every theme */
@@ -320,7 +320,7 @@
   & .lpart .lform .field { display: inline-flex; gap: 4px; }
   & .lpart .lform input[type=number] { width: 9ch; text-align: right; }
   /* Active: one gold edge (the box's own border, with a faint glow), not a focus ring around the border. */
-  & .lpart .lform :is(input, select):focus { outline: none; border-color: var(--l-gold); box-shadow: 0 0 0 2px color-mix(in srgb, var(--l-gold) 28%, transparent); }
+  & .lpart :is(.lform, .lb-tbl) :is(input, select):focus { outline: none; border-color: var(--l-gold); box-shadow: 0 0 0 1px color-mix(in srgb, var(--l-gold) 35%, transparent); }
   /* A form's secondary buttons (Max) beside its blue one: a firmer edge and the same small shadow, so they read as the same size. */
   & .lpart .lform .btn:not(.primary) { border-color: color-mix(in srgb, var(--l-muted) 55%, var(--l-page)); box-shadow: 0 1px 2px rgba(0, 0, 0, .14); }
   & .lpart .lfoot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
@@ -344,14 +344,14 @@
   & .lland table.kv tr.go:focus-visible { outline: 2px solid var(--l-gold); outline-offset: -2px; }
   & .lland table.kv tr.gap > * { border-top: 1px solid var(--l-line); padding-top: 10px; }
   @media (max-width: 900px) { & .lpart.lland { grid-template-columns: minmax(0, 1fr); } }
-  @media (max-width: 760px) { & .lland table.ticks { min-width: 720px; } }
+  @media (max-width: 760px) { & :is(.lland, .lbuild) table.ticks { min-width: 720px; } }
   /* The 24 ticks: narrow columns, a tinted cell where land arrives. */
-  & .lland table.ticks { width: 100%; min-width: 0; table-layout: fixed; font-size: .86em; }
-  & .lland table.ticks th:first-child { width: 8.5em; text-align: left; font-variant-caps: normal; letter-spacing: 0; white-space: nowrap; }
-  & .lland table.ticks thead th { color: var(--l-muted); font-size: .9em; }
-  & .lland table.ticks td, & .lland table.ticks thead th:not(:first-child) { text-align: center; padding: 4px 0; border-left: 1px solid var(--l-rule); }
-  & .lland table.ticks td.on { background: color-mix(in srgb, var(--l-gold) 22%, var(--l-page)); font-weight: 600; }
-  & .lland table.ticks tr.sum > * { border-top: 1px solid var(--l-line); font-weight: 600; }
+  & :is(.lland, .lbuild) table.ticks { width: 100%; min-width: 0; table-layout: fixed; font-size: .86em; }
+  & :is(.lland, .lbuild) table.ticks th:first-child { width: 8.5em; text-align: left; font-variant-caps: normal; letter-spacing: 0; white-space: nowrap; }
+  & :is(.lland, .lbuild) table.ticks thead th { color: var(--l-muted); font-size: .9em; }
+  & :is(.lland, .lbuild) table.ticks td, & :is(.lland, .lbuild) table.ticks thead th:not(:first-child) { text-align: center; padding: 4px 0; border-left: 1px solid var(--l-rule); }
+  & :is(.lland, .lbuild) table.ticks td.on { background: color-mix(in srgb, var(--l-gold) 22%, var(--l-page)); font-weight: 600; }
+  & :is(.lland, .lbuild) table.ticks tr.sum > * { border-top: 1px solid var(--l-line); font-weight: 600; }
   /* Land as ten houses: each a house-shaped mask over a fill, built (--b) then being built (--c) from the left. */
   & .lpart .landbar { display: flex; justify-content: center; gap: 6px; max-width: 520px; margin: 6px 0 12px; opacity: .78; }   /* centred over its table (which is at most 520px) */
   & .lpart .landbar i { width: 30px; aspect-ratio: 1; display: block;
@@ -369,14 +369,74 @@
   & .ltabs [role=tab][aria-selected=true] { color: var(--l-ink); background: var(--l-page); border-color: var(--l-frame); }
   & .lbuild [role=tabpanel][hidden] { display: none; }
   & .lb-tbl { width: 100%; }
-  & .lbuild .lb-tbl th[scope=row] { font-size: inherit; font-variant-caps: normal; letter-spacing: 0; font-weight: 600; color: var(--l-ink); white-space: nowrap; }
+  & .lbuild .lb-tbl th[scope=row] { font-size: inherit; font-variant-caps: normal; letter-spacing: 0; font-weight: 400; color: var(--l-ink); white-space: nowrap; }
   & .lb-tbl td, & .lb-tbl th { vertical-align: top; }
   & .lbuild .lb-tbl td:is([data-each], .cost) { white-space: normal; min-width: 10ch; }
   & .lb-tbl input[type=number], & .lb-tbl .btn { margin-top: -3px; }
-  & .lb-tbl .does { max-width: 30ch; white-space: normal; }
+  & .lb-tbl .does { max-width: 26ch; white-space: normal; }
   & .lb-tbl .does .more { display: block; color: var(--l-muted); }
   & .lb-tbl input[type=number] { width: 8ch; text-align: right; }
-  & .lb-tbl tr.on > * { background: var(--l-self); }
+  /* Throne's faint stripes and hover; a row with a count keeps its own highlight. */
+  & .lbuild .lb-tbl tbody tr.alt > * { background: color-mix(in srgb, var(--l-ink) 1.25%, transparent); }
+  & .lbuild .lb-tbl tbody tr:not(.grp):hover > * { background: color-mix(in srgb, var(--l-gold) 12%, transparent); }
+  /* A group's heading row: its name in the page's small capitals over a double rule, as section headings are. */
+  /* The groups: a small table each, as many columns as fit at 490px or more (two at most), as Throne's tables flow. */
+  & .line-main > .room:has(.lbuild) { max-width: none; width: auto; min-width: 0; }
+  & .lbuild .lb-groups { columns: 490px 2; column-gap: 30px; max-width: 1500px; }
+  & .lbuild .lb-grp { break-inside: avoid; margin-bottom: 20px; padding-top: 10px; }   /* padding, not the heading's margin: a column break drops margins */
+  & .lbuild .lb-grp > h3.sub { margin-top: 0; }
+  & .lbuild .lb-grp > table.lb-tbl { margin-top: 0; width: 100%; min-width: 0; table-layout: fixed; }   /* full width, or the fixed column widths are ignored */
+  /* The same column widths in every group, so they fit a column and line up group to group. */
+  & .lbuild .lb-grp .lb-tbl col.c-name { width: 21%; } & .lbuild .lb-grp .lb-tbl col.c-own { width: 58px; } & .lbuild .lb-grp .lb-tbl col.c-n { width: 76px; }
+  & .lbuild .lb-grp .lb-tbl col.c-max { width: 76px; } & .lbuild .lb-grp .lb-tbl col.c-cost { width: 84px; }
+  & .lbuild .lb-grp .lb-tbl th[scope=row] { white-space: normal; }
+  & .lbuild .lb-grp .lb-tbl .does { max-width: none; }
+  & .lbuild .lb-grp .lb-tbl input[type=number] { width: 100%; }
+  & .lbuild .lb-tbl thead th { font-size: .78em; }
+  & .lb-tbl .does .needs { display: block; color: var(--l-gold); }
+  & .lb-tbl .does .nil { color: var(--l-muted); }
+  & .lb-tbl .does { cursor: help; }
+  /* The order bar: under the tabs, the sentence left and Clear / Build right; sticky below the page heading
+     while the list scrolls, released at the end of the Build panel. */
+  /* The Build | Raze tabs stay in view below the page heading, and the order bar below them. */
+  & .lbuild > .ltabs { position: sticky; top: 36px; z-index: 4; background: var(--l-page); padding-top: 6px; margin-top: -6px; }
+  & .lbuild .lb-bar { position: sticky; top: 77px; z-index: 3; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 14px;
+    margin: 0 0 6px; padding: 8px 0; background: var(--l-page); border-bottom: 1px solid var(--l-rule); }
+  & .lbuild .lb-bar .doing, & .lbuild .lb-bar .done { flex: 1 1 360px; margin: 0; max-width: none; padding: 4px 10px; }
+  & .lbuild .lb-bar { min-height: 47px; }   /* the sentence (one line) fits without the bar growing */
+  & .lbuild .lb-bar .doing[hidden], & .lbuild .lb-bar .done[hidden] { display: none; }
+  & .lbuild .lb-btns { display: flex; gap: 8px; margin-left: auto; }
+  & .lbuild #lb-build > h3.sub { margin-top: 30px; }
+  & .lbuild #lb-raze .what { max-width: none; }   /* one line where the page is wide enough */
+  /* Razing: the whole page washed faintly red, so it's plain you're tearing down, not building. */
+  & .line-main > .room:has(.lbuild[data-tab="raze"]) { background: color-mix(in srgb, var(--l-bad) 6%, var(--l-page)); }
+  & .lbuild[data-tab="raze"] > .ltabs, & .lbuild[data-tab="raze"] .lb-bar { background: color-mix(in srgb, var(--l-bad) 6%, var(--l-page)); }
+  & .line-main:has(.lbuild[data-tab="raze"]) .line-page-h { background: color-mix(in srgb, var(--l-bad) 6%, var(--l-page)); }
+  & .lbuild[data-tab="raze"] .ltabs [role=tab][aria-selected=true] { background: color-mix(in srgb, var(--l-bad) 6%, var(--l-page)); color: var(--l-bad); border-color: color-mix(in srgb, var(--l-bad) 50%, var(--l-frame)); }
+  & .lbuild[data-tab="raze"] .lb-tbl tbody tr.on > * { background: color-mix(in srgb, var(--l-bad) 12%, var(--l-page)); }
+  & .lbuild .rz-tbl tr.none > * { color: var(--l-muted); }
+  /* A building's name links to the wiki: plain until you point at it, then underlined with a faint ↗. */
+  & .lbuild .lb-tbl a.bwiki { color: inherit; text-decoration: none; }
+  & .lbuild .lb-tbl a.bwiki .ext { margin-left: 3px; font-size: .75em; color: var(--l-muted); opacity: 0; }
+  & .lbuild .lb-tbl a.bwiki:is(:hover, :focus-visible) { text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--l-gold) 60%, transparent); text-underline-offset: 3px; }
+  & .lbuild .lb-tbl a.bwiki:is(:hover, :focus-visible) .ext { opacity: .7; }
+  /* A row's own Clear (×), beside Max: only on a row with a count; its space kept, so nothing shifts. */
+  & .lbuild .lb-tbl td.acts { white-space: nowrap; }
+  & .lbuild .lb-tbl td.acts > button { vertical-align: middle; height: 24px; margin-top: 0; }
+  & .lbuild .lb-grp .lb-tbl tbody :is(td, th) { vertical-align: middle; }   /* one centre line per row: name, figures and controls */
+  & .lbuild .lb-tbl input[type=number] { margin-top: 0; vertical-align: middle; }   /* level with Max and × */
+  /* Raze's cost note: one muted line, centred, at the page's foot. */
+  & .lbuild #lb-rz-info { margin: 14px 0 -22px; text-align: center; color: color-mix(in srgb, var(--l-muted) 92%, var(--l-page)); }
+  & .lbuild .lb-tbl .x { margin-left: 4px; padding: 0 6px; border: 0; background: none; color: var(--l-muted); font: inherit; font-size: 1.1em; line-height: 24px; cursor: pointer; border-radius: 3px; }
+  & .lbuild .lb-tbl .x:hover { color: var(--l-bad); }
+  & .lbuild .lb-tbl .x:focus-visible { outline: 2px solid var(--l-gold); }
+  & .lbuild .lb-tbl tr:not(.on) .x { visibility: hidden; }
+  & .lbuild .rz-tbl col.c-name { width: auto; }
+  & .lbuild .lb-bar .confirm { flex: 1 1 360px; margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--l-bad); border-radius: 4px; }
+  & .lbuild .lb-bar .confirm[hidden] { display: none; }
+  & .lbuild .lb-bar .confirm span { font-weight: 600; flex: 1 1 auto; }   /* Being built: set apart from the buildings above */
+  & .lb-tbl .bld { color: var(--l-blue); font-size: .88em; }
+  & .lbuild .lb-tbl tbody tr.on > * { background: var(--l-self); }
   & .lbuild .confirm { margin: 12px 0 0; padding: 10px 12px; border: 1px solid var(--l-bad); border-radius: 4px; max-width: 70ch; }
   & .lbuild .confirm[hidden] { display: none; }
   & .lbuild .confirm p { margin: 0 0 8px; font-weight: 600; }

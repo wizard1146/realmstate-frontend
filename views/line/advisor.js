@@ -45,6 +45,21 @@ function courtName(house, role, then) {
  * Advice text is HTML: numbers via fmt, links to pages by #id.
  */
 const COURT = {
+  build: {
+    role: 'Steward',
+    advice: [
+      (h) => (h.employment_bp != null && h.jobs > 0 && h.employment_bp < 9000 ? `Our buildings want for hands, my liege: only ${(h.employment_bp / 100).toFixed(0)}% of the work is done, and they run at ${(h.efficiency_bp / 100).toFixed(1)}%. More homes would house more workers.` : null),
+      (h) => (h.barren >= Math.max(5, h.land * 0.05) ? `${fmt(h.barren)} acres lie barren and waiting, my liege. Tell the masons what we should raise.` : null),
+      (h) => { const n = Object.values(h.constructing || {}).reduce((a, x) => a + x, 0); return n ? `${fmt(n)} buildings are rising, my liege; the masons ask only for patience.` : null; },
+    ],
+    flavour: [
+      'Stone outlasts the hand that lays it, my liege.',
+      'Every wall we build is a promise to those who shelter behind it.',
+      'What we raise today, our heirs will defend tomorrow.',
+      'Tear down nothing in haste, my liege; but keep nothing that no longer serves.',
+      'The masons sing as they work, my liege. It is a good sign.',
+    ],
+  },
   land: {
     role: 'Steward',
     advice: [

@@ -46,6 +46,23 @@ export function landByTick(n = 24, h = store.house) {
   return out;
 }
 
+/**
+ * Buildings being built, tick by tick (as landByTick): [{ id, ticks: [n], later }] per building, in rules order,
+ * each count in the tick period it finishes in; and ends[k], when period k+1 ends.
+ */
+export function buildByTick(n = 24, h = store.house) {
+  const t = tickMs(), now = Date.now(), next = nextTickAt() || now + t;
+  const rows = new Map();
+  for (const x of h.pending || []) {
+    if (x.kind !== 'build' || !x.count) continue;
+    if (!rows.has(x.what)) rows.set(x.what, { id: x.what, ticks: Array(n).fill(0), later: 0 });
+    const r = rows.get(x.what), k = x.done_at <= next ? 0 : Math.ceil((x.done_at - next) / t);
+    if (k < n) r.ticks[k] += x.count; else r.later += x.count;
+  }
+  const order = (store.rules?.buildings || []).map((b) => b.building);
+  return { rows: [...rows.values()].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)), ends: Array.from({ length: n }, (_, k) => next + k * t) };
+}
+
 // ---------- explore ----------
 /** Why MAX finds no acres to explore. */
 export const exploreWhy = () => (!price.have() ? '' : price.explorable() === 0 ? 'no explorable acres left: more come each tick (or ask a statemate for aid)' : store.house.units[SOLDIER] < price.exploreSoldiers(1) ? `no soldiers to settle land (${fmt(price.exploreSoldiers(1))} per acre, ${fmt(store.house.units[SOLDIER])} at home): draft more` : store.house.gold < price.exploreCost(1) ? 'not enough gold for one acre' : 'nothing fits');

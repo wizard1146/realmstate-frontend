@@ -6,15 +6,26 @@ import { store } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import * as price from '../../core/prices.js';
 import { fmt, esc, when } from '../../core/words.js';
-import { matText, buildTotals, buildRowProblem, buildMaxRow, razeEach, razeable, razeMax, razeProblem } from '../../core/land.js';
+import { matText, buildTotals, buildRowProblem, buildMaxRow, razeEach, razeable, razeMax, razeProblem, buildByTick } from '../../core/land.js';
 import { does } from '../../core/does.js';
-import { underwayHTML, tickUnderway } from './underway.js';
+import { mountAdvisor } from './advisor.js';
+import { WIKI } from '../../core/wiki.js';
 
 const n0 = (v) => Math.max(0, Math.floor(Number(v) || 0));
 const TABS = [['build', 'Build'], ['raze', 'Raze']];
 const KEY = 'realmstate.line.build';
 const bname = (id) => store.rules.buildings.find((b) => b.building === id)?.name || id;
 /** "10 Farms, 5 Homes and 2 Towers" */
+/** The buildings by purpose, in reading order; any the age has that aren't listed go under Other. */
+const GROUPS = [
+  ['Economy', ['banks', 'farms', 'homes', 'mills', 'trading_houses']],
+  ['Learning', ['libraries', 'universities']],
+  ['Military', ['armouries', 'barracks', 'forts', 'castles', 'hospitals', 'stables', 'training_grounds']],
+  ['Shadows and magic', ['thieves_dens', 'watch_towers', 'shrines', 'watchstones']],
+  ['Great works', ['ancestral_hall', 'dragon_walls', 'lesser_dragon_walls']],
+];
+/** A building's name, linking to its entry on the wiki's Buildings page (new tab). */
+const wikiName = (d) => `<a class="bwiki" href="${WIKI}buildings.html#${encodeURIComponent(d.building)}" target="_blank" rel="noopener" title="${esc(d.name)} on the wiki (new tab)">${esc(d.name)}<span class="ext" aria-hidden="true">&#8599;</span><span class="vh"> (opens the wiki in a new tab)</span></a>`;
 const listText = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}`);
 
 export function mountBuild(host, on) {
@@ -26,38 +37,35 @@ export function mountBuild(host, on) {
       `<button type="button" role="tab" id="lb-tab-${t}" aria-controls="lb-${t}" data-tab="${t}">${label}</button>`).join('')}</div>
 
     <div role="tabpanel" id="lb-build" aria-labelledby="lb-tab-build" data-panel="build">
-      <p class="what">Building turns barren acres into buildings. You pay the gold and materials now; each building
-        starts working once it's finished. Fill in a count on as many rows as you like, then Build sends them all.
-        A row's <b>+1% land</b> line is what one more percent of your land in that building would add.</p>
-      <form id="lb-form" novalidate>
-        <div class="scrollx"><table class="tbl lb-tbl"><thead><tr><th>Building</th><th>What it does</th><th class="num">Owned</th><th class="num">Being built</th>
-          <th class="num">Price each</th><th class="num">Count</th><th></th><th class="num">Cost</th></tr></thead><tbody id="lb-rows"></tbody></table></div>
-        <p class="doing" id="lb-doing" aria-live="polite"></p>
+      <!-- The order: what it will do, and Clear / Build, under the tabs; it stays in view (sticky) while you scroll the list. -->
+      <div class="lb-bar">
+        <p class="doing" id="lb-doing" aria-live="polite" hidden></p>
         <p class="done" id="lb-done" aria-live="polite" hidden></p>
-        <div class="lfoot"><button type="button" class="btn" id="lb-clear">Clear</button><button class="btn primary" id="lb-go">Build</button></div>
+        <span class="lb-btns"><button type="button" class="btn" id="lb-clear">Clear</button><button type="submit" form="lb-form" class="btn primary" id="lb-go">Build</button></span>
+      </div>
+      <form id="lb-form" novalidate>
+        <div class="lb-groups" id="lb-rows"></div>
       </form>
-      <h3 class="sub">Being built</h3><div id="lb-uw"></div>
+      <h3 class="sub">Being built <span class="dim">the next 24 ticks; +1 finishes before the next tick</span></h3><div id="lb-uw"></div>
     </div>
 
     <div role="tabpanel" id="lb-raze" aria-labelledby="lb-tab-raze" data-panel="raze">
-      <p class="what">Razing tears finished buildings down. The land turns barren at once, so you can build something
-        else there. It costs gold for each building, and the buildings are gone for good: nothing is refunded.
-        Buildings still under construction can't be razed.</p>
-      <form id="lb-rz" class="lform" novalidate>
-        <label for="lb-rz-b">Building</label><select id="lb-rz-b"></select>
-        <label for="lb-rz-n">Count</label>
-        <span class="field"><input id="lb-rz-n" type="number" min="1" step="1" inputmode="numeric" value="1"><button type="button" class="btn mini" id="lb-rz-max" aria-label="Most of this building you can raze">MAX</button></span>
-        <button class="btn danger" id="lb-rz-go">Raze…</button>
-      </form>
-      <p class="doing" id="lb-rz-doing" aria-live="polite"></p>
-      <div class="confirm" id="lb-rz-confirm" hidden role="group" aria-labelledby="lb-rz-ask">
-        <p id="lb-rz-ask"></p>
-        <button type="button" class="btn danger" id="lb-rz-yes">Yes, raze them</button> <button type="button" class="btn" id="lb-rz-no">Cancel</button>
+      <!-- The raze order: what it will do, then a confirm step before anything is torn down. -->
+      <div class="lb-bar rz">
+        <p class="doing" id="lb-rz-doing" aria-live="polite" hidden></p>
+        <div class="confirm" id="lb-rz-confirm" hidden role="group" aria-labelledby="lb-rz-ask">
+          <span id="lb-rz-ask"></span>
+          <button type="button" class="btn danger" id="lb-rz-yes">Yes, raze them</button> <button type="button" class="btn" id="lb-rz-no">Cancel</button>
+        </div>
+        <span class="lb-btns"><button type="button" class="btn" id="lb-rz-clear">Clear</button><button type="button" class="btn danger" id="lb-rz-go">Raze…</button></span>
       </div>
+      <p class="what">Razing tears buildings down; you can then build something new in its stead. Buildings under construction cannot be razed.</p>
+      <div class="lb-groups" id="lb-rz-rows"></div>
       <p class="dim small" id="lb-rz-info"></p>
     </div>
   </div>`;
   const $ = (id) => host.querySelector(`#lb-${id}`);
+  const advisor = mountAdvisor(host.querySelector('.lbuild'), 'build');
   const tbody = $('rows');
 
   // ---------- tabs (the ARIA tabs pattern: ←/→, Home, End) ----------
@@ -65,8 +73,12 @@ export function mountBuild(host, on) {
     tab = t;
     try { localStorage.setItem(KEY, t); } catch { /* storage off */ }
     host.querySelectorAll('[role=tab]').forEach((b) => { const on2 = b.dataset.tab === t; b.setAttribute('aria-selected', String(on2)); b.tabIndex = on2 ? 0 : -1; });
+    // Switching tabs keeps your place on the page (no jump back to the top).
+    const main = host.closest('.line-main'), y = main?.scrollTop;
     host.querySelectorAll('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== t; });
-    if (focus) $(`tab-${t}`).focus();
+    host.querySelector('.lbuild').dataset.tab = t;   // line.css tints the page red while razing
+    if (main && y != null) main.scrollTop = y;
+    if (focus) $(`tab-${t}`).focus({ preventScroll: true });
   }
   const bar = host.querySelector('[role=tablist]');
   on(bar, 'click', (ev) => { const b = ev.target.closest('[data-tab]'); if (b) showTab(b.dataset.tab); });
@@ -84,20 +96,34 @@ export function mountBuild(host, on) {
 
   function lead() {
     const h = store.house;
+    // The price most buildings share, said once; rows show only what a building needs beyond it.
+    const golds = Object.values(h.prices?.build?.buildings || {}).map((b) => b.gold);
+    const base = golds.length ? Math.min(...golds) : null;
     $('lead').innerHTML = `You have <b>${fmt(h.barren)}</b> barren acre${h.barren === 1 ? '' : 's'} to build on, of ${fmt(h.land)}.`
+      + (base != null ? ` Each building costs <b>${fmt(base)} gold</b>; a few also need additional materials.` : '')
       + (h.barren ? '' : ' Explore for more on the <a href="#land">Land</a> page, or raze buildings you don\'t need.');
   }
   /** The rows, once (the buildings come from /rules); fillRows() keeps their figures current without touching the inputs. */
+  /** The age's buildings in their groups: [[group, [building]]], Other last for any not listed. */
+  function groupsOf() {
+    const all = store.rules.buildings, listed = GROUPS.flatMap(([, ids]) => ids);
+    return [...GROUPS.map(([g, ids]) => [g, ids.map((id) => all.find((d) => d.building === id)).filter(Boolean)]),
+      ['Other', all.filter((d) => !listed.includes(d.building))]].filter(([, ds]) => ds.length);
+  }
   function makeRows() {
-    tbody.innerHTML = store.rules.buildings.map((d) => {
+    // Grouped by purpose: a small table each, flowing into two columns where there's room (line.css).
+    const groups = groupsOf();
+    tbody.innerHTML = groups.map(([g, ds]) => `<section class="lb-grp"><h3 class="sub">${esc(g)}</h3><table class="tbl lb-tbl">
+      <colgroup><col class="c-name"><col class="c-does"><col class="c-own"><col class="c-n"><col class="c-max"><col class="c-cost"></colgroup>
+      <thead><tr><th>Building</th><th>What it does</th><th class="num">Owned</th><th class="num">Count</th><th></th><th class="num">Cost</th></tr></thead><tbody>` + ds.map((d, k) => {
       const id = esc(d.building);
-      return `<tr data-row="${id}"><th scope="row">${esc(d.name)}<span class="dim small" data-cap></span></th>
+      return `<tr data-row="${id}"${k % 2 ? ' class="alt"' : ''}><th scope="row">${wikiName(d)}<span class="dim small" data-cap></span></th>
         <td class="does small" title="${esc(d.description)}" data-does></td>
-        <td class="num" data-own></td><td class="num" data-bld></td><td class="num" data-each></td>
+        <td class="num" data-own></td>
         <td class="num"><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-b="${id}" aria-label="${esc(d.name)} to build"></td>
-        <td><button type="button" class="btn mini" data-max="${id}" aria-label="Most ${esc(d.name)} you can build with what the other rows leave">MAX</button></td>
+        <td class="acts"><button type="button" class="btn mini" data-max="${id}" aria-label="Most ${esc(d.name)} you can build with what the other rows leave">MAX</button><button type="button" class="x" data-x="${id}" aria-label="Clear ${esc(d.name)}" title="Clear this row">×</button></td>
         <td class="num cost" data-cost="${id}"></td></tr>`;
-    }).join('');
+    }).join('') + '</tbody></table></section>').join('');
   }
   function fillRows() {
     const h = store.house, exact = price.have();
@@ -106,10 +132,16 @@ export function mountBuild(host, on) {
       if (!tr) continue;
       const p = price.buildingPrice(id), x = does(id, h), k = h.constructing[id] || 0;
       tr.querySelector('[data-cap]').textContent = p?.max_count ? ` (up to ${fmt(p.max_count)})` : '';
-      tr.querySelector('[data-does]').innerHTML = x ? `${esc(x.now.map((y) => y.short).join(' · ') || 'nothing yet')}<span class="more">+1% land: ${esc(x.more.map((y) => y.short).join(' · ') || 'no change')}</span>` : esc(d.description);
-      tr.querySelector('[data-own]').textContent = fmt(h.buildings[id] || 0);
-      tr.querySelector('[data-bld]').innerHTML = k ? fmt(k) : '<span class="dim">·</span>';
-      tr.querySelector('[data-each]').textContent = p ? `${fmt(p.gold)} gold${Object.keys(p.materials).length ? ` + ${matText(p.materials)}` : ''}` : `≈${fmt(act.estimate.build(id, 1))} gold`;
+      // What it needs beyond the shared price (said once above): extra gold, and materials.
+      const golds = Object.values(h.prices?.build?.buildings || {}).map((b) => b.gold), base = golds.length ? Math.min(...golds) : 0;
+      const needs = p ? [p.gold > base ? `+${fmt(p.gold - base)} gold` : '', matText(p.materials)].filter(Boolean).join(', ') : `≈${fmt(act.estimate.build(id, 1))} gold each`;
+      // What it does now; nothing yet is a muted dash. The +1% land line is in the hover, with the description.
+      const now = x ? x.now.map((y) => y.short).join(' · ') : '';
+      const cell = tr.querySelector('[data-does]');
+      cell.innerHTML = (x ? (now ? esc(now) : '<span class="nil" aria-label="nothing yet">–</span>') : esc(d.description)) + (needs ? `<span class="needs">needs ${esc(needs)}</span>` : '');
+      cell.title = `${x ? `+1% land: ${x.more.map((y) => y.short).join(' · ') || 'no change'}\n\n` : ''}${d.description}`;
+      // Owned, and (+n) while n more are being built.
+      tr.querySelector('[data-own]').innerHTML = `${fmt(h.buildings[id] || 0)}${k ? ` <span class="bld" title="${fmt(k)} being built">+${fmt(k)}</span>` : ''}`;
       tr.querySelector('[data-max]').disabled = !exact;
     }
     totals();
@@ -130,7 +162,8 @@ export function mountBuild(host, on) {
     }
     const doing = $('doing');
     $('go').disabled = !rows.length;
-    if (!rows.length) { doing.textContent = 'Fill in a count on any row to see what the order will do.'; doing.classList.remove('short'); return; }
+    doing.hidden = !rows.length;   // nothing entered: no sentence, just the buttons
+    if (!rows.length) { doing.textContent = ''; doing.classList.remove('short'); return; }
     const what = listText(rows.map((r) => `${fmt(r.n)} ${bname(r.id)}`));
     if (!exact) { doing.textContent = `You will build ${what}: about ≈${fmt(rows.reduce((a, r) => a + act.estimate.build(r.id, r.n), 0))} gold before your modifiers.`; doing.classList.remove('short'); return; }
     const t = buildTotals(rows, h);
@@ -144,6 +177,8 @@ export function mountBuild(host, on) {
   }
   on(tbody, 'input', () => { $('done').hidden = true; totals(); });
   on(tbody, 'click', (ev) => {
+    const x = ev.target.closest('[data-x]');
+    if (x) { const i = tbody.querySelector(`input[data-b="${CSS.escape(x.dataset.x)}"]`); i.value = ''; $('done').hidden = true; totals(); i.focus(); return; }
     const b = ev.target.closest('[data-max]');
     if (!b) return;
     const id = b.dataset.max, inp = tbody.querySelector(`input[data-b="${CSS.escape(id)}"]`);
@@ -171,54 +206,104 @@ export function mountBuild(host, on) {
     if (done.length) $('done').textContent = `Ordered: ${listText(done)}.`;
   });
 
-  // ---------- raze ----------
-  function razeList() {
-    const h = store.house, list = razeable(h), sel = $('rz-b'), v = sel.value;
-    const k = list.map((b) => `${b.building}:${h.buildings[b.building]}`).join();
-    if (sel.dataset.k === k) return;
-    sel.innerHTML = list.length ? list.map((b) => `<option value="${esc(b.building)}">${esc(b.name)} (${fmt(h.buildings[b.building])} owned)</option>`).join('') : '<option value="">nothing built yet</option>';
-    sel.dataset.k = k;
-    if (list.some((b) => b.building === v)) sel.value = v;
+  // ---------- raze: the same groups, smaller (no bonuses): owned, a count to raze, Max, and the gold it costs ----------
+  const rz = $('rz-rows');
+  function makeRazeRows() {
+    rz.innerHTML = groupsOf().map(([g, ds]) => `<section class="lb-grp"><h3 class="sub">${esc(g)}</h3><table class="tbl lb-tbl rz-tbl">
+      <colgroup><col class="c-name"><col class="c-own"><col class="c-n"><col class="c-max"><col class="c-cost"></colgroup>
+      <thead><tr><th>Building</th><th class="num">Owned</th><th class="num">Raze</th><th></th><th class="num">Cost</th></tr></thead><tbody>`
+      + ds.map((d, k) => `<tr data-rz="${esc(d.building)}"${k % 2 ? ' class="alt"' : ''}><th scope="row">${wikiName(d)}</th><td class="num" data-own></td>
+        <td class="num"><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-r="${esc(d.building)}" aria-label="${esc(d.name)} to raze"></td>
+        <td class="acts"><button type="button" class="btn mini" data-rzmax="${esc(d.building)}" aria-label="All the ${esc(d.name)} you can raze with the gold the other rows leave">MAX</button><button type="button" class="x" data-x="${esc(d.building)}" aria-label="Clear ${esc(d.name)}" title="Clear this row">×</button></td>
+        <td class="num cost" data-rzcost="${esc(d.building)}"></td></tr>`).join('') + '</tbody></table></section>').join('');
   }
+  const rzInputs = () => [...rz.querySelectorAll('input[data-r]')];
+  const rzOrder = () => rzInputs().map((i) => ({ id: i.dataset.r, n: n0(i.value) })).filter((r) => r.n);
+  /** Owned per row (a row with none can't be razed), each row's cost, then the whole order as a sentence. */
   function raze() {
-    const h = store.house, P = store.rules.params, id = $('rz-b').value, n = n0($('rz-n').value);
-    const each = razeEach(h), have = h.buildings[id] || 0, why = id && n ? razeProblem(id, n, h) : '';
-    const doing = $('rz-doing');
-    $('rz-go').disabled = !id || !n || !!why;
-    $('rz-max').disabled = !id;
-    if (!id) doing.textContent = 'You have no finished buildings to raze.';
-    else if (!n) doing.textContent = 'Enter how many to raze.';
-    else doing.textContent = `You will raze ${fmt(n)} ${bname(id)} for ${fmt(n * each)} gold (${fmt(each)} each). ${fmt(n)} acre${n === 1 ? '' : 's'} turn barren at once; you'll have ${fmt(Math.max(0, have - n))} ${bname(id)} left.`
-      + (why ? ` Can't: ${why}.` : '');
+    const h = store.house, P = store.rules.params, each = razeEach(h);
+    for (const i of rzInputs()) {
+      const id = i.dataset.r, own = h.buildings[id] || 0, n = n0(i.value), tr = i.closest('tr');
+      tr.querySelector('[data-own]').textContent = fmt(own);
+      i.disabled = !own; tr.querySelector('[data-rzmax]').disabled = !own; tr.classList.toggle('none', !own);
+      if (!own && i.value) i.value = '';
+      const cell = rz.querySelector(`[data-rzcost="${CSS.escape(id)}"]`);
+      cell.textContent = n ? `${fmt(n * each)} gold` : '';
+      cell.classList.toggle('short', n > own);
+      tr.classList.toggle('on', n > 0);
+    }
+    const order = rzOrder(), doing = $('rz-doing');
+    const acres = order.reduce((a, r) => a + r.n, 0), gold = acres * each;
+    const over = order.find((r) => r.n > (h.buildings[r.id] || 0));
+    const why = over ? `you have ${fmt(h.buildings[over.id] || 0)} ${bname(over.id)}` : gold > h.gold ? `that needs ${fmt(gold)} gold; you have ${fmt(h.gold)}` : '';
+    doing.hidden = !order.length;
+    doing.textContent = order.length ? `You will raze ${listText(order.map((r) => `${fmt(r.n)} ${bname(r.id)}`))} for ${fmt(gold)} gold (${fmt(each)} each). ${fmt(acres)} acre${acres === 1 ? '' : 's'} turn barren at once.${why ? ` Can't: ${why}.` : ''}` : '';
     doing.classList.toggle('short', !!why);
-    $('rz-info').textContent = `Razing costs ${fmt(each)} gold a building now: ${fmt(P.raze_cost_base)} plus ${P.raze_cost_per_land_milli / 1000} for each of your ${fmt(h.land)} acres.`;
+    $('rz-go').disabled = !order.length || !!why;
+    $('rz-info').textContent = `Razing costs ${fmt(each)} gold a building: ${fmt(P.raze_cost_base)} plus ${P.raze_cost_per_land_milli / 1000} for each of your ${fmt(h.land)} acres.`;
   }
   const ask = (open) => {
     $('rz-confirm').hidden = !open;
-    if (open) { $('rz-ask').textContent = `Raze ${fmt(n0($('rz-n').value))} ${bname($('rz-b').value)} for ${fmt(n0($('rz-n').value) * razeEach())} gold? They're gone for good.`; $('rz-yes').focus(); }
+    $('rz-doing').classList.toggle('vh', open);
+    if (open) {
+      const order = rzOrder(), n = order.reduce((a, r) => a + r.n, 0);
+      $('rz-ask').textContent = `Raze ${listText(order.map((r) => `${fmt(r.n)} ${bname(r.id)}`))} for ${fmt(n * razeEach())} gold? They're gone for good.`;
+      $('rz-yes').focus();
+    }
   };
-  on($('rz'), 'input', () => { ask(false); raze(); });
-  on($('rz-max'), 'click', () => { $('rz-n').value = String(razeMax($('rz-b').value)); ask(false); raze(); $('rz-n').focus(); });
-  on($('rz'), 'submit', (ev) => { ev.preventDefault(); if (!$('rz-go').disabled) ask(true); });
+  on(rz, 'input', () => { ask(false); raze(); });
+  on(rz, 'click', (ev) => {
+    const x = ev.target.closest('[data-x]');
+    if (x) { const i = rz.querySelector(`input[data-r="${CSS.escape(x.dataset.x)}"]`); i.value = ''; ask(false); raze(); i.focus(); return; }
+    const b = ev.target.closest('[data-rzmax]');
+    if (!b) return;
+    // All you own of it, as far as the gold the other rows leave will go.
+    const id = b.dataset.rzmax, h = store.house, each = Math.max(1, razeEach(h));
+    const others = rzOrder().filter((r) => r.id !== id).reduce((a, r) => a + r.n, 0);
+    const n = Math.max(0, Math.min(h.buildings[id] || 0, Math.floor(h.gold / each) - others));
+    const inp = rz.querySelector(`input[data-r="${CSS.escape(id)}"]`);
+    inp.value = n ? String(n) : '';
+    ask(false); raze(); inp.focus();
+  });
+  on($('rz-clear'), 'click', () => { rzInputs().forEach((i) => { i.value = ''; }); ask(false); raze(); });
+  on($('rz-go'), 'click', () => { if (!$('rz-go').disabled) ask(true); });
   on($('rz-no'), 'click', () => { ask(false); $('rz-go').focus(); });
   on($('rz-confirm'), 'keydown', (ev) => { if (ev.key === 'Escape') { ev.stopPropagation(); ask(false); $('rz-go').focus(); } });
   on($('rz-yes'), 'click', async () => {
-    const id = $('rz-b').value, n = n0($('rz-n').value);
+    const order = rzOrder();
     ask(false);
-    await act.raze(id, n, { button: $('rz-go') });
+    for (const r of order) {
+      if (await act.raze(r.id, r.n, { button: $('rz-go') })) { const i = rz.querySelector(`input[data-r="${CSS.escape(r.id)}"]`); if (i) i.value = ''; }
+    }
+    raze();
     $('rz-go').focus();
   });
 
+  /** Being built: a row per building, a column per tick (+1 to +24, then later), each count where it finishes. */
+  let shownTicks = '';
+  function timeline() {
+    const b = buildByTick(24), key = JSON.stringify([b.rows, store.tick]);
+    if (key === shownTicks) return;
+    shownTicks = key;
+    const late = b.rows.some((r) => r.later);
+    const head = b.ends.map((t, k) => `<th scope="col" class="num" title="Tick ${fmt(store.tick + k + 1)}, ${esc(when(t))}">+${k + 1}</th>`).join('') + (late ? '<th scope="col" class="num">later</th>' : '');
+    const cells = (r) => r.ticks.map((v) => `<td class="num${v ? ' on' : ''}">${v ? fmt(v) : ''}</td>`).join('') + (late ? `<td class="num${r.later ? ' on' : ''}">${r.later ? fmt(r.later) : ''}</td>` : '');
+    // Nothing under way: one empty row, so the grid keeps its shape.
+    const rows = b.rows.length ? b.rows.map((r) => `<tr><th scope="row">${esc(bname(r.id))}</th>${cells(r)}</tr>`).join('')
+      : `<tr><th scope="row"><span class="vh">Nothing being built</span></th>${cells({ ticks: Array(24).fill(0), later: 0 })}</tr>`;
+    $('uw').innerHTML = `<div class="scrollx"><table class="tbl ticks nocards"><thead><tr><th scope="col">Ticks from now</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
   function draw() {
-    lead(); fillRows(); razeList(); raze();
-    $('uw').innerHTML = underwayHTML(['build'], 'Nothing being built.');
+    lead(); fillRows(); raze();
+    timeline();
   }
   showTab(tab);
   makeRows();
+  makeRazeRows();
   draw();
   return {
-    update(c) { if (c?.has('rules')) makeRows(); if (!c || c.has('house') || c.has('rules')) draw(); },
-    tick() { tickUnderway(host); },
+    update(c) { if (c?.has('rules')) { makeRows(); makeRazeRows(); } if (!c || c.has('house') || c.has('rules')) { draw(); advisor.update(); } },
+    tick() { timeline(); },
     destroy() { host.replaceChildren(); },
   };
 }

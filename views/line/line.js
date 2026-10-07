@@ -38,7 +38,7 @@ const MENU = [
     ['throne', 'Throne', null, null, 'your house at a glance', { part: 'throne' }],
     ['resources', 'Resources', null, null, 'what you hold, and how it moved each tick', { part: 'resources' }],
     ['land', 'Land & Exploration', null, null, 'what land you hold, and explore for more', { part: 'land' }],
-    ['build', 'Build', null, null, 'put up buildings on barren land, or raze them', { part: 'build' }],
+    ['build', 'Build & Raze', null, null, 'put up buildings on barren land, or raze them', { part: 'build' }],
   ]],
   ['Learning', [
     ['science', 'Science', 'sci', ['sci', 'science'], 'books and sciences'],
