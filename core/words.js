@@ -242,6 +242,9 @@ export function describe(o, cmd) {
       uncovered: `Uncovered: ${o.truth}. Your state may use it now; every house hears in a few ticks.`,
     }[o.result] || 'Answered.';
     case 'subscriber_set': return 'Subscriber flag set.';
+    case 'released': return o.unit === SOLDIER
+      ? `Released ${plural(o.count, 'soldier', 'soldiers')} back to the fields as peasants. Draft rate now ${o.draft_bp / 100}% (lowered if it had to be, so they aren't drafted back).`
+      : `Released ${fmt(o.count)} ${uname(o.unit)} back into soldiers.`;
     case 'transmuted': return `Transmuted ${fmt(cmd?.amount)} ${cmd?.to || ''} from ${fmt(o.spent)} ${cmd?.from || ''} and ${fmt(o.aether)} aether.`;
     case 'work_voted': return o.passed ? "Recorded. The realm's work has passed: every house of the realm may fund it." : 'Recorded. The work needs more states to vote yes.';
     case 'work_funded': return `Gave ${[o.gold && `${fmt(o.gold)} gold`, o.material && `${fmt(o.material)} material`].filter(Boolean).join(' and ') || 'nothing (already covered)'} to the realm's work${o.done ? '. It is done: the realm makes more of its material.' : '.'}`;

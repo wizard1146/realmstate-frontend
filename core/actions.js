@@ -57,6 +57,8 @@ export const train = (unit, count, opts = {}) => {
   if (direct) cmd.direct = true;
   return run(cmd, { estimate: estimate.train(unit, count, direct), ...rest });
 };
+/** Release troops at home: soldiers (unit 0) back to peasants; any other unit back into soldiers. */
+export const release = (unit, count, opts = {}) => run({ type: 'release', house: me(), unit: Number(unit), count: Number(count) }, opts);
 /** The share of your population to keep under arms, in basis points (soldiers are drafted toward it each tick). */
 export const setDraft = (rateBp, opts = {}) => run({ type: 'set_draft', house: me(), rate_bp: Math.round(Number(rateBp)) }, opts);
 /**
