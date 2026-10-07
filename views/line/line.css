@@ -194,10 +194,17 @@
   & .line-main > .room:has(.throne) { max-width: none; width: auto; min-width: 0; }
   /* A faint throne behind the page, as the War Room's panes have their glyphs: a mask over the ink colour, so it
      suits every theme. About 18% in from the right and 11% up from the bottom. Configuration turns it off. */
-  & .line-main > .room:has(.throne.glyph) { isolation: isolate; }
-  & .line-main > .room:has(.throne.glyph)::after { content: ""; position: absolute; z-index: -1; pointer-events: none;
+  & .line-main > .room:has(:is(.throne, .lland, .lbuild).glyph) { isolation: isolate; }
+  & .line-main > .room:has(:is(.throne, .lland, .lbuild).glyph)::after { content: ""; position: absolute; z-index: -1; pointer-events: none;
     right: 18%; bottom: 11%; width: clamp(160px, 24%, 340px); aspect-ratio: 1; background: var(--l-ink); opacity: .045;
     -webkit-mask: url("assets/throne.png") no-repeat center / contain; mask: url("assets/throne.png") no-repeat center / contain; }
+  /* Resources: the War Room's wheat in the same place (same setting). */
+  & .line-main > .room:has(.throne.res2.glyph)::after { width: clamp(120px, 17%, 240px); -webkit-mask-image: url("assets/wheat.svg"); mask-image: url("assets/wheat.svg"); }
+  /* Land & Exploration: a compass rose (same setting). */
+  /* Build & Raze: wood planks (same setting). */
+  & .line-main > .room:has(.lbuild.glyph)::after { width: clamp(120px, 17%, 240px); -webkit-mask-image: url("assets/planks.png"); mask-image: url("assets/planks.png"); }
+  & .line-main > .room:has(.lbuild.glyph[data-tab="raze"])::after { -webkit-mask-image: url("assets/sledgehammer.png"); mask-image: url("assets/sledgehammer.png"); }   /* a sledgehammer while razing */
+  & .line-main > .room:has(.lland.glyph)::after { width: clamp(120px, 17%, 240px); -webkit-mask-image: url("assets/compass.png"); mask-image: url("assets/compass.png"); }
   & .throne { container-type: inline-size; }
   & .throne .tgrid { columns: 430px 3; column-gap: 34px; max-width: 1500px; margin-inline: auto; }   /* as many 430px+ columns as fit, up to 3: the People table needs that much */
   & .throne .tcard { break-inside: avoid; margin-bottom: 22px; }

@@ -4,6 +4,7 @@
 import { store } from '../../core/store.js';
 import { fmt, esc } from '../../core/words.js';
 import { WIKI } from '../../core/wiki.js';
+import { throneGlyph } from './throne.js';
 import * as trend from '../room/trend.js';
 import { mountGraph } from '../room/graph.js';
 
@@ -25,7 +26,7 @@ function groups(h) {
 
 export function mountResources(host, on) {
   // Throne's layout (line.css): the page's full width, tables flowing into up to three columns, each kept whole.
-  host.innerHTML = `<div class="throne res2"><div class="tgrid"></div><p class="dim small note" id="l-res-note"></p></div>`;
+  host.innerHTML = `<div class="throne res2${throneGlyph() ? ' glyph' : ''}"><div class="tgrid"></div><p class="dim small note" id="l-res-note"></p></div>`;
   const graph = mountGraph(host);
   const grid = host.querySelector('.tgrid');
 

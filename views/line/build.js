@@ -10,6 +10,7 @@ import { matText, buildTotals, buildRowProblem, buildMaxRow, razeEach, razeable,
 import { does } from '../../core/does.js';
 import { mountAdvisor } from './advisor.js';
 import { WIKI } from '../../core/wiki.js';
+import { throneGlyph } from './throne.js';
 
 const n0 = (v) => Math.max(0, Math.floor(Number(v) || 0));
 const TABS = [['build', 'Build'], ['raze', 'Raze']];
@@ -31,7 +32,7 @@ const listText = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(
 export function mountBuild(host, on) {
   let tab = 'build';
   try { if (localStorage.getItem(KEY) === 'raze') tab = 'raze'; } catch { /* storage off */ }
-  host.innerHTML = `<div class="lpart lbuild">
+  host.innerHTML = `<div class="lpart lbuild${throneGlyph() ? ' glyph' : ''}">
     <p class="lead" id="lb-lead"></p>
     <div class="ltabs" role="tablist" aria-label="Build or raze">${TABS.map(([t, label]) =>
       `<button type="button" role="tab" id="lb-tab-${t}" aria-controls="lb-${t}" data-tab="${t}">${label}</button>`).join('')}</div>

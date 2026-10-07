@@ -29,7 +29,8 @@ export function mountConfig(host, on) {
       <fieldset class="cf-icons"><legend>The houses in the land bar</legend>${LAND_ICONS.map(([k, name]) =>
         `<label class="cf-icon"><input type="radio" name="cf-icon" value="${k}"><i style="--house:${iconUrl(k)}" aria-hidden="true"></i> ${esc(name)}</label>`).join('')}</fieldset></section>
     <section><h3 class="sub">Throne</h3>
-      <label class="cf-check"><input type="checkbox" id="cf-glyph"> A faint throne in the background of the page</label>
+      <label class="cf-check"><input type="checkbox" id="cf-glyph"> A faint image in the background: a throne on Throne, wheat on Resources, a compass on Land &amp; Exploration, planks on Build, a sledgehammer on Raze</label>
+      <p class="dim small cf-credit">Throne image by Amethyst prime, from <a href="https://www.flaticon.com/free-icon/throne_10623266" target="_blank" rel="noopener">Flaticon</a>. Compass by meaicon, from <a href="https://www.flaticon.com/free-icon/compass_18513259" target="_blank" rel="noopener">Flaticon</a>. Wood planks by Vectorsclub, from <a href="https://www.flaticon.com/free-icon/wood-planks_18333413" target="_blank" rel="noopener">Flaticon</a>. Sledgehammer by andinur, from <a href="https://www.flaticon.com/free-icon/sledgehammer_8591563" target="_blank" rel="noopener">Flaticon</a>. Wheat by Lorc, from <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>, <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>.</p>
       <label class="cf-check"><input type="checkbox" id="cf-upg"> List upgraded units on rows of their own (otherwise each is counted in with its base unit, marked *)</label></section>
     <section><h3 class="sub">Times</h3>
       <fieldset class="cf-clock"><legend class="vh">Show times in</legend>

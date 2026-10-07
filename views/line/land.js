@@ -8,6 +8,7 @@ import { fmt, esc, dayTime, SOLDIER } from '../../core/words.js';
 import { landSplit, landByTick, exploreWhy, ticks } from '../../core/land.js';
 import { mountAdvisor } from './advisor.js';
 import { WIKI } from '../../core/wiki.js';
+import { throneGlyph } from './throne.js';
 
 const n0 = (v) => Math.max(0, Math.floor(Number(v) || 0));
 
@@ -25,7 +26,7 @@ const pct = (n, of) => `${(100 * n / Math.max(1, of)).toFixed(1)}%`;
 const TICKS = 24;
 
 export function mountLand(host, on) {
-  host.innerHTML = `<div class="lpart lland">
+  host.innerHTML = `<div class="lpart lland${throneGlyph() ? ' glyph' : ''}">
     <section class="ll-left"><h3 class="sub">Your land</h3>
       <div class="landbar" id="ll-bar" aria-hidden="true" style="--house:${iconUrl(landIcon())}" title="Each house is a tenth of your land: filled where built, lighter where being built"></div>
       <table class="tbl kv" id="ll-land"></table></section>
