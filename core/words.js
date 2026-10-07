@@ -259,8 +259,8 @@ export function describe(o, cmd) {
     case 'ceasefire_broken': return 'Ceasefire broken.';
     case 'attack': return `${names.attacks[o.kind] || o.kind}: ${o.success ? 'victory' : 'driven off'} at ${fmt(o.offense)} offense${o.land ? `; ${fmt(o.land)} acres taken` : ''}${spoils(o.spoils, 'took')}${o.protection_bp < 10000 ? ` (they've been hit often lately: ${o.protection_bp / 100}% of the usual)` : ''}${o.size_bp < 10000 ? ` (a smaller house: ${o.size_bp / 100}% of the usual gains)` : ''}${o.renown ? `, +${fmt(o.renown)} renown` : ''}${o.saved ? `; medics saved ${fmt(o.saved)}` : ''}${o.mercenary_gold ? `; mercenaries cost ${fmt(o.mercenary_gold)} gold (survivors leave)` : ''}${o.general_killed ? '; our general fell' : ''}. Army home ${when(o.returns_at)}. Report card in NEWS (Alt+4).`;
     case 'operation': return o.success
-      ? `${names.ops[o.op] || o.op}: success${o.intel ? '. The report is in INTRIGUE, shared with your state.' : `: ${fmt(o.taken)} taken.`} Chance was ${o.chance_bp / 100}%, nerve left ${o.nerve_bp / 100}%.`
-      : `${names.ops[o.op] || o.op}: our thieves were caught, ${fmt(o.thieves_lost)} lost. Chance was ${o.chance_bp / 100}%.`;
+      ? `${names.ops[o.op] || o.op}: success${o.intel ? '. The report is in INTRIGUE, shared with your state.' : `: ${fmt(o.taken)} taken.`} The chance was ${o.chance}, nerve left ${o.nerve_bp / 100}%.`
+      : `${names.ops[o.op] || o.op}: our thieves were caught, ${fmt(o.thieves_lost)} lost. The chance was ${o.chance}.`;
     case 'cast': return castLine(o);
     case 'spy': return o.success ? `Full Dossier: success. Report in INTRIGUE.` : `Full Dossier: our thieves were caught, ${fmt(o.thieves_lost)} lost.`;
     case 'invested': return 'Books invested; the science takes effect at once.';
@@ -313,7 +313,8 @@ function hexDid(o, whose) {
 }
 function castLine(o) {
   const n = names.rites[o.rite] || o.rite;
-  const chance = o.chance_bp < 10000 ? ` Chance was ${o.chance_bp / 100}%.` : '';
+  // The server tells a chance as a band (very low to very good, or sure), never the number.
+  const chance = o.chance && o.chance !== 'sure' ? ` The chance was ${o.chance}.` : '';
   if (!o.success) return `${n}: it was resisted. Aether left ${fmt(o.aether)}.${chance}`;
   const what = o.reflected ? `it worked, but a Mirror Ward turned it back on us: ${hexDid(o, 'our')}`
     : o.intel ? 'the vision is in INTRIGUE, shared with your state'
