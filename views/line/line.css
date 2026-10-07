@@ -325,9 +325,9 @@
   & .lpart table.kv tr.sum > * { font-weight: 600; color: var(--l-ink); border-top: 1px solid var(--l-line); }
   /* An advisor's band at the top of a page (advisor.js): the court's voice, a little gold-tinted, full width. */
   & .adv-band { grid-column: 1 / -1; margin: -4px 0 18px; padding: 9px 16px; text-align: center; font: italic .92rem/1.4 var(--l-head-font);
-    color: color-mix(in srgb, var(--l-ink) 68%, var(--l-page)); background: color-mix(in srgb, var(--l-gold) 9%, var(--l-page));
+    color: color-mix(in srgb, var(--l-ink) 67%, var(--l-page)); background: color-mix(in srgb, var(--l-gold) 9%, var(--l-page));   /* one shade for the whole line: the faintest that still reads 4.5:1 on every theme */
     border-top: 1px solid color-mix(in srgb, var(--l-gold) 40%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--l-gold) 40%, transparent); }
-  & .adv-band .who { font-style: normal; color: var(--l-muted); white-space: nowrap; }   /* same size as the line it signs */
+  & .adv-band .who { font-style: normal; white-space: nowrap; }   /* same size and shade as the line it signs */
   & .adv-band a { color: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--l-gold) 60%, transparent); text-underline-offset: 3px; }
   & .adv-band a:hover { color: var(--l-gold); }
   /* Land: your land and Explore side by side, land on its way across the page under them. */
