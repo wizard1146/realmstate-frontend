@@ -194,9 +194,9 @@ export function newsLine(n) {
     case 'truth_uncovered': return [`${where(n.by)} uncovered a Truth: ${n.truth}. Our state may use it now; the world hears in a few ticks.`, 'good'];
     case 'truth_announced': return [`A Truth is uncovered: ${n.truth}, by state ${st(n.by)}. Every house may use it now.`, ''];
     case 'realm_work': return [`Our realm's ${n.work} ${n.step === 'proposed' ? `was proposed by state ${n.by ? st(n.by) : '?'}; the realm's leaders vote` : n.step === 'passed' ? 'passed its vote: every house of the realm may fund it' : 'is done: the realm makes more of its material'}.`, n.step === 'proposed' ? '' : 'good'];
-    case 'dragon_raid': return n.driven_off ? [`A dragon raided us and was driven off. +${fmt(n.renown)} renown.`, 'good']
-      : [`A dragon raided us: ${fmt(n.buildings)} buildings, ${fmt(n.troops)} troops and ${fmt(n.peasants)} peasants lost.`, 'bad'];
-    case 'dragon_sighted': return [`A dragon struck in realm ${n.realm}.`, ''];
+    case 'dragon_raid': return n.driven_off ? [`${dragonWho(n)} fell on us, and our defenders drove it off. +${fmt(n.renown)} renown.`, 'good']
+      : [`${dragonWho(n)} fell on us. ${dragonToll(n)}`, 'bad'];
+    case 'dragon_sighted': return [`${dragonWho(n)} struck in realm ${n.realm}.`, ''];
     case 'wonder_started': return [`${where(n.by)} began the ${n.wonder}; our state's houses may fund it.`, ''];
     case 'wonder_funded': return [`The ${n.wonder} of ${where(n.by)} is fully funded; it finishes at tick ${n.done_tick}.`, 'good'];
     case 'wonder_lost': return [`Another house finished the ${n.wonder} first; ${n.refund_bp / 100}% of what our build was given came back.`, 'bad'];
@@ -324,6 +324,26 @@ function castLine(o) {
 /** Was this outcome a setback (for colouring the message)? */
 export const outcomeTone = (o) => ((o.type === 'attack' || o.type === 'operation' || o.type === 'cast' || o.type === 'spy') && (!o.success || o.reflected) ? 'bad' : 'good');
 
+// "Vharzul the Unquenched, a Magma dragon" (older news has no name: "A dragon").
+const dragonWho = (n) => {
+  if (!n.dragon || n.dragon === 'a dragon') return 'A dragon';
+  const kind = n.kind ? `${n.kind[0].toUpperCase()}${n.kind.slice(1)} dragon` : 'dragon';
+  return n.dragon.startsWith('the ') ? cap(n.dragon) : `${cap(n.dragon)}, a${/^[AEIOU]/.test(kind) ? 'n' : ''} ${kind},`;
+};
+// What a dragon took, in the words of its kind.
+const dragonToll = (n) => {
+  const and = (xs) => xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}` : xs[0] || '';
+  const magma = n.kind === 'magma';
+  const burned = and([n.buildings && `${fmt(n.buildings)} buildings`, n.troops && `${fmt(n.troops)} troops at home`, !magma && n.peasants && `${fmt(n.peasants)} peasants`].filter(Boolean));
+  const extra = [];
+  if (magma && n.peasants) extra.push(`Its lava swept away ${fmt(n.peasants)} peasants.`);
+  const mats = Object.entries(n.materials || {}).filter(([, q]) => q).map(([m, q]) => `${fmt(q)} ${m}`);
+  if (n.gold || mats.length) extra.push(`It dissolved ${and([n.gold && `${fmt(n.gold)} gold`, ...mats].filter(Boolean))} from our stores.`);
+  if (n.food) extra.push(`It blighted ${fmt(n.food)} food.`);
+  if (n.books) extra.push(`It unwrote ${fmt(n.books)} books of our learning.`);
+  if (n.horses || n.chariots) extra.push(`It swallowed ${and([n.horses && `${fmt(n.horses)} horses`, n.chariots && `${fmt(n.chariots)} chariots`].filter(Boolean))}.`);
+  return [burned ? `It burned ${burned}.` : 'It burned nothing of note.', ...extra].join(' ');
+};
 const listing = (m) => Object.entries(m || {}).filter(([, n]) => n).map(([k, n]) => `${fmt(n)} ${k}`).join(', ') || 'none';
 /** Troops as a spy sees them: {soldiers, offense, defense, elites} (base and upgraded together, no thieves). */
 export function forcesText(f) {
