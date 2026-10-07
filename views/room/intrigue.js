@@ -628,6 +628,16 @@ export function detailRites(sec, on, ctx) {
         </form>
         <h3 class="sub gap">IN FORCE ON YOU</h3>
         <div id="d-r-force"></div>
+        <h3 class="sub gap">ADEPTS <span class="dim">drawn from your peasants by your shrines</span></h3>
+        <form id="d-r-adepts" class="dform" novalidate>
+          <label for="d-r-cap">Stop at</label>
+          <span class="field"><input id="d-r-cap" type="number" min="0" max="100" step="0.1" inputmode="decimal" placeholder="no limit" aria-describedby="d-r-capl"> <span class="dim">an acre</span></span>
+          <button type="button" class="btn" data-cap>SET</button>
+          <label for="d-r-rel">Release</label>
+          <span class="field"><input id="d-r-rel" type="number" min="1" step="1" inputmode="numeric" placeholder="0"> <span class="dim">adepts</span></span>
+          <button type="button" class="btn" data-rel>RELEASE</button>
+          <p class="dim small span" id="d-r-capl"></p>
+        </form>
         <h3 class="sub gap">RESILIENCE AND VENGEANCE <span class="dim">yours only</span></h3>
         <div id="d-r-magic"></div>
         <p class="dim small">Shrines draw adepts and gather aether each tick; Watchstones give ward against hexes and divinations. Divinations land in INTRIGUE's reports.</p>
@@ -674,8 +684,26 @@ export function detailRites(sec, on, ctx) {
   on($('d-f-rite'), 'submit', async (ev) => { ev.preventDefault(); await sendCast(f, ev.submitter); form(); });
   if (store.target) f.target.value = addr(store.target);
   form();
+  // Adepts: the limit where shrines stop gathering (adepts an acre, one decimal place), and release.
+  function adepts() {
+    const h = store.house;
+    const cap = h.adept_cap_tenths;
+    if (document.activeElement !== $('d-r-cap')) $('d-r-cap').value = cap == null ? '' : (cap / 10).toFixed(1);
+    $('d-r-rel').max = h.adepts;
+    $('d-r-rel').disabled = sec.querySelector('[data-rel]').disabled = !h.adepts;
+    $('d-r-capl').textContent = `You have ${fmt(h.adepts)} adepts, ${(h.adepts / Math.max(1, h.land)).toFixed(2)} an acre. `
+      + (cap == null ? 'No limit: your shrines gather up to what they can hold.' : `Your shrines stop gathering at ${(cap / 10).toFixed(1)} an acre (${fmt(Math.floor(cap * h.land / 10))} adepts at your land now).`)
+      + ' Released adepts go back to the fields as peasants; the limit comes down so they aren\'t gathered back. Leave the box empty for no limit.';
+  }
+  on($('d-r-adepts'), 'click', async (ev) => {
+    if (ev.target.closest('[data-cap]')) { await act.setAdeptCap($('d-r-cap').value === '' ? null : $('d-r-cap').value, { button: ev.target.closest('button') }); adepts(); }
+    if (ev.target.closest('[data-rel]')) { if (await act.releaseAdepts($('d-r-rel').value, { button: ev.target.closest('button') })) $('d-r-rel').value = ''; adepts(); }
+  });
+  on($('d-r-adepts'), 'submit', (ev) => ev.preventDefault());
+  adepts();
   return {
     update(c) {
+      if (!c || c.has('house')) adepts();
       if (c && c.has('target') && store.target && document.activeElement !== f.target && !f.target.disabled) f.target.value = addr(store.target);
       if (!c || c.has('house') || c.has('tick') || c.has('relations') || c.has('target')) form();
     },

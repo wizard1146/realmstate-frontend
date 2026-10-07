@@ -24,6 +24,7 @@ import * as mk from './milacts.js';
 import { razeHTML, wireRaze } from './raze.js';
 import * as mkt from './market.js';
 import { stateDetail } from './statedetail.js';
+import { landSplit } from '../../core/land.js';
 
 export const PANES = ['act', 'res', 'mil', 'news', 'chat', 'roster', 'rank', 'sci'];
 const META = {
@@ -86,14 +87,12 @@ const res = {
     if (!has(c, 'house')) return;
     const h = store.house;
     b.querySelector('#d-uw').innerHTML = uw.html(['explore', 'build'], { full: true });
-    const built = Object.values(h.buildings).reduce((a, x) => a + x, 0);
-    const cons = Object.values(h.constructing).reduce((a, x) => a + x, 0);
-    const byArmy = pend.list(['army']).reduce((a, x) => a + (x.land || 0), 0);
+    const { built, building: cons, explored, withArmies: byArmy } = landSplit(h);
     b.querySelector('#d-landbar').innerHTML = `<span class="built" style="width:${pctOf(built, h.land)}"></span><span class="cons" style="width:${pctOf(cons, h.land)}"></span>`;
     b.querySelector('#d-land').innerHTML = table('<th>LAND</th><th class="num">ACRES</th><th class="num">% LAND</th>',
       [['Built', built], ['Under construction', cons], ['Barren', h.barren]].map(([k, v]) => `<tr><td>${k}</td>${td(v)}<td class="num dim">${pctOf(v, h.land)}</td></tr>`).join('')
       + `<tr class="sum"><td>Held</td>${td(h.land)}<td class="num dim">100%</td></tr>`
-      + `<tr><td>Incoming, explored</td>${td(Math.max(0, h.incoming_land - byArmy))}<td></td></tr>`
+      + `<tr><td>Incoming, explored</td>${td(explored)}<td></td></tr>`
       + `<tr><td>Incoming, with armies</td>${td(byArmy)}<td></td></tr>`
       + `<tr class="sum"><td>Held + incoming</td>${td(h.land + h.incoming_land)}<td></td></tr>`);
     res.resources(b, h);

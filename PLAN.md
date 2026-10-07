@@ -19,10 +19,14 @@ becomes a lens inside Atlas or War Ring once the attack-range rule exists in the
 
 ## The skeleton: War Room parts, new UI around them
 
-- **Panels.** The War Room's detail views (`views/room/detail.js`: orders, holdings, military, science, news, chat,
-  state, ranks) are self-contained builders. Every view shows them as they are: Straightline as its pages,
-  the world views as "in full" panels. Their look adapts through `.room-scope` and room.css's variables (see the
-  Map's slate-and-brass block in `views/map/map.css`), not by forking their code.
+- **Logic, not panes.** What an order costs, what's left, why it can't go, what a building does: these live in
+  `core/` (`prices.js`, `land.js`, `does.js`, `train.js`, `pending.js`) and every view uses them. Each view draws
+  its own markup. Straightline, the newbie default, gets its own pages (`views/line/`), each saying in plain words
+  what it does and, as you fill it in, exactly what the order will do. A converted page imports nothing from
+  `views/room/`. Done: Throne, Land, Build (with Raze), Train. Resources is its own page but still borrows the War
+  Room's `trend.js` and `graph.js`. Still War Room panes (via `paneRunner`,
+  their section picked by setting the War Room's remembered tab): the rest. The world views may keep showing
+  War Room panels "in full" through `.room-scope`.
 - **One world shell** for War Ring, Atlas and Map: the HUD, the house / target / news / chat / state / ranks sheets,
   the dock, the panels in full. Only the picture in the middle differs, a *canvas* module with
   `mount(svg, ctx)`, `update(changes)`, `destroy()`. Clicking a house anywhere opens the same target sheet.
@@ -34,7 +38,8 @@ becomes a lens inside Atlas or War Ring once the attack-range rule exists in the
 ## Order of work
 
 1. View switch with the five views; Straightline as the default here.
-2. Straightline: a side menu of pages, each page one War Room panel (or one tab of one), single column.
+2. Straightline: a side menu of pages, single column; each page its own markup over `core/` logic (converting
+   from War Room panels page by page).
 3. World shell out of `views/map/map.js`; the hex map becomes its first canvas.
 4. War Ring canvas from the mock-up: real wars, ceasefires, hostility; click a state for its sheet.
 5. Atlas canvas from the mock-up; Range as its lens when the attack-range rule lands.
@@ -42,7 +47,7 @@ becomes a lens inside Atlas or War Ring once the attack-range rule exists in the
 
 ## Before a view ships
 
-- Web fonts picked in a look lab (Straightline's defaults are Cinzel and Alegreya Sans) load from Google Fonts
+- Web fonts picked in a look lab (Straightline's defaults are IM Fell English and Source Sans 3) load from Google Fonts
   while we choose; the chosen faces get self-hosted (as the War Room's are) so a shipped page makes no outside requests.
 
 ## Going back to the front end

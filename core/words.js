@@ -214,6 +214,9 @@ export function describe(o, cmd) {
     case 'protection_left': return 'You left protection. Others can now attack you, and you them.';
     case 'explored': return `Exploring ${fmt(o.acres)} acres for ${fmt(o.gold)} gold${o.soldiers ? ` and ${fmt(o.soldiers)} soldiers, who go to settle it` : ''}. They arrive ${when(o.arrives_at)}.${o.books ? ` The explorers found lost texts: ${fmt(o.books)} books.` : ''}`;
     case 'training': return `Training ${fmt(o.count)} ${uname(o.unit)} for ${fmt(o.gold)} gold, ${readySpread(o)} (${zoneLabel()}).`;
+    case 'adept_cap_set': return o.per_acre_tenths == null ? 'No adept limit: your shrines gather adepts up to what they can hold.'
+      : `Adept limit set to ${(o.per_acre_tenths / 10).toFixed(1)} an acre: your shrines stop gathering there.`;
+    case 'adepts_released': return `${fmt(o.count)} adepts went back to the fields as peasants.${o.per_acre_tenths == null ? '' : ` Adept limit now ${(o.per_acre_tenths / 10).toFixed(1)} an acre, so they aren't gathered back.`}`;
     case 'draft_set': return `Draft rate set to ${o.rate_bp / 100}%. Each tick, up to 1% of your peasants are drafted as soldiers until you reach it.`;
     case 'building': return `Building ${fmt(o.count)} ${bname(o.building)} for ${fmt(o.gold)} gold. Ready ${when(o.ready_at)}.`;
     case 'upgrading': return `Upgrading ${fmt(o.count)} troops into ${uname(o.unit)} for ${fmt(o.material)} ${names.mats.upgrade || 'material'}. Ready ${when(o.ready_at)}.`;

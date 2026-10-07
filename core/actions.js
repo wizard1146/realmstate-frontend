@@ -61,6 +61,11 @@ export const train = (unit, count, opts = {}) => {
 export const release = (unit, count, opts = {}) => run({ type: 'release', house: me(), unit: Number(unit), count: Number(count) }, opts);
 /** The share of your population to keep under arms, in basis points (soldiers are drafted toward it each tick). */
 export const setDraft = (rateBp, opts = {}) => run({ type: 'set_draft', house: me(), rate_bp: Math.round(Number(rateBp)) }, opts);
+/** Adepts an acre the shrines gather up to (one decimal place: 3.1), or null for no limit. */
+export const setAdeptCap = (perAcre, opts = {}) =>
+  run({ type: 'set_adept_cap', house: me(), per_acre_tenths: perAcre == null || perAcre === '' ? null : Math.round(Number(perAcre) * 10) }, opts);
+/** Send adepts back to the fields as peasants. */
+export const releaseAdepts = (count, opts = {}) => run({ type: 'release_adepts', house: me(), count: Number(count) }, opts);
 /**
  * Several build orders at once (a construction grid): one `build` command per row, in order, so
  * each sees the gold and land the last one left. rows: [{ building, count }]. Returns one result

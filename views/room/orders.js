@@ -9,9 +9,11 @@ import { fmt, esc, addr, names, when, UNIT_ORDER, TRAINABLE, THIEF, SOLDIER } fr
 import { detailIntrigue, detailRites } from './intrigue.js';
 import * as ax from './atkextra.js';
 import { buildingChoice, buildingOptions } from './truthsui.js';
+import { matText, ticks, dur, exploreWhy, buildTotals, buildRowProblem, buildMaxRow } from '../../core/land.js';
+import { trainNote } from '../../core/train.js';
 
+export { exploreWhy, trainNote };
 const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
-const matText = (mats) => Object.entries(mats).map(([m, q]) => `${fmt(q)} ${m}`).join(', ');
 
 // ---------- quotes: { text, short, title } ----------
 export function exploreQuote(n) {
@@ -31,15 +33,6 @@ export function trainQuote(slot, n, direct = false) {
     : num(n) > pool ? (direct ? `Each recruit takes a peasant; you have ${fmt(pool)}` : `Each trainee takes a soldier; you have ${fmt(pool)} (draft more, or recruit direct)`)
       : num(n) > price.trainLimit() ? `At most ${fmt(price.trainLimit())} per order` : '';
   return { text: `${fmt(g)}g`, short: !!why, title: why || `Exact cost: ${fmt(g)} gold and ${fmt(num(n))} ${direct ? 'peasants' : 'soldiers'}` };
-}
-/** The trade-off between training from soldiers and recruiting straight from peasants, in a sentence. */
-export function trainNote(direct, slot) {
-  const P = store.rules.params;
-  const h = store.house;
-  const upg = Number(slot) !== THIEF ? `, ${P.train_plus_bp / 100}% come out upgraded` : '';
-  return direct
-    ? `Direct from peasants (${fmt(h.peasants)}): +${P.direct_cost_bp / 100}% gold, +${P.direct_time_bp / 100}% time, ${P.direct_fail_bp / 100}% fail back to peasants, ${P.direct_death_bp / 100}% die, never upgraded.`
-    : `From soldiers (${fmt(h.units[SOLDIER])} at home): base price and time, ${P.train_fail_bp / 100}% fail back to soldiers, ${P.train_death_bp / 100}% die${upg}.`;
 }
 /** Train options: the four trainable units (soldiers are drafted, never trained). */
 export const trainOptions = (race, withGold = true) => trainableSlots(race, TRAINABLE).map((i) => {
@@ -83,7 +76,6 @@ export function fillMax(input, n, why) {
   input.dispatchEvent(new Event('input', { bubbles: true }));
   if (!n) say(`MAX is 0: ${why}.`, 'bad');
 }
-export const exploreWhy = () => (!price.have() ? '' : price.explorable() === 0 ? 'no explorable acres left: more come each tick (or ask a statemate for aid)' : store.house.units[SOLDIER] < price.exploreSoldiers(1) ? `no soldiers to settle land (${fmt(price.exploreSoldiers(1))} per acre, ${fmt(store.house.units[SOLDIER])} at home): draft more in MIL` : store.house.gold < price.exploreCost(1) ? 'not enough gold for one acre' : 'nothing fits');
 export const trainWhy = (slot, direct = false) => (!price.trainPool(direct) ? (direct ? 'no peasants to recruit' : 'no soldiers at home: draft more (MIL), or recruit direct') : store.house.gold < price.trainCost(slot, 1, direct) ? 'not enough gold for one' : 'nothing fits');
 
 // ---------- the ACT tabs (ORDERS, INTRIGUE, RITES), shared by the pane and its detail ----------
@@ -108,13 +100,6 @@ let seenTarget = null;
 export function newTarget() { const id = store.target?.id ?? null; const fresh = id != null && id !== seenTarget; seenTarget = id; return fresh; }
 
 // ---------- the ACT detail view ----------
-const ticks = (t) => `${t} tick${t === 1 ? '' : 's'}`;
-const dur = (t) => {
-  const ms = t * (store.age?.tick_ms || store.rules.params.tick_ms);
-  const m = Math.round(ms / 60000);
-  return m < 120 ? `${m} min` : `${Math.round(m / 6) / 10} h`;
-};
-
 /**
  * Draws the full order forms into `body`. `on` registers listeners (removed when the view
  * changes). `goto(pane)` switches the detail view. Returns { update(changes) }.
@@ -214,28 +199,8 @@ export function actDetail(body, on, { goto, tab, report }) {
   const rows = [...body.querySelectorAll('.bg-row[data-b]')];
   const rowN = (r) => num(r.querySelector('.bg-n').value);
 
-  // ---------- the construction grid ----------
-  /** Totals of the grid's rows, optionally leaving one row out. */
-  function sums(except) {
-    const t = { gold: 0, barren: 0, materials: {} };
-    for (const r of rows) {
-      if (r === except) continue;
-      const n = rowN(r);
-      if (!n) continue;
-      const c = price.buildCost(r.dataset.b, n);
-      t.gold += c.gold;
-      t.barren += n;
-      for (const [m, q] of Object.entries(c.materials)) t.materials[m] = (t.materials[m] || 0) + q;
-    }
-    return t;
-  }
-  function left(except) {
-    const h = store.house;
-    const t = sums(except);
-    const mats = {};
-    for (const [m, q] of Object.entries(h.materials)) mats[m] = q - (t.materials[m] || 0);
-    return { gold: h.gold - t.gold, barren: h.barren - t.barren, materials: mats };
-  }
+  // ---------- the construction grid (sums and limits: core/land.js) ----------
+  const rowsOf = (except) => rows.filter((r) => r !== except).map((r) => ({ id: r.dataset.b, n: rowN(r) }));
   function grid() {
     const h = store.house;
     const ok = price.have();
@@ -259,20 +224,17 @@ export function actDetail(body, on, { goto, tab, report }) {
       const cc = price.buildCost(id, n);
       const m = matText(cc.materials);
       cost.textContent = `${fmt(cc.gold)}g${m ? ` +${m}` : ''}`;
-      let why = '';
-      if (n > price.buildLimit()) why = `at most ${fmt(price.buildLimit())} per order`;
-      else if (n > price.buildRoom(id)) why = `may own ${bp.max_count} at most`;
+      const why = buildRowProblem(id, n);
       if (!note.dataset.result || why) { note.textContent = why; note.className = `bg-note${why ? ' short' : ''}`; delete note.dataset.result; }
     }
-    const t = sums();
+    const t = buildTotals(rowsOf());
     const have = h;
     const part = (label, used, held) => `<span class="${used > held ? 'short' : ''}">${label} <b class="num">${fmt(used)}</b><span class="dim">/${fmt(held)}</span></span>`;
     const parts = [part('ACRES', t.barren, have.barren), part('GOLD', t.gold, have.gold)];
     for (const [m, q] of Object.entries(t.materials)) parts.push(part(m.toUpperCase(), q, have.materials[m] || 0));
     $('d-bg-tot').innerHTML = `<span class="dim">TOTAL</span> ${parts.join(' ')}`;
     const anyRow = rows.some((r) => rowN(r) > 0);
-    const bad = t.barren > have.barren || t.gold > have.gold || Object.entries(t.materials).some(([m, q]) => q > (have.materials[m] || 0))
-      || rows.some((r) => rowN(r) > 0 && (rowN(r) > price.buildLimit() || rowN(r) > price.buildRoom(r.dataset.b)));
+    const bad = t.over || rows.some((r) => buildRowProblem(r.dataset.b, rowN(r)));
     $('d-bg-exec').disabled = !anyRow || (ok && bad);
     $('d-bg-exec').title = !anyRow ? 'Fill in a count first' : bad ? 'Over what you have: lower a row' : `Send ${rows.filter((r) => rowN(r) > 0).length} build orders`;
   }
@@ -285,11 +247,8 @@ export function actDetail(body, on, { goto, tab, report }) {
     const b = ev.target.closest('[data-max]');
     if (!b) return;
     const r = b.closest('.bg-row');
-    const budget = left(r);
-    const n = price.buildMax(r.dataset.b, budget);
+    const { n, why } = buildMaxRow(r.dataset.b, rowsOf(r));
     const inp = r.querySelector('.bg-n');
-    const why = budget.barren <= 0 ? 'no barren land left after the other rows' : price.buildRoom(r.dataset.b) <= 0 ? 'you already have as many as a house may own'
-      : price.buildingPrice(r.dataset.b).gold > budget.gold ? 'not enough gold left after the other rows' : 'not enough materials';
     fillMax(inp, n, why);
     inp.focus();
   });
