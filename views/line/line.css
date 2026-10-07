@@ -207,7 +207,7 @@
   & .throne tr.total > * { color: var(--l-ink); }
   & .throne tr.total > td { font-weight: 400; }
   /* Row labels a touch muted; full ink on the row you point at. */
-  & .throne table.kv tr > th[scope=row] { color: color-mix(in srgb, var(--l-ink) 78%, var(--l-page)); transition: color 120ms; }
+  & .throne table.kv tr > th[scope=row] { color: color-mix(in srgb, var(--l-ink) 68%, var(--l-page)); transition: color 120ms; }
   & .throne table.kv tr:not(.colhead):hover > th[scope=row] { color: var(--l-ink); }
   & .throne table.kv tr:nth-child(even) > * { background: color-mix(in srgb, var(--l-ink) 1.25%, transparent); }   /* the faintest of stripes */
   & .throne table.kv tr:not(.colhead):hover > * { background: color-mix(in srgb, var(--l-gold) 12%, transparent); }

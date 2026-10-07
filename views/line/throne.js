@@ -105,7 +105,9 @@ export function mountThrone(host, on) {
     const res = table('Resources', [['Gold', h.gold], ['Food', h.food], ['Books', books], ['Horses', h.horses || 0], ['Chariots', h.chariots || 0]]);
     // Every material, held or not.
     const mats = table('Materials', Object.entries(h.materials || {}).map(([m, q]) => [m[0].toUpperCase() + m.slice(1), q]));
-    const spirit = table('Spirit', [['Nerve', `${h.nerve_bp / 100}%`], ['Aether', h.aether || 0]]);
+    // Aether against what your buildings hold (the server's figure; an older server sends none).
+    const aether = h.aether_capacity == null ? h.aether || 0 : `${fmt(h.aether || 0)} <span class="dim">of ${fmt(h.aether_capacity)}</span>`;
+    const spirit = table('Spirit', [['Nerve', `${h.nerve_bp / 100}%`], ['Aether', aether]]);
 
     grid.innerHTML = house + core + people + infra + res + mats + spirit;
     grid.dataset.metric = metric;
