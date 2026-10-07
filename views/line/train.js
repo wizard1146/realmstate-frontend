@@ -6,7 +6,7 @@ import * as act from '../../core/actions.js';
 import * as price from '../../core/prices.js';
 import * as pend from '../../core/pending.js';
 import { fmt, esc, TRAINABLE } from '../../core/words.js';
-import { trainNote } from '../room/orders.js';
+import { trainNote } from '../../core/train.js';
 
 const n0 = (v) => Math.max(0, Math.floor(Number(v) || 0));
 

@@ -14,29 +14,37 @@ import { mountLook, clear as clearLook } from './looklab.js';
 import { mountThrone } from './throne.js';
 import { mountTrain } from './train.js';
 import { mountResources } from './resources.js';
+import { mountLand } from './land.js';
+import { mountBuild } from './build.js';
+import { mountChatbox } from './chatbox.js';
+import { mountConfig } from './config.js';
+import { mountProfile } from './profile.js';
+import { mountWorld, homeRealm } from './world.js';
 import { watchCards } from './cards.js';
 import { newsLine } from '../../core/words.js';
 
 // Straightline's own page parts (not War Room panels): mount(host, on) -> { update(c), tick(), destroy() }.
-const PARTS = { throne: mountThrone, train: mountTrain, resources: mountResources };
+const PARTS = { throne: mountThrone, train: mountTrain, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld };
 
 const KEY = 'realmstate.line.page';
 
 /**
  * The menu: [group, [[page id, label, pane, tab, what it's for, extra]]]. Tabs pick a section inside a pane.
- * extra.show: only the pane's sections matching this ('train'); extra.hide: its sections to leave out;
- * extra.part: a Straightline part instead of a pane (Throne); extra.top: a part drawn above the pane (Military's Train).
+ * extra.part: a Straightline part instead of a pane (Throne); extra.top: a part drawn above the pane (Military's Train);
+ * extra.chat: not a page, it opens the chat box.
  */
 const MENU = [
   ['Your house', [
     ['throne', 'Throne', null, null, 'your house at a glance', { part: 'throne' }],
     ['resources', 'Resources', null, null, 'what you hold, and how it moved each tick', { part: 'resources' }],
-    ['buildings', 'Buildings', 'res', ['res', 'buildings'], 'land, construction, what each building does'],
-    ['orders', 'Explore & build', 'act', ['act', 'orders'], 'explore land and build', { hide: 'train' }],
+    ['land', 'Land', null, null, 'what land you hold, and explore for more', { part: 'land' }],
+    ['build', 'Build', null, null, 'put up buildings on barren land, or raze them', { part: 'build' }],
+    ['truths', 'Truths & Quests', 'sci', ['sci', 'truths'], 'your quest, the Truths you know, transmutation'],
+  ]],
+  ['Learning', [
     ['science', 'Science', 'sci', ['sci', 'science'], 'books and sciences'],
     ['academics', 'Academics', 'sci', ['sci', 'academics'], 'your scholars and their attributes'],
     ['colloquium', 'Colloquium', 'sci', ['sci', 'colloquium'], 'your state’s shared research'],
-    ['truths', 'Truths & Quests', 'sci', ['sci', 'truths'], 'your quest, the Truths you know, transmutation'],
   ]],
   ['Military', [
     ['military', 'Military', 'mil', ['mil', 'forces'], 'train troops; troops, draft, medics, upgrades', { top: 'train' }],
@@ -48,9 +56,10 @@ const MENU = [
     ['intrigue', 'Intrigue', 'act', ['act', 'intrigue'], 'thieves’ operations and reports'],
     ['rites', 'Rites', 'act', ['act', 'rites'], 'rites and hexes'],
   ]],
-  ['Your state', [
+  ['State Matters', [
     ['state', 'State', 'roster', ['state', 'members'], 'the houses of your state'],
     ['leadership', 'Leadership', 'roster', ['state', 'leadership'], 'votes, treasury, tax'],
+    ['world', 'World', null, null, 'the realms, and the states in each', { part: 'world' }],
     ['war', 'War', 'roster', ['state', 'war'], 'wars and relations'],
     ['work', 'Realm Work', 'roster', ['state', 'work'], 'your realm’s Specialised Materials Production'],
     ['wonders', 'World Wonders', 'roster', ['state', 'wonders'], 'start, fund and use wonders'],
@@ -58,12 +67,19 @@ const MENU = [
   ]],
   ['The world', [
     ['news', 'News', 'news', null, 'what happened to your house'],
-    ['chat', 'Chat', 'chat', null, 'world, realm and state'],
+    ['chat', 'Chat', null, null, 'world, realm and state, in a box over the page', { chat: true }],
     ['ranks', 'Rankings', 'rank', null, 'houses and states'],
   ]],
 ];
-const PAGES = MENU.flatMap(([, items]) => items);
-const page = (id) => PAGES.find((p) => p[0] === id) || PAGES[0];
+/** Pinned to the bottom of the menu. */
+const FOOT = [
+  ['profile', 'Profile', null, null, 'your account, and your house this age', { part: 'profile' }],
+  ['config', 'Configuration', null, null, 'how the game looks and reads for you, in this browser', { part: 'config' }],
+];
+const PAGES = [...MENU.flatMap(([, items]) => items), ...FOOT].filter((p) => !p[5]?.chat);
+/** Old page ids (bookmarks, a remembered page) and where they went. */
+const MOVED = { buildings: 'build', orders: 'build' };
+const page = (id) => PAGES.find((p) => p[0] === (MOVED[id] || id)) || PAGES[0];
 
 const TEMPLATE = (view) => `
 <div class="line">
@@ -80,18 +96,21 @@ const TEMPLATE = (view) => `
 <dl class="line-res" id="l-res" aria-label="Your house at a glance"></dl>
 <div class="line-body">
   <div class="line-side" id="l-side">
+    <div class="side-brand" aria-hidden="true"><span class="banner">Hegemoney:</span> REALMSTATE</div>
     <nav class="line-menu" id="l-menu" aria-label="Pages">
-      ${MENU.map(([g, items]) => `<h2>${esc(g)}</h2><ul>${items.map(([id, label, , , what]) =>
-        `<li><a href="#${id}" data-page="${id}" title="${esc(what)}">${esc(label)}</a></li>`).join('')}</ul>`).join('')}
+      ${MENU.map(([g, items]) => `<h2>${esc(g)}</h2><ul>${items.map(([id, label, , , what, extra]) =>
+        `<li><a href="#${id}" ${extra?.chat ? 'data-chat aria-controls="lchat"' : `data-page="${id}"`} title="${esc(what)}">${esc(label)}</a></li>`).join('')}</ul>`).join('')}
       <ul><li><a href="#" class="out" data-out>Sign out</a></li></ul>
+    </nav>
+    <nav class="line-foot" aria-label="You">
+      <ul>${FOOT.map(([id, label, , , what]) => `<li><a href="#${id}" data-page="${id}" title="${esc(what)}">${esc(label)}</a></li>`).join('')}</ul>
     </nav>
     <span class="l-sword" id="l-sword" aria-hidden="true"></span>
     <span class="l-shield" id="l-shield" aria-hidden="true"></span>
   </div>
   <main class="line-main room-scope" id="l-main" tabindex="-1">
     <div class="room">
-      <header class="line-page-h"><h1 id="l-title"></h1><div class="orn-rule" aria-hidden="true"></div></header>
-      <p class="line-protect" id="l-protect" hidden></p>
+      <header class="line-page-h"><h1 id="l-title"></h1><p class="line-what" id="l-what"></p></header>
       <div class="line-page line-pre detail-host" id="l-pre" hidden></div>
       <div class="line-page detail-host" id="l-page" tabindex="-1"></div>
     </div>
@@ -106,7 +125,7 @@ export function mount(root) {
   const $ = (id) => root.querySelector(`#l-${id}`);
   const ac = new AbortController();
   const on = (t, type, fn, o = {}) => t.addEventListener(type, fn, { signal: ac.signal, ...o });
-  const panes = paneRunner($('page'), $('main'), { onShow: (name) => { if (page(current)[2] !== name) select(PAGES.find((p) => p[2] === name)[0], { draw: false }); } });
+  const panes = paneRunner($('page'), $('main'), { onShow: (name) => { const pg = PAGES.find((p) => p[2] === name); if (pg && page(current)[2] !== name) select(pg[0], { draw: false }); } });
   // A part's buttons can ask for a pane ("+3 more · detail"): go to that pane's first page.
   on(root, 'click', (ev) => { const x = ev.target.closest('.line-main [data-expand]'); if (x && x.dataset.expand) { const pg = PAGES.find((p) => p[2] === x.dataset.expand); if (pg) select(pg[0]); } });
   let current = null;
@@ -115,11 +134,11 @@ export function mount(root) {
 
   /** Opens a page: picks the pane's tab first, so the pane draws on that section. */
   function select(id, { draw = true, focus = false } = {}) {
-    const [pid, label, pane, tab, , extra = {}] = page(id);
+    const [pid, label, pane, tab, what, extra = {}] = page(id);
     current = pid;
     try { localStorage.setItem(KEY, pid); } catch { /* storage off */ }
     if (location.hash.slice(1) !== pid) history.replaceState(null, '', `#${pid}`);
-    root.querySelectorAll('.line-menu [data-page]').forEach((a) => a.toggleAttribute('aria-current', a.dataset.page === pid));
+    root.querySelectorAll('.line-side [data-page]').forEach((a) => a.toggleAttribute('aria-current', a.dataset.page === pid));
     // Keep the current row in view inside the menu (scrollIntoView would scroll the page too).
     requestAnimationFrame(() => {
       const a = menu.querySelector('[aria-current]');
@@ -127,6 +146,9 @@ export function mount(root) {
       place();
     });
     $('title').textContent = label;
+    $('what').textContent = what;
+    heading();
+    $('main').dataset.page = pid;   // line.css styles some pages' headings by name (Throne's is centred, on its own)
     if (!draw) return;
     let opts = {};
     if (tab) {
@@ -142,13 +164,18 @@ export function mount(root) {
     part?.destroy(); part = null;
     $('pre').hidden = !extra.top;
     if (extra.top) top = PARTS[extra.top]($('pre'), on);
-    // Sections: only some of a pane (data-show), or all but some (data-hide); line.css does the hiding.
-    $('page').dataset.show = extra.show || '';
-    $('page').dataset.hide = extra.hide || '';
     if (extra.part) { panes.clear(); part = PARTS[extra.part]($('page'), on); }
     else panes.show(pane, { focus: false, ...opts });
     if (focus) $('page').focus({ preventScroll: true });
     $('main').scrollTop = 0;
+  }
+
+  /** Throne's heading: "Throne", and under it your house, of your state and realm (those muted). */
+  function heading() {
+    const h = store.house;
+    if (current !== 'throne' || !h) return;
+    const st = store.state && store.state.realm === h.realm && store.state.state === h.state ? store.state : null;
+    $('title').innerHTML = `<span class="h-page">Throne</span> <span class="h-house">${esc(h.name)} <span class="h-of">of ${esc(st?.name || `State ${h.realm}:${h.state}`)}, ${esc(st?.realm_name || `Realm ${h.realm}`)}</span></span>`;
   }
 
   function renderTop() {
@@ -159,23 +186,33 @@ export function mount(root) {
     $('ident').textContent = `· ${raceName(h.race)}, ${persName(h.personality)}`;
     const items = [['Land', h.land + (h.incoming_land ? ` (+${fmt(h.incoming_land)})` : '')], ['Peasants', h.peasants], ['Gold', h.gold], ['Food', h.food],
       ['Soldiers', h.units[0]], ['Might', h.might], ['Renown', h.renown]];
-    $('res').innerHTML = items.map(([k, v]) => `<div><dt>${k}</dt><dd>${typeof v === 'number' ? fmt(v) : esc(v)}</dd></div>`).join('');
-    const prot = isProtected(h);
-    $('protect').hidden = !prot;
-    if (prot) $('protect').innerHTML = `<b>Protected</b> until tick ${fmt(h.protected_until)}: no one can attack you, and you can't attack. Build up while it lasts.`;
+    // Protection, while it lasts: a marker at the end of the line (it used to be a box on every page).
+    const prot = isProtected(h)
+      ? `<div class="prot" title="Protected until tick ${fmt(h.protected_until)}: no one can attack you, and you can't attack. Build up while it lasts."><dt>Protected</dt><dd>${fmt(h.protected_until - h.ticks_now)} ticks left</dd></div>` : '';
+    $('res').innerHTML = items.map(([k, v]) => `<div><dt>${k}</dt><dd>${typeof v === 'number' ? fmt(v) : esc(v)}</dd></div>`).join('') + prot;
   }
   function renderTick() {
     $('tick').textContent = store.age ? `${fmt(store.tick)} / ${fmt(store.age.age_ticks)}` : fmt(store.tick);
     $('next').textContent = countdown() || '–';
   }
 
-  on(root.querySelector('.line-menu'), 'click', (ev) => {
+  // Throne's realm link opens World on your own realm.
+  on($('main'), 'click', (ev) => { if (ev.target.closest('[data-home-realm]')) homeRealm(); });
+  on(root.querySelector('.line-side'), 'click', (ev) => {
+    if (ev.target.closest('[data-chat]')) { ev.preventDefault(); chat.open(); return; }
     const a = ev.target.closest('[data-page]');
     if (!a) return;
     ev.preventDefault();
     select(a.dataset.page, { focus: true });
   });
-  on(window, 'hashchange', () => { const id = location.hash.slice(1); if (id && id !== current && PAGES.some((p) => p[0] === id)) select(id); });
+  const known = (id) => !!id && (PAGES.some((p) => p[0] === id) || id in MOVED);
+  on(window, 'hashchange', () => {
+    const id = location.hash.slice(1);
+    if (id === 'chat') { history.replaceState(null, '', `#${current}`); chat.open(); return; }
+    if (!known(id)) return;
+    if (page(id)[0] !== current) select(id);
+    else if (id !== current) history.replaceState(null, '', `#${current}`);   // an old id for the page you're on
+  });
   on($('out'), 'click', () => act.signOut());
   on(root.querySelector('[data-out]'), 'click', (ev) => { ev.preventDefault(); act.signOut(); });
   mountLook(root, on);
@@ -239,7 +276,7 @@ export function mount(root) {
   on(burger, 'click', () => drawer(!side.classList.contains('open')));
   on(scrim, 'click', () => { drawer(false); burger.focus(); });
   on(document, 'keydown', (ev) => { if (ev.key === 'Escape' && side.classList.contains('open')) { drawer(false); burger.focus(); } });
-  on(menu, 'click', (ev) => { if (phone() && ev.target.closest('a')) drawer(false); });
+  on(side, 'click', (ev) => { if (phone() && ev.target.closest('a')) drawer(false); });   // any link in the drawer, the pinned Profile and Configuration too
   on(window, 'resize', () => { if (!phone() && side.classList.contains('open')) drawer(false); });
   on(menu, 'scroll', place, { passive: true });
   on(window, 'resize', place);
@@ -255,12 +292,8 @@ export function mount(root) {
   document.fonts?.ready.then(place);
 
   const stopCards = watchCards([$('page'), $('pre')], on);
+  const chat = mountChatbox(root.querySelector('.line'), on);
 
-  // The age bar (views/ages) lives above every view; Straightline fills the window, so while it's shown the bar
-  // sits inside its layout, under the header (and goes back where it was when the view changes).
-  const agebar = document.getElementById('agebar');
-  const agebarHome = agebar && [agebar.parentNode, agebar.nextSibling];
-  if (agebar) root.querySelector('.line-top').after(agebar);
 
   const unsub = subscribe((c) => {
     if (c.has('news') && current !== 'news') for (const d of c.get('news')) if (d.added) toast(d.added);
@@ -269,15 +302,17 @@ export function mount(root) {
     if (c.has('msg') && store.msg.text && store.msg.text !== lastMsg) card(store.msg.text, store.msg.tone, { ms: store.msg.tone === 'bad' ? 30000 : 5000 });
     if (c.has('msg')) lastMsg = store.msg.text;
     if (c.has('house') || c.has('me') || c.has('rules')) renderTop();
+    if (c.has('house') || c.has('state')) heading();
     if (c.has('age') || c.has('clock')) renderTick();
     if (c.has('clock')) { panes.tick(); part?.tick(); top?.tick(); }
     if (part) part.update(c); else panes.update(c);
+    chat.update(c);
     top?.update(c);
   });
 
   renderTop(); renderTick();
   let start = location.hash.slice(1);
-  if (!PAGES.some((p) => p[0] === start)) { try { start = localStorage.getItem(KEY) || 'throne'; } catch { start = 'throne'; } }
+  if (!known(start)) { try { start = localStorage.getItem(KEY) || 'throne'; } catch { start = 'throne'; } }
   select(start);
 
   return {
@@ -286,10 +321,10 @@ export function mount(root) {
       unsub();
       panes.clear();
       part?.destroy(); top?.destroy();
+      chat.destroy();
       clearLook();
       document.documentElement.classList.remove('line-drawer');
       stopCards();
-      if (agebarHome) agebarHome[0].insertBefore(agebar, agebarHome[1]);
       if (location.hash) history.replaceState(null, '', location.pathname + location.search);
       root.replaceChildren();
     },

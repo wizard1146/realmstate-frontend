@@ -15,6 +15,10 @@ export const THEMES = [
   ['crimson', 'Crimson Court', ['#fdf9f3', '#5a1620', '#c49a3a']],
   ['abbey', 'Abbey Green', ['#fafaf2', '#1f3a2c', '#a8893a']],
   ['vigil', 'Night Vigil', ['#1b1f26', '#10161f', '#d9ad55']],
+  ['ember', 'Ember Hall', ['#201a15', '#0f0b08', '#e09a4a']],
+  ['forest', 'Deepwood', ['#18211c', '#0b100d', '#c9b26a']],
+  ['amethyst', 'Amethyst Court', ['#1e1825', '#0e0a13', '#d8b45a']],
+  ['midnight', 'Midnight Ink', ['#151516', '#000000', '#c9a24a']],
   ['ink', 'Ink & Parchment', ['#fbf6e6', '#111111', '#7a1f12']],
 ];
 
@@ -39,7 +43,7 @@ export const BODIES = [
   { name: 'Crimson Pro', css: '"Crimson Pro", Georgia, serif', src: WEB, gf: 'Crimson+Pro:wght@400;500;700' },
   { name: 'Source Sans 3', css: '"Source Sans 3", system-ui, sans-serif', src: WEB, gf: 'Source+Sans+3:wght@400;600;700' },
 ];
-const FONT_DEFAULT = { head: 'Cinzel', body: 'Alegreya Sans', size: 15 };
+const FONT_DEFAULT = { head: 'IM Fell English', body: 'Source Sans 3', size: 15 };
 
 const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
 const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage off */ } };
@@ -68,6 +72,16 @@ export function apply({ theme, fonts, ornaments } = {}) {
   root.style.setProperty('--l-body-font', b.css);
   root.style.setProperty('--l-size', `${fonts.size}px`);
 }
+/** The saved look: { theme, fonts: { head, body, size }, ornaments }. */
+export const look = () => ({ theme: read(THEME_KEY, 'auto'), fonts: { ...FONT_DEFAULT, ...read(FONT_KEY, {}) }, ornaments: read(ORN_KEY, true) });
+/** Saves part of the look and applies it (the Configuration page; the header panels catch up when opened). */
+export function setLook({ theme, fonts, ornaments }) {
+  if (theme !== undefined) write(THEME_KEY, theme);
+  if (fonts !== undefined) write(FONT_KEY, fonts);
+  if (ornaments !== undefined) write(ORN_KEY, ornaments);
+  apply();
+}
+export const FONT_DEFAULTS = FONT_DEFAULT;
 /** Takes the look off the page (when leaving Straightline). */
 export function clear() {
   const root = document.documentElement;
@@ -101,6 +115,11 @@ export function mountLook(root, on, { blocked = () => false } = {}) {
   host.append(tpanel, fpanel);
   const panels = { theme: [tpanel, root.querySelector('#l-theme')], fonts: [fpanel, root.querySelector('#l-fonts')] };
   const open = (which, yes) => {
+    // The Configuration page may have changed the look since: start from what's saved.
+    ({ theme, fonts, ornaments } = look());
+    tpanel.querySelectorAll('input[name="l-theme"]').forEach((i) => { i.checked = i.value === theme; });
+    tpanel.querySelector('[data-k="orn"]').checked = ornaments;
+    sync();
     for (const [k, [p, b]] of Object.entries(panels)) {
       const show = k === which && (yes ?? p.hidden);
       p.hidden = !show; b.setAttribute('aria-expanded', String(show));

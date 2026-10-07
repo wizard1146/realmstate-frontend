@@ -27,9 +27,10 @@ function label(t) {
   return true;
 }
 
-/** Lays out every table under `host`: cards where a table is too wide for a phone, a table otherwise. */
+/** Lays out every table under `host`: cards where a table is too wide for a phone, a table otherwise. A table marked
+ * nocards (a timeline, where the columns are the point) scrolls sideways instead. */
 export function cardify(host) {
-  for (const t of host.querySelectorAll('table.tbl')) {
+  for (const t of host.querySelectorAll('table.tbl:not(.nocards)')) {
     t.classList.remove('cards');
     if (!phone() || !label(t)) continue;
     const box = t.parentElement.closest('.scrollx') || t.parentElement;
