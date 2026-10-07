@@ -20,11 +20,12 @@ import { mountChatbox } from './chatbox.js';
 import { mountConfig } from './config.js';
 import { mountProfile } from './profile.js';
 import { mountWorld, homeRealm } from './world.js';
+import { mountState } from './state.js';
 import { watchCards } from './cards.js';
 import { newsLine } from '../../core/words.js';
 
 // Straightline's own page parts (not War Room panels): mount(host, on) -> { update(c), tick(), destroy() }.
-const PARTS = { throne: mountThrone, train: mountTrain, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld };
+const PARTS = { throne: mountThrone, train: mountTrain, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState };
 
 const KEY = 'realmstate.line.page';
 
@@ -40,24 +41,24 @@ const MENU = [
     ['land', 'Land & Exploration', null, null, 'what land you hold, and explore for more', { part: 'land' }],
     ['build', 'Build & Raze', null, null, 'put up buildings on barren land, or raze them', { part: 'build' }],
   ]],
-  ['Learning', [
-    ['science', 'Science', 'sci', ['sci', 'science'], 'books and sciences'],
-    ['academics', 'Academics', 'sci', ['sci', 'academics'], 'your scholars and their attributes'],
-    ['colloquium', 'Colloquium', 'sci', ['sci', 'colloquium'], 'your state’s shared research'],
-    ['truths', 'Truths & Quests', 'sci', ['sci', 'truths'], 'your quest, the Truths you know, transmutation'],
-  ]],
   ['Military', [
     ['military', 'Military', 'mil', ['mil', 'forces'], 'train troops; troops, draft, medics, upgrades', { top: 'train' }],
     ['attack', 'Attack', 'act', ['act', 'attacks'], 'send an army'],
     ['generals', 'Generals', 'mil', ['mil', 'generals'], 'raise and command generals'],
     ['hall', 'Hall of Deeds', 'mil', ['mil', 'hall'], 'trade generals and academics'],
   ]],
-  ['Shadows', [
+  ['Shadows & Magic', [
     ['intrigue', 'Intrigue', 'act', ['act', 'intrigue'], 'thieves’ operations and reports'],
     ['rites', 'Rites', 'act', ['act', 'rites'], 'rites and hexes'],
   ]],
+  ['Learning', [
+    ['science', 'Science', 'sci', ['sci', 'science'], 'books and sciences'],
+    ['academics', 'Academics', 'sci', ['sci', 'academics'], 'your scholars and their attributes'],
+    ['colloquium', 'Colloquium', 'sci', ['sci', 'colloquium'], 'your state’s shared research'],
+    ['truths', 'Truths & Quests', 'sci', ['sci', 'truths'], 'your quest, the Truths you know, transmutation'],
+  ]],
   ['State Matters', [
-    ['state', 'State', 'roster', ['state', 'members'], 'the houses of your state'],
+    ['state', 'State', null, null, 'the houses of your state', { part: 'state' }],
     ['leadership', 'Leadership', 'roster', ['state', 'leadership'], 'votes, treasury, tax'],
     ['world', 'World', null, null, 'the realms, and the states in each', { part: 'world' }],
     ['war', 'War', 'roster', ['state', 'war'], 'wars and relations'],
@@ -67,7 +68,6 @@ const MENU = [
   ]],
   ['The world', [
     ['news', 'News', 'news', null, 'what happened to your house'],
-    ['chat', 'Chat', null, null, 'world, realm and state, in a box over the page', { chat: true }],
     ['ranks', 'Rankings', 'rank', null, 'houses and states'],
   ]],
 ];
@@ -173,8 +173,13 @@ export function mount(root) {
   /** Throne's heading: "Throne", and under it your house, of your state and realm (those muted). */
   function heading() {
     const h = store.house;
-    if (current !== 'throne' || !h) return;
+    if (!h || !['throne', 'state'].includes(current)) return;
     const st = store.state && store.state.realm === h.realm && store.state.state === h.state ? store.state : null;
+    // State's heading is the state's own name, grand; under it its address and realm (the realm opens World).
+    if (current === 'state') {
+      $('title').innerHTML = `<span class="h-state">${esc(st?.name || `State ${h.realm}:${h.state}`)}</span> <span class="h-of">State ${h.state} of <a href="#world" data-home-realm>${esc(st?.realm_name || `Realm ${h.realm}`)}</a></span>`;
+      return;
+    }
     $('title').innerHTML = `<span class="h-page">Throne</span> <span class="h-house">${esc(h.name)} <span class="h-of">of ${esc(st?.name || `State ${h.realm}:${h.state}`)}, ${esc(st?.realm_name || `Realm ${h.realm}`)}</span></span>`;
   }
 

@@ -11,3 +11,5 @@
   free licence with attribution. Credited in Configuration and on the wiki's About page.
 - sledgehammer.png: "Sledgehammer" by andinur, Flaticon (https://www.flaticon.com/free-icon/sledgehammer_8591563),
   free licence with attribution. Credited in Configuration and on the wiki's About page.
+- fort.svg: "hill fort" by Delapouite, game-icons.net (delapouite/hill-fort.svg), CC BY 3.0; the War Room's
+  roster.svg, background removed. Credited in Configuration and on the wiki's About page.

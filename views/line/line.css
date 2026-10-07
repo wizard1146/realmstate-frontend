@@ -169,9 +169,13 @@
     border-bottom: 3px double var(--l-line); display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; }
   & .line-page-h h1 { margin: 0; font: 600 1.4rem/1.2 var(--l-head-font); letter-spacing: .02em; }
   & .line-page-h .line-what { margin: 0; color: var(--l-muted); }
-  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"]) .line-page-h { justify-content: center; }
-  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"]) .line-what { display: none; }
-  & .line-main[data-page="throne"] .line-page-h h1 { display: flex; flex-direction: column; align-items: center; text-align: center; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"]) .line-page-h { justify-content: center; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"]) .line-what { display: none; }
+  & .line-main:is([data-page="throne"], [data-page="state"]) .line-page-h h1 { display: flex; flex-direction: column; align-items: center; text-align: center; }
+  /* State: the state's name, grand, with its address and realm small beneath. */
+  & .line-page-h h1 .h-state { font-size: 1.3rem; letter-spacing: .04em; line-height: 1.1; padding: 6px 0 2px; }
+  & .line-page-h h1:has(.h-state) .h-of { font-size: .95rem; margin-bottom: 4px; }
+  & .line-page-h h1 .h-of a { color: inherit; text-decoration-color: color-mix(in srgb, var(--l-gold) 50%, transparent); text-underline-offset: 3px; }
   & .line-page-h h1 .h-house { font-size: .78em; }
   & .line-page-h h1 .h-of { color: color-mix(in srgb, var(--l-muted) 92%, var(--l-page)); }   /* a shade past muted, still 4.5:1 on every theme */
   & .line-page-h h1 a { color: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--l-gold) 60%, transparent); text-underline-offset: 3px; }
@@ -201,6 +205,92 @@
   /* Resources: the War Room's wheat in the same place (same setting). */
   & .line-main > .room:has(.throne.res2.glyph)::after { width: clamp(120px, 17%, 240px); -webkit-mask-image: url("assets/wheat.svg"); mask-image: url("assets/wheat.svg"); }
   /* Land & Exploration: a compass rose (same setting). */
+  /* State: the War Room's hill fort (same setting); the page runs the full width, like Throne. */
+  & .line-main > .room:has(.lstate) { max-width: none; width: auto; min-width: 0; }
+  & .line-main > .room:has(.lstate.glyph) { isolation: isolate; }
+  & .line-main > .room:has(.lstate.glyph)::after { content: ""; position: absolute; z-index: -1; pointer-events: none; right: 18%; bottom: 11%;
+    width: clamp(120px, 17%, 240px); aspect-ratio: 1; background: var(--l-ink); opacity: .045;
+    -webkit-mask: url("assets/fort.svg") no-repeat center / contain; mask: url("assets/fort.svg") no-repeat center / contain; }
+  & .lpart.lstate { max-width: 1500px; width: 100%; margin-inline: auto; }
+  /* The banner placeholder: a dashed swallow-tail pennant, centred above the figures. */
+  & .lstate .st-banner { margin: 0 auto 18px; width: 92px; text-align: center; }
+  & .lstate .st-banner svg { display: block; width: 92px; height: auto; }
+  & .lstate .st-banner path { fill: color-mix(in srgb, var(--l-gold) 6%, transparent); stroke: color-mix(in srgb, var(--l-gold) 70%, transparent); stroke-width: 2; stroke-dasharray: 6 4; }
+  & .lstate .st-banner figcaption { margin-top: 4px; font: 600 .78rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
+  & .lstate .st-glance { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 640px; gap: 0; margin: 4px auto 26px;
+    border-block: 3px double var(--l-line); }
+  & .lstate .st-glance > div { padding: 12px 10px; text-align: center; }
+  & .lstate .st-glance > div + div { border-left: 1px solid var(--l-rule); }
+  & .lstate .st-glance dt { font: 600 .82rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
+  & .lstate .st-glance dd { margin: 2px 0 0; font: 1.35rem var(--l-head-font); font-variant-numeric: lining-nums tabular-nums; }
+  & .lstate .st-glance dd.rank { margin-top: 1px; font: 600 .95rem var(--l-body-font); color: var(--l-gold); font-variant-numeric: tabular-nums; }
+  & .lstate .st-glance dd.rank span { font-weight: 400; color: var(--l-muted); font-size: .9em; }
+  & .lstate .st-glance dd.note a { color: inherit; }
+  & .lstate section { margin-bottom: 26px; }
+  & .lstate table.st-tbl { width: 100%; }
+  & .lstate .st-tbl tbody :is(td, th) { vertical-align: middle; height: 34px; padding-block: 0; }   /* every row one height, buttons or not */
+  & .lstate .st-tbl .btn.mini { margin: 0; }
+  & .lstate .st-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+  & .lstate .st-head h3.sub { flex: 1; }
+  & .lstate .st-btns { display: flex; gap: 8px; margin-bottom: 6px; }
+  /* Straightline's windows (<dialog>): the page's own paper and frame, a quiet header, Esc or × to close. */
+  & dialog.ldlg { padding: 0; border: 1px solid var(--l-frame); border-radius: 6px; background: var(--l-page); color: var(--l-ink);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, .28); width: min(820px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); font: inherit; }
+  & dialog.ldlg[open] { display: flex; flex-direction: column; }
+  & dialog.ldlg::backdrop { background: rgba(20, 16, 10, .45); }
+  & dialog.ldlg > header { display: flex; align-items: center; gap: 12px; padding: 14px 20px 12px; border-bottom: 3px double var(--l-line); }
+  & dialog.ldlg > header h2 { margin: 0; flex: 1; font: 1.3rem var(--l-head-font); }
+  & dialog.ldlg > header h2 span { color: var(--l-muted); font-size: .8em; }
+  & dialog.ldlg > header .x { border: 0; background: none; color: var(--l-muted); font-size: 1.6rem; line-height: 1; padding: 0 4px; cursor: pointer; border-radius: 4px; }
+  & dialog.ldlg > header .x:hover { color: var(--l-ink); }
+  & dialog.ldlg > header .x:focus-visible { outline: 2px solid var(--l-gold); }
+  & dialog.ldlg > .body { padding: 6px 20px 20px; overflow: auto; }
+  & dialog.ldlg section + section { margin-top: 22px; }
+  & dialog.ldlg .note { color: var(--l-muted); font-size: .88em; margin: 8px 0 0; }
+  & dialog.st-aid { width: min(520px, calc(100vw - 32px)); }
+  & dialog.st-aid .lform { margin-top: 14px; display: grid; grid-template-columns: 72px 1fr; gap: 10px 12px; align-items: center; max-width: none; }
+  & dialog.st-aid .lform label { margin: 0; }
+  & dialog.st-aid .lform :is(select, .field) { width: 100%; margin: 0; }
+  & dialog.st-aid .lform .field { display: flex; gap: 8px; }
+  & dialog.st-aid .lform .field input { flex: 1; min-width: 0; }
+  & dialog.st-aid .doing { max-width: none; }
+  & dialog.st-aid .lform .go { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
+  /* Statistics: the spread table, two small histograms side by side, and the races as a ring. */
+  & .lstate table.st-spread { width: 100%; }
+  & .lstate .st-spread tbody th[scope=row] { font: inherit; font-variant-caps: normal; letter-spacing: 0; color: var(--l-ink); text-align: left; }
+  & .lstate .st-hists { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-top: 8px; }
+  & .lstate .st-hist { margin: 0; padding: 10px 12px 6px; background: color-mix(in srgb, var(--l-gold) 4%, var(--l-page)); border: 1px solid var(--l-rule); border-radius: 6px; }
+  & .lstate .st-hist figcaption { font-size: .9em; color: var(--l-muted); margin-bottom: 6px; }
+  & .lstate .st-hist svg { display: block; width: 100%; height: auto; overflow: visible; }
+  & .lstate .st-hist rect { fill: color-mix(in srgb, var(--l-gold) 70%, var(--l-page)); }
+  & .lstate .st-hist g:hover rect { fill: var(--l-gold); }
+  & .lstate .st-hist .grid { stroke: var(--l-rule); stroke-width: .6; }
+  & .lstate .st-hist text { fill: var(--l-muted); font: 8px var(--l-body-font); }
+  & .lstate .st-hist text.ax { text-anchor: middle; }
+  & .lstate .st-hist text.ax.tilt { text-anchor: end; transform-box: fill-box; transform-origin: right top; transform: rotate(-35deg); }
+  & .lstate .st-hist text.ay { text-anchor: end; }
+  & .lstate .st-races { display: flex; flex-wrap: wrap; gap: 28px; align-items: center; margin-top: 8px; }
+  & .lstate .st-races .pie { width: 150px; height: 150px; flex: none; }
+  & .lstate .st-races .pie :is(path, circle) { stroke: var(--l-page); stroke-width: 1; }
+  & .lstate .st-races .pie circle.hole { fill: var(--l-page); stroke: none; }
+  & .lstate .st-races .pie text { text-anchor: middle; fill: var(--l-ink); }
+  & .lstate .st-races .pie text.n { font: 15px var(--l-head-font); }
+  & .lstate .st-races .pie text.u { font: 7px var(--l-body-font); fill: var(--l-muted); }
+  & .lstate .st-races table { flex: 1 1 260px; }
+  & .lstate .st-races tbody th[scope=row] { font: inherit; font-variant-caps: normal; letter-spacing: 0; color: var(--l-ink); text-align: left; }
+  & .lstate .st-races .sw { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 8px; vertical-align: -1px; }
+  & .lstate .st-tbl tbody th[scope=row] { font: inherit; font-variant-caps: normal; letter-spacing: 0; color: var(--l-ink); text-align: left; }
+  & .lstate .st-tbl tr.self > * { background: color-mix(in srgb, var(--l-gold) 10%, var(--l-page)); }
+  & .lstate .st-tbl tbody tr:hover > * { background: color-mix(in srgb, var(--l-gold) 14%, var(--l-page)); }
+  & .lstate .st-tbl td.marks { white-space: nowrap; }
+  & .lstate .st-tbl tr.open > * { color: var(--l-muted); }
+  & .lstate .st-tbl tr.open th[scope=row] { color: var(--l-muted); font-style: italic; }
+  & .lstate .st-tbl tr.open:hover > * { background: none; }
+  & .lstate .st-glance dd .of { font-size: .62em; color: var(--l-muted); }
+  & .lstate .st-tbl .mark { display: inline-block; margin-right: 6px; padding: 0 6px; border: 1px solid var(--l-line); border-radius: 3px; font-size: .78em; color: var(--l-muted); }
+  & .lstate .st-tbl .mark.lead { color: var(--l-gold); border-color: color-mix(in srgb, var(--l-gold) 60%, transparent); }
+  & .lstate .st-tbl td.acts { white-space: nowrap; text-align: right; }
+  & .lstate .st-tbl td.acts .btn + .btn { margin-left: 6px; }
   /* Build & Raze: wood planks (same setting). */
   & .line-main > .room:has(.lbuild.glyph)::after { width: clamp(120px, 17%, 240px); -webkit-mask-image: url("assets/planks.png"); mask-image: url("assets/planks.png"); }
   & .line-main > .room:has(.lbuild.glyph[data-tab="raze"])::after { -webkit-mask-image: url("assets/sledgehammer.png"); mask-image: url("assets/sledgehammer.png"); }   /* a sledgehammer while razing */
