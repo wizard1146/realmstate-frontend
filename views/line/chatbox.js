@@ -32,7 +32,7 @@ export function mountChatbox(root, on) {
   btn.className = 'lchat-btn';
   btn.title = 'Chat (C)';
   btn.setAttribute('aria-controls', 'lchat');
-  btn.innerHTML = '<span>Chat</span> <b class="n"></b><span class="vh unread"></span>';
+  btn.innerHTML = '<span>Chat</span><b class="n"></b><span class="vh unread"></span>';
 
   const win = document.createElement('section');
   win.className = 'lchat';
