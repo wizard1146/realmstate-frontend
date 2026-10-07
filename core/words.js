@@ -196,7 +196,7 @@ export function newsLine(n) {
     case 'realm_work': return [`Our realm's ${n.work} ${n.step === 'proposed' ? `was proposed by state ${n.by ? st(n.by) : '?'}; the realm's leaders vote` : n.step === 'passed' ? 'passed its vote: every house of the realm may fund it' : 'is done: the realm makes more of its material'}.`, n.step === 'proposed' ? '' : 'good'];
     case 'dragon_raid': return n.driven_off ? [`${dragonWho(n)} fell on us, and our defenders drove it off. +${fmt(n.renown)} renown.`, 'good']
       : [`${dragonWho(n)} fell on us. ${dragonToll(n)}`, 'bad'];
-    case 'dragon_sighted': return [`${dragonWho(n)} struck in realm ${n.realm}.`, ''];
+    case 'dragon_sighted': return [`${dragonWho(n)} struck in ${n.realm_name ? `${n.realm_name.replace(/^The /, 'the ')} (realm ${n.realm})` : `realm ${n.realm}`}.`, ''];
     case 'wonder_started': return [`${where(n.by)} began the ${n.wonder}; our state's houses may fund it.`, ''];
     case 'wonder_funded': return [`The ${n.wonder} of ${where(n.by)} is fully funded; it finishes at tick ${n.done_tick}.`, 'good'];
     case 'wonder_lost': return [`Another house finished the ${n.wonder} first; ${n.refund_bp / 100}% of what our build was given came back.`, 'bad'];
