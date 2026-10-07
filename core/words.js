@@ -169,6 +169,13 @@ export function newsLine(n) {
     case 'aid_sent': return [`${where(n.from)} sent us aid: ${fmt(n.amount)} ${aidName(n.what)}, arriving ${when(n.arrives_at)}.`, 'good'];
     case 'aid_arrived': return [`Aid arrived from ${where(n.from)}: ${fmt(n.amount)} ${aidName(n.what)}.`, 'good'];
     case 'admin_action': return [`The game's staff ${n.what}${n.note ? `: ${n.note}` : ''}.`, ''];
+    case 'deserted': {
+      // Unpaid wages: the gold we were short, and who left (largest first).
+      const left = (n.units || []).map((c, i) => [c, i]).filter(([c]) => c > 0).sort((x, y) => y[0] - x[0]);
+      const total = left.reduce((a, [c]) => a + c, 0);
+      const who = left.map(([c, i]) => `${uname(i)} ${fmt(c)}`).join(', ');
+      return [`We couldn't pay our troops' wages (${fmt(n.unpaid)} gold short), so ${plural(total, 'troop', 'troops')} deserted${who ? `: ${who}` : ''}. Keep gold for wages each tick, or keep fewer troops.`, 'bad'];
+    }
     case 'troops_recovered': return [`${fmt((n.units || []).reduce((a, b) => a + b, 0))} of our battle dead rose again and came home.`, 'good'];
     case 'burned': {
       const troops = (n.units || []).reduce((a, b) => a + b, 0);
