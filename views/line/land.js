@@ -5,7 +5,7 @@ import { store } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import * as price from '../../core/prices.js';
 import { fmt, esc, dayTime, SOLDIER } from '../../core/words.js';
-import { landSplit, landByTick, exploreWhy, ticks, dur } from '../../core/land.js';
+import { landSplit, landByTick, exploreWhy, ticks } from '../../core/land.js';
 import { mountAdvisor } from './advisor.js';
 import { WIKI } from '../../core/wiki.js';
 
@@ -33,7 +33,7 @@ export function mountLand(host, on) {
       <p class="what" id="ll-what"></p>
       <form id="ll-x" class="lform" novalidate>
         <label for="ll-n">Acres</label>
-        <span class="field"><input id="ll-n" type="number" min="1" step="1" inputmode="numeric" value="10" placeholder="0"><button type="button" class="btn mini" id="ll-max" aria-label="Most acres you can explore now">MAX</button></span>
+        <span class="field"><input id="ll-n" type="number" min="1" step="1" inputmode="numeric" placeholder="0"><button type="button" class="btn" id="ll-max">Max</button></span>
         <button class="btn primary" id="ll-go">Explore</button>
       </form>
       <p class="doing" id="ll-doing" aria-live="polite"></p>
@@ -49,12 +49,13 @@ export function mountLand(host, on) {
     const b = s.built / Math.max(1, s.held) * 10, c = (s.built + s.building) / Math.max(1, s.held) * 10;
     const fill = (k) => `${Math.round(Math.min(1, Math.max(0, k)) * 100)}%`;
     $('bar').innerHTML = Array.from({ length: 10 }, (_, i) => `<i style="--b:${fill(b - i)};--c:${fill(c - i)}"></i>`).join('');
-    const row = (k, v, cls = '', share = true) => `<tr${cls ? ` class="${cls}"` : ''}><th scope="row">${k}</th><td class="num">${fmt(v)}</td><td class="num dim">${share ? pct(v, s.held) : ''}</td></tr>`;
-    $('land').innerHTML = row('Built', s.built) + row('Being built', s.building) + row('Barren (free to build on)', s.barren)
+    const row = (k, v, cls = '', share = true, go = '') => `<tr${cls ? ` class="${cls}"` : ''}${go ? ` data-go="${go}" tabindex="0" title="Open ${go === 'build' ? 'Build' : go}"` : ''}><th scope="row">${k}</th><td class="num">${fmt(v)}</td><td class="num dim">${share ? pct(v, s.held) : ''}</td></tr>`;
+    // Barren land is land to build on: its row opens Build.
+    $('land').innerHTML = row('Built', s.built) + row('Being built', s.building) + row('Barren (free to build on)', s.barren, 'go', true, 'build')
       + row('Held', s.held, 'sum') + row('Coming, explored', s.explored, '', false) + row('Coming, with your armies', s.withArmies, '', false)
       + row('Held and coming', s.held + s.incoming, 'sum', false)
       + (h.explorable
-        ? `<tr class="gap"><th scope="row">Explorable</th><td class="num">${fmt(h.explorable.acres)}</td><td class="num dim">of ${fmt(h.explorable.cap)}</td></tr>`
+        ? `<tr class="gap"><th scope="row">Explorable <span class="dim">(+${(h.explorable.per_tick_milli / 1000).toLocaleString('en-US', { maximumFractionDigits: 2 })} per tick)</span></th><td class="num">${fmt(h.explorable.acres)}</td><td class="num dim">of ${fmt(h.explorable.cap)}</td></tr>`
         : '<tr class="gap"><th scope="row">Explorable</th><td class="num">no limit</td><td></td></tr>');
     coming();
   }
@@ -83,25 +84,36 @@ export function mountLand(host, on) {
     const h = store.house, P = store.rules.params, n = n0($('n').value);
     const exact = price.have();
     $('max').disabled = !exact;
-    $('what').textContent = `Exploring claims new land for your house. You pay gold now, and soldiers go out to settle it (they don't come back). `
-      + `The land arrives as barren acres in ${ticks(P.explore_ticks)} (≈${dur(P.explore_ticks)}), ready to build on.`;
+    // Max shows the most you can explore now (gold, soldiers, explorable acres and the per-order limit).
+    $('max').textContent = exact ? `Max (${fmt(price.exploreMax())})` : 'Max';
+    $('max').setAttribute('aria-label', exact ? `Fill in the most you can explore now: ${fmt(price.exploreMax())} acres` : 'Most acres you can explore now');
+    $('what').textContent = `Exploring claims new land for your house; you pay in gold and soldiers. `
+      + `The land arrives as barren acres in ${ticks(P.explore_ticks)}, ready to build on.`;
     let line, why = '';
     if (!n) line = 'Enter how many acres to explore.';
     else if (exact) {
       const g = price.exploreCost(n), s = price.exploreSoldiers(n);
       why = price.exploreProblem(n, h) || '';
-      line = `You will explore ${fmt(n)} acre${n === 1 ? '' : 's'} for ${fmt(g)} gold${s ? ` and ${fmt(s)} soldiers` : ''}. Land then: ${fmt(h.land + h.incoming_land + n)} acres, counting what's already coming.`;
+      line = `You will explore ${fmt(n)} acre${n === 1 ? '' : 's'} for ${fmt(g)} gold${s ? ` and ${fmt(s)} soldiers` : ''}. Land then: ${fmt(h.land + h.incoming_land + n)} acres inclusive.`;
     } else line = `You will explore ${fmt(n)} acres for about ≈${fmt(act.estimate.explore(n))} gold (an estimate before your modifiers).`;
     $('doing').textContent = why ? `${line} Can't yet: ${why}.` : line;
     $('doing').classList.toggle('short', !!why);
     $('go').disabled = !n || !!why;
     const per = exact ? (h.prices.explore.soldiers_milli_per_acre || 0) / 1000 : 0;
-    $('info').textContent = exact
-      ? `Each acre: ${fmt(price.exploreCost(1))} gold and ${fmt(per)} soldiers (${fmt(h.units[SOLDIER])} at home). Most you can explore now: ${fmt(price.exploreMax())} acres; ${fmt(price.exploreLimit())} per order.`
-        + (h.explorable ? ` Explorable acres: ${fmt(h.explorable.acres)} of ${fmt(h.explorable.cap)}, +${(h.explorable.per_tick_milli / 1000).toLocaleString('en-US', { maximumFractionDigits: 2 })} a tick (fewer as you grow).` : '')
+    // The rates, then what you have to spend, a line each. Soldiers per acre to one decimal place (the order itself
+    // rounds the whole order's soldiers up, as the engine does).
+    $('info').innerHTML = exact
+      ? `<span class="i-grp">Exploration costs per acre: ${fmt(price.exploreCost(1))} gold and ${per.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} soldiers.</span>`
+        + `<span class="i-grp">Available gold: ${fmt(h.gold)}<br>Available soldiers: ${fmt(h.units[SOLDIER])}`
+        + `<br>Available acres: ${h.explorable ? fmt(h.explorable.acres) : 'no limit'}</span>`
+        + `<span class="i-grp">Current maximum explorable: ${fmt(price.exploreMax())}</span>`
       : '';
   }
 
+  // A row that leads somewhere (Barren → Build): click it, or Enter on it.
+  const go = (tr) => { if (tr) location.hash = tr.dataset.go; };
+  on($('land'), 'click', (ev) => go(ev.target.closest('tr[data-go]')));
+  on($('land'), 'keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('tr[data-go]')) { ev.preventDefault(); go(ev.target); } });
   on($('x'), 'input', explore);
   on($('max'), 'click', () => {
     const n = price.exploreMax();

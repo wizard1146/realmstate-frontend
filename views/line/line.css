@@ -206,11 +206,11 @@
   & .throne table.kv td { white-space: normal; }
   & .throne tr.total > * { color: var(--l-ink); }
   & .throne tr.total > td { font-weight: 400; }
-  /* Row labels a touch muted; full ink on the row you point at. */
-  & .throne table.kv tr > th[scope=row] { color: color-mix(in srgb, var(--l-ink) 68%, var(--l-page)); transition: color 120ms; }
-  & .throne table.kv tr:not(.colhead):hover > th[scope=row] { color: var(--l-ink); }
-  & .throne table.kv tr:nth-child(even) > * { background: color-mix(in srgb, var(--l-ink) 1.25%, transparent); }   /* the faintest of stripes */
-  & .throne table.kv tr:not(.colhead):hover > * { background: color-mix(in srgb, var(--l-gold) 12%, transparent); }
+  /* Row labels a touch muted; full ink on the row you point at (Throne, Resources and Land's own table). */
+  & :is(.throne, .lland) table.kv tr > th[scope=row] { color: color-mix(in srgb, var(--l-ink) 68%, var(--l-page)); transition: color 120ms; }
+  & :is(.throne, .lland) table.kv tr:not(.colhead):hover > th[scope=row] { color: var(--l-ink); }
+  & :is(.throne, .lland) table.kv tr:nth-child(even) > * { background: color-mix(in srgb, var(--l-ink) 1.25%, transparent); }   /* the faintest of stripes */
+  & :is(.throne, .lland) table.kv tr:not(.colhead):hover > * { background: color-mix(in srgb, var(--l-gold) 12%, transparent); }
   & .throne tr.unit > th { padding-left: 1.4em; }
   & .throne tr.unit > td { color: var(--l-muted); }
   & .throne table.kv tr.sum > :is(th, td) { color: var(--l-ink); border-top: 1px solid var(--l-line); font-weight: 400; }
@@ -319,6 +319,8 @@
   & .lpart .lform { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
   & .lpart .lform .field { display: inline-flex; gap: 4px; }
   & .lpart .lform input[type=number] { width: 9ch; text-align: right; }
+  /* A form's secondary buttons (Max) beside its blue one: a firmer edge and the same small shadow, so they read as the same size. */
+  & .lpart .lform .btn:not(.primary) { border-color: color-mix(in srgb, var(--l-muted) 55%, var(--l-page)); box-shadow: 0 1px 2px rgba(0, 0, 0, .14); }
   & .lpart .lfoot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
   & .lpart table.kv { width: 100%; min-width: 0; max-width: 520px; }
   & .lpart table.kv th { text-align: left; font-weight: 400; font-variant-caps: normal; letter-spacing: 0; font-size: inherit; color: var(--l-muted); }
@@ -334,6 +336,10 @@
   & .lpart.lland { max-width: none; width: min(100%, 900px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 34px; align-items: start; }
   & .lland .ll-wide { grid-column: 1 / -1; }
   & .lland .what, & .lland .doing { max-width: none; }
+  & .lland #ll-info .i-grp { display: block; } & .lland #ll-info .i-grp + .i-grp { margin-top: .45em; }   /* cost, what you have, the maximum: a little air between */
+  & .lland table.kv tr.go { cursor: pointer; }
+  & .lland table.kv tr.go > th[scope=row]::after { content: " ↗"; font-size: .8em; color: var(--l-muted); opacity: .6; }   /* this row opens another page */
+  & .lland table.kv tr.go:focus-visible { outline: 2px solid var(--l-gold); outline-offset: -2px; }
   & .lland table.kv tr.gap > * { border-top: 1px solid var(--l-line); padding-top: 10px; }
   @media (max-width: 900px) { & .lpart.lland { grid-template-columns: minmax(0, 1fr); } }
   @media (max-width: 760px) { & .lland table.ticks { min-width: 720px; } }

@@ -37,7 +37,7 @@ const MENU = [
   ['Your house', [
     ['throne', 'Throne', null, null, 'your house at a glance', { part: 'throne' }],
     ['resources', 'Resources', null, null, 'what you hold, and how it moved each tick', { part: 'resources' }],
-    ['land', 'Land', null, null, 'what land you hold, and explore for more', { part: 'land' }],
+    ['land', 'Land & Exploration', null, null, 'what land you hold, and explore for more', { part: 'land' }],
     ['build', 'Build', null, null, 'put up buildings on barren land, or raze them', { part: 'build' }],
     ['truths', 'Truths & Quests', 'sci', ['sci', 'truths'], 'your quest, the Truths you know, transmutation'],
   ]],
