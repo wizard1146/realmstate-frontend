@@ -3,6 +3,7 @@
 // each row's history); a row opens the same graph as the Holdings panel.
 import { store } from '../../core/store.js';
 import { fmt, esc } from '../../core/words.js';
+import { WIKI } from '../../core/wiki.js';
 import * as trend from '../room/trend.js';
 import { mountGraph } from '../room/graph.js';
 
@@ -33,7 +34,9 @@ export function mountResources(host, on) {
     if (!h) return;
     let out = '';
     for (const [title, rows] of groups(h)) {
-      out += `<section class="tcard"><h3 class="sub">${esc(title)}</h3><table class="tbl kv res">
+      // Materials links to the wiki's materials page (new tab): not everyone remembers what each is for.
+      const wiki = title === 'Materials' ? ` <a class="wiki" href="${WIKI}materials.html" target="_blank" rel="noopener" title="What each material is for (wiki, new tab)">&#8599;<span class="vh">What each material is for: opens the wiki in a new tab</span></a>` : '';
+      out += `<section class="tcard"><h3 class="sub">${esc(title)}${wiki}</h3><table class="tbl kv res">
         <tr><th>Item</th><th class="num">Held</th><th class="num" title="Change over the last tick">Last tick</th><th class="num" title="Mean change over the last 12 ticks">Avg 12</th></tr>
         ${rows.map(([k, label, held]) => {
           const v = held ?? trend.latestLevel(k);

@@ -5,6 +5,8 @@ import { setClock, isUtc } from '../../core/store.js';
 import { esc } from '../../core/words.js';
 import { THEMES, HEADS, BODIES, look, setLook, FONT_DEFAULTS } from './looklab.js';
 import { UPGRADES_KEY, upgradeRows, GLYPH_KEY, throneGlyph } from './throne.js';
+import { ADVISOR_KEY, ADVISOR_MODES, advisorMode } from './advisor.js';
+import { LAND_ICONS, LAND_ICON_KEY, landIcon, iconUrl } from './land.js';
 
 export function mountConfig(host, on) {
   host.innerHTML = `<div class="lpart lconfig">
@@ -20,6 +22,12 @@ export function mountConfig(host, on) {
       </div>
       <p class="cf-specimen"><span class="h">The Crown of Valmark</span><br>Gold 1,234,567 · Land 430 acres · Might 80,904</p>
       <button type="button" class="btn" id="cf-reset">Default fonts</button></section>
+    <section><h3 class="sub">Advisors</h3>
+      <fieldset class="cf-clock"><legend class="vh">Advisors</legend>${ADVISOR_MODES.map(([k, label]) =>
+        `<label><input type="radio" name="cf-adv" value="${k}"> ${esc(label)}</label>`).join('')}</fieldset></section>
+    <section><h3 class="sub">Land</h3>
+      <fieldset class="cf-icons"><legend>The houses in the land bar</legend>${LAND_ICONS.map(([k, name]) =>
+        `<label class="cf-icon"><input type="radio" name="cf-icon" value="${k}"><i style="--house:${iconUrl(k)}" aria-hidden="true"></i> ${esc(name)}</label>`).join('')}</fieldset></section>
     <section><h3 class="sub">Throne</h3>
       <label class="cf-check"><input type="checkbox" id="cf-glyph"> A faint throne in the background of the page</label>
       <label class="cf-check"><input type="checkbox" id="cf-upg"> List upgraded units on rows of their own (otherwise each is counted in with its base unit, marked *)</label></section>
@@ -37,6 +45,8 @@ export function mountConfig(host, on) {
     $('orn').checked = l.ornaments;
     $('head').value = l.fonts.head; $('body').value = l.fonts.body; $('size').value = l.fonts.size; $('size-o').textContent = `${l.fonts.size}px`;
     $('upg').checked = upgradeRows();
+    host.querySelectorAll('input[name="cf-icon"]').forEach((i) => { i.checked = i.value === landIcon(); });
+    host.querySelectorAll('input[name="cf-adv"]').forEach((i) => { i.checked = i.value === advisorMode(); });
     $('glyph').checked = throneGlyph();
     host.querySelectorAll('input[name="cf-clock"]').forEach((i) => { i.checked = (i.value === 'utc') === isUtc(); });
   }
@@ -45,6 +55,8 @@ export function mountConfig(host, on) {
     if (t.name === 'cf-theme') setLook({ theme: t.value });
     else if (t.id === 'cf-orn') setLook({ ornaments: t.checked });
     else if (t.name === 'cf-clock') setClock(t.value === 'utc');
+    else if (t.name === 'cf-icon') { try { localStorage.setItem(LAND_ICON_KEY, t.value); } catch { /* storage off */ } }
+    else if (t.name === 'cf-adv') { try { localStorage.setItem(ADVISOR_KEY, t.value); } catch { /* storage off */ } }
     else if (t.id === 'cf-glyph') { try { localStorage.setItem(GLYPH_KEY, JSON.stringify(t.checked)); } catch { /* storage off */ } }
     else if (t.id === 'cf-upg') { try { localStorage.setItem(UPGRADES_KEY, JSON.stringify(t.checked)); } catch { /* storage off */ } }
   });

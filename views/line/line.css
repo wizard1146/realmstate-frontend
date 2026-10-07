@@ -169,8 +169,8 @@
     border-bottom: 3px double var(--l-line); display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; }
   & .line-page-h h1 { margin: 0; font: 600 1.4rem/1.2 var(--l-head-font); letter-spacing: .02em; }
   & .line-page-h .line-what { margin: 0; color: var(--l-muted); }
-  & .line-main:is([data-page="throne"], [data-page="resources"]) .line-page-h { justify-content: center; }
-  & .line-main:is([data-page="throne"], [data-page="resources"]) .line-what { display: none; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"]) .line-page-h { justify-content: center; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"]) .line-what { display: none; }
   & .line-main[data-page="throne"] .line-page-h h1 { display: flex; flex-direction: column; align-items: center; text-align: center; }
   & .line-page-h h1 .h-house { font-size: .78em; }
   & .line-page-h h1 .h-of { color: color-mix(in srgb, var(--l-muted) 92%, var(--l-page)); }   /* a shade past muted, still 4.5:1 on every theme */
@@ -273,6 +273,12 @@
   & .res2 table.kv.res th:first-child, & .res2 table.kv.res tr > :first-child { width: 46%; }
   & .res2 table.kv.res tr:first-child th { font-variant-caps: all-small-caps; letter-spacing: .06em; font-size: .9em; }
   & .res2 table.kv.res th.num { text-align: right; }
+  & .line-page h3 .wiki { margin-left: 4px; font-size: .68em; color: var(--l-muted); opacity: .5; text-decoration: none; font-family: var(--l-body-font); font-variant-caps: normal; }
+  & .line-page h3 .wiki:is(:hover, :focus-visible) { opacity: 1; }
+  & .line-page h3 .wiki:hover { color: var(--l-gold); }   /* a heading's faint ↗ to its wiki page, on any page */
+  /* The graph window (the War Room's): wider here, and without the War Room's keyboard-key badge ("G"). */
+  & dialog.dlg.gdlg { width: min(1040px, calc(100vw - 48px)); }   /* dialog: outranks room.css, which loads later */
+  & .gdlg .dlg-h h2 .key { display: none; }
   & .res2 .note { max-width: 1500px; margin: 18px auto -22px; text-align: center; color: color-mix(in srgb, var(--l-muted) 92%, var(--l-page)); }   /* a muted footnote at the page's foot */
   & .res2 tr[data-graph] { cursor: pointer; }
   & .res2 th .chart { width: 13px; height: 13px; margin-left: 6px; vertical-align: -1px; opacity: .5; }   /* the graph mark, half its label's strength */
@@ -317,6 +323,13 @@
   & .lpart table.kv { width: 100%; min-width: 0; max-width: 520px; }
   & .lpart table.kv th { text-align: left; font-weight: 400; font-variant-caps: normal; letter-spacing: 0; font-size: inherit; color: var(--l-muted); }
   & .lpart table.kv tr.sum > * { font-weight: 600; color: var(--l-ink); border-top: 1px solid var(--l-line); }
+  /* An advisor's band at the top of a page (advisor.js): the court's voice, a little gold-tinted, full width. */
+  & .adv-band { grid-column: 1 / -1; margin: -4px 0 18px; padding: 9px 16px; text-align: center; font: italic .92rem/1.4 var(--l-head-font);
+    color: color-mix(in srgb, var(--l-ink) 68%, var(--l-page)); background: color-mix(in srgb, var(--l-gold) 9%, var(--l-page));
+    border-top: 1px solid color-mix(in srgb, var(--l-gold) 40%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--l-gold) 40%, transparent); }
+  & .adv-band .who { font-style: normal; color: var(--l-muted); white-space: nowrap; }   /* same size as the line it signs */
+  & .adv-band a { color: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--l-gold) 60%, transparent); text-underline-offset: 3px; }
+  & .adv-band a:hover { color: var(--l-gold); }
   /* Land: your land and Explore side by side, land on its way across the page under them. */
   & .lpart.lland { max-width: none; width: min(100%, 900px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 34px; align-items: start; }
   & .lland .ll-wide { grid-column: 1 / -1; }
@@ -331,10 +344,15 @@
   & .lland table.ticks td, & .lland table.ticks thead th:not(:first-child) { text-align: center; padding: 4px 0; border-left: 1px solid var(--l-rule); }
   & .lland table.ticks td.on { background: color-mix(in srgb, var(--l-gold) 22%, var(--l-page)); font-weight: 600; }
   & .lland table.ticks tr.sum > * { border-top: 1px solid var(--l-line); font-weight: 600; }
-  & .lpart .landbar { display: flex; height: 12px; max-width: 520px; margin: 4px 0 10px; border: 1px solid var(--l-line); background: var(--l-rule); }
-  & .lpart .landbar span { display: block; height: 100%; }
-  & .lpart .landbar .built { background: var(--l-blue); }
-  & .lpart .landbar .cons { background: repeating-linear-gradient(90deg, var(--l-blue) 0 2px, transparent 2px 4px); }
+  /* Land as ten houses: each a house-shaped mask over a fill, built (--b) then being built (--c) from the left. */
+  & .lpart .landbar { display: flex; justify-content: center; gap: 6px; max-width: 520px; margin: 6px 0 12px; opacity: .78; }   /* centred over its table (which is at most 520px) */
+  & .lpart .landbar i { width: 30px; aspect-ratio: 1; display: block;
+    background: linear-gradient(90deg, var(--l-blue) 0 var(--b), color-mix(in srgb, var(--l-blue) 40%, var(--l-page)) var(--b) var(--c), var(--l-line) var(--c) 100%);
+    -webkit-mask: var(--house) center / contain no-repeat; mask: var(--house) center / contain no-repeat; }   /* --house: the icon Configuration picked (land.js) */
+  & .lconfig .cf-icons { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px 12px; }
+  & .lconfig .cf-icon { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--l-line); border-radius: 4px; cursor: pointer; }
+  & .lconfig .cf-icon:has(input:checked) { border-color: var(--l-gold); background: var(--l-self); }
+  & .lconfig .cf-icon i { width: 24px; aspect-ratio: 1; background: var(--l-blue); -webkit-mask: var(--house) center / contain no-repeat; mask: var(--house) center / contain no-repeat; }
   /* Sub-tabs (Build, Raze): a row of tabs over the page, the chosen one joined to it. */
   & .ltabs { display: flex; gap: 4px; border-bottom: 1px solid var(--l-frame); margin: 0 0 4px; }
   & .ltabs [role=tab] { font: 600 1rem/1.3 var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted);

@@ -6,7 +6,8 @@ import { fmt, esc, fullTime } from '../../core/words.js';
 import * as trend from './trend.js';
 
 let W = 560; // the chart's width in SVG units: the box's own width, so labels stay at their real size
-const H = 230, L = 58, R = 12, T = 12, B = 30;
+let H = 230;   // grows with a wide box (Straightline's wider window), so the chart never turns into a strip
+const L = 58, R = 12, T = 12, B = 30;
 
 /** A tidy step for about `n` gridlines over a span: 1, 2 or 5 times a power of ten. */
 function niceStep(span, n = 4) {
@@ -14,10 +15,12 @@ function niceStep(span, n = 4) {
   const p = 10 ** Math.floor(Math.log10(raw));
   return [1, 2, 5, 10].map((m) => m * p).find((s) => s >= raw);
 }
-const short = (v) => {
+/** An axis label: 2.6M, 45k, 1,234. With `step` (the grid's spacing), enough decimals that neighbouring lines differ. */
+const short = (v, step = 0) => {
   const a = Math.abs(v);
-  if (a >= 1e6) return `${+(v / 1e6).toFixed(a >= 1e7 ? 0 : 1)}M`;
-  if (a >= 1e4) return `${+(v / 1e3).toFixed(a >= 1e5 ? 0 : 1)}k`;
+  const dp = (unit, base) => Math.min(3, Math.max(base, step ? Math.ceil(-Math.log10(step / unit) - 1e-9) : 0));
+  if (a >= 1e6) return `${+(v / 1e6).toFixed(dp(1e6, a >= 1e7 ? 0 : 1))}M`;
+  if (a >= 1e4) return `${+(v / 1e3).toFixed(dp(1e3, a >= 1e5 ? 0 : 1))}k`;
   return fmt(v);
 };
 
@@ -32,7 +35,7 @@ function chart(pts, label) {
   const y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
   const grid = [];
   for (let v = lo; v <= hi + step / 2; v += step) {
-    grid.push(`<line class="g-grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text class="g-lab" x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${esc(short(v))}</text>`);
+    grid.push(`<line class="g-grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text class="g-lab" x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${esc(short(v, step))}</text>`);
   }
   const xs = niceStep(t1 - t0, 5);
   for (let t = Math.ceil(t0 / xs) * xs; t <= t1; t += xs) {
@@ -86,7 +89,8 @@ export function mountGraph(host) {
     const a = pts[0], z = pts[pts.length - 1], ch = z.v - a.v;
     const pct = a.v ? ` (${ch >= 0 ? '+' : '−'}${Math.abs((100 * ch) / a.v).toFixed(1)}%)` : '';
     dlg.querySelector('.g-sum').innerHTML = `Latest <b class="num">${fmt(z.v)}</b> at T${z.tick} · over ${pts.length - 1} tick${pts.length === 2 ? '' : 's'} (T${a.tick}–T${z.tick}): <b class="num ${trend.tone(ch)}">${esc(trend.signed(ch))}${esc(pct)}</b>`;
-    W = Math.max(280, Math.min(720, Math.round(box.clientWidth || 560)));
+    W = Math.max(280, Math.min(1200, Math.round(box.clientWidth || 560)));
+    H = W > 720 ? Math.round(W * 0.36) : 230;
     geo = chart(pts, label);
     const hadFocus = box.contains(document.activeElement);
     box.innerHTML = geo.svg;
