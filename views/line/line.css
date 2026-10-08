@@ -169,8 +169,8 @@
     border-bottom: 3px double var(--l-line); display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; }
   & .line-page-h h1 { margin: 0; font: 600 1.4rem/1.2 var(--l-head-font); letter-spacing: .02em; }
   & .line-page-h .line-what { margin: 0; color: var(--l-muted); }
-  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"]) .line-page-h { justify-content: center; }
-  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"]) .line-what { display: none; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"]) .line-page-h { justify-content: center; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"]) .line-what { display: none; }
   & .line-main:is([data-page="throne"], [data-page="state"]) .line-page-h h1 { display: flex; flex-direction: column; align-items: center; text-align: center; }
   /* State: the state's name, grand, with its address and realm small beneath. */
   & .line-page-h h1 .h-state { font-size: 1.3rem; letter-spacing: .04em; line-height: 1.1; padding: 6px 0 2px; }
@@ -818,4 +818,63 @@
 :root[data-view="line"] {
   /* Headings' numbers stand on the line, in faces that can (IM Fell can't: its numbers are old-style only). */
   & :is(h1, h2, h3, .st-glance dd) { font-variant-numeric: lining-nums; }
+}
+
+:root[data-view="line"] {
+  /* Attack: target and how side by side, the order bar, the army table, armies coming home. Build's layout (.lbuild). */
+  & .line-main > .room:has(.latk.glyph)::after { -webkit-mask-image: url("assets/sword.png"); mask-image: url("assets/sword.png"); }
+  & .latk .atk-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 12px 40px; max-width: 1100px; margin-bottom: 18px; }
+  & .latk .atk-find { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 12px; }
+  & .latk .atk-find input { width: 110px; text-align: center; font-variant-numeric: tabular-nums; }
+  & .latk .atk-card { min-height: 92px; padding: 12px 14px; border: 1px solid var(--l-rule); border-radius: 6px; background: color-mix(in srgb, var(--l-gold) 4%, var(--l-page)); }
+  & .latk .atk-card p { margin: 0; }
+  & .latk .atk-name { font: 1.15rem var(--l-head-font); }
+  & .latk .atk-name .addr { margin-left: 8px; font: .85rem var(--l-body-font); color: var(--l-muted); }
+  & .latk .atk-facts { display: flex; flex-wrap: wrap; gap: 6px 28px; margin: 8px 0 0; }
+  & .latk .atk-facts dt { font-size: .78em; color: var(--l-muted); font-variant-caps: all-small-caps; letter-spacing: .08em; }
+  & .latk .atk-facts dd { margin: 0; }
+  & .latk .atk-card .short { margin-top: 8px; color: var(--l-bad); }
+  & .latk .atk-grid { display: grid; grid-template-columns: 90px 1fr; gap: 8px 12px; align-items: center; margin-top: 8px; max-width: none; }
+  & .latk .atk-grid label { margin: 0; }
+  & .latk .atk-grid select { width: 100%; margin: 0; }
+  & .latk .atk-grid [hidden] { display: none; }
+  & .latk .atk-note { grid-column: 2; margin: -2px 0 4px; color: var(--l-muted); font-size: .88em; }
+  & .latk .atk-bar { top: 36px; }
+  & .lpart.latk table.atk-tbl { width: 100%; max-width: 820px; table-layout: fixed; margin-top: 8px; }
+  & .latk .atk-tbl col.c-name { width: auto; } & .latk .atk-tbl col.c-pt { width: 56px; } & .latk .atk-tbl col.c-home { width: 92px; }
+  & .latk .atk-tbl col.c-n { width: 92px; } & .latk .atk-tbl col.c-max { width: 76px; } & .latk .atk-tbl col.c-sum { width: 110px; }
+  & .latk .atk-tbl tbody :is(td, th) { vertical-align: middle; height: 36px; padding-block: 0; font-size: 1em; font-weight: 400; }
+  & .latk .atk-tbl tbody th[scope=row] { font-variant-caps: normal; letter-spacing: 0; color: var(--l-ink); text-align: left; }
+  & .latk .atk-tbl input[type=number] { width: 100%; }
+  & .latk .atk-tbl input.over { border-color: var(--l-bad); }
+  & .latk .atk-tbl td.pt { color: color-mix(in srgb, var(--l-muted) 70%, var(--l-page)); }
+  & .latk .atk-tbl tr:is(:hover, :focus-within, .on) td.pt { color: var(--l-ink); }
+  & .latk .atk-tbl td.sum { color: var(--l-muted); }
+  & .latk .atk-tbl tr.grp th { padding-top: 14px; font: 600 .82rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); background: none; height: auto; }
+  & .latk .atk-check { display: flex; align-items: center; gap: 8px; font-weight: 400; cursor: pointer; }
+  & .latk .note { color: var(--l-muted); font-size: .88em; margin: 8px 0 26px; }
+  & dialog.atk-pickdlg { width: min(860px, calc(100vw - 32px)); }
+  & dialog.atk-pickdlg #la-filter { width: 100%; margin: 10px 0; }
+  & dialog.atk-pickdlg table.atk-picks { width: 100%; }
+  & dialog.atk-pickdlg .atk-picks tbody tr { cursor: pointer; }
+  & dialog.atk-pickdlg .atk-picks tbody tr:is(:hover, :focus) > * { background: color-mix(in srgb, var(--l-gold) 14%, var(--l-page)); outline: none; }
+  & dialog.atk-pickdlg .atk-picks tbody th[scope=row] { font: inherit; font-variant-caps: normal; letter-spacing: 0; color: var(--l-ink); text-align: left; }
+  & dialog.atk-pickdlg .atk-picks tr.prot > * { color: var(--l-muted); }
+  & dialog.atk-pickdlg .note { color: var(--l-muted); font-size: .88em; }
+}
+
+:root[data-view="line"] {
+  & .latk .atk-intel { margin-top: 10px; }
+  & .latk .atk-intel-h { margin: 0 0 4px; font-weight: 600; }
+  & .latk .atk-intel table.tbl { width: 100%; max-width: 420px; }
+  & .latk .atk-intel tbody th[scope=row] { font: inherit; font-variant-caps: normal; letter-spacing: 0; color: var(--l-ink); text-align: left; }
+  & .latk .atk-intel .note { margin: 6px 0 0; }
+  & dialog.atk-confirm { width: min(520px, calc(100vw - 32px)); }
+  & dialog.atk-confirm #la-ask { font: 1.15rem var(--l-head-font); margin: 12px 0 10px; }
+  & dialog.atk-confirm .atk-facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; }
+  & dialog.atk-confirm .atk-facts > div { display: contents; }
+  & dialog.atk-confirm .atk-facts dt { color: var(--l-muted); }
+  & dialog.atk-confirm .atk-facts dd { margin: 0; }
+  & dialog.atk-confirm .atk-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  & dialog.atk-confirm { border-color: color-mix(in srgb, var(--l-bad) 60%, var(--l-frame)); }
 }

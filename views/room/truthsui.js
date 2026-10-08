@@ -270,9 +270,4 @@ export function stateTruthsWire(b, on) {
   on($('wo-revive'), 'click', (ev) => { if (confirm('Use the Halls of the Dead now? Once a season.')) act.revive({ button: ev.currentTarget }); });
 }
 
-/** For the ACT attack forms: the building select for kinds that choose one (Flanked Ambush). */
-export function buildingChoice(kindId) {
-  const k = (P().attacks || []).find((x) => x.id === kindId);
-  return !!k?.choose_building;
-}
-export const buildingOptions = () => `<option value="">any (spread over every building)</option>${(store.rules?.buildings || []).map((b) => `<option value="${esc(b.building)}">${esc(b.name)}</option>`).join('')}`;
+export { buildingChoice, buildingOptions } from '../../core/attack.js';

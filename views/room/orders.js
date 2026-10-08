@@ -13,6 +13,8 @@ import { matText, ticks, dur, exploreWhy, buildTotals, buildRowProblem, buildMax
 import { trainNote } from '../../core/train.js';
 
 export { exploreWhy, trainNote };
+export { attackHint, attackSlots } from '../../core/attack.js';
+import { attackHint, attackSlots } from '../../core/attack.js';
 const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
 
 // ---------- quotes: { text, short, title } ----------
@@ -40,7 +42,6 @@ export const trainOptions = (race, withGold = true) => trainableSlots(race, TRAI
   return `<option value="${i}">${esc(u.name)} ${unitPoints(race, i).join('/')}${withGold ? ` · ${fmt(u.gold)}g` : ''}</option>`;
 }).join('');
 /** Slots that can attack (offense above 0, thieves never), in reading order. */
-export const attackSlots = (race) => UNIT_ORDER.filter((i) => i !== THIEF && (race.units[i]?.off || 0) > 0 && slotUsed(race, i));
 
 export function buildQuote(id, n) {
   if (!price.have()) return { text: `≈${fmt(act.estimate.build(id, n))}g`, short: false, title: 'Estimate from base prices, before modifiers' };
@@ -54,19 +55,6 @@ export function showQuote(el, q) {
   el.textContent = q.text;
   el.title = q.title;
   el.classList.toggle('short', q.short);
-}
-
-/** What an attack kind needs, in a sentence. */
-export function attackHint(kindId) {
-  const k = store.rules.params.attacks.find((x) => x.id === kindId);
-  if (!k) return '';
-  const need = [k.own_state ? 'own state only' : 'other states only'];
-  if (k.range_min_bp) need.push(`target ≥ ${k.range_min_bp / 100}% of your land`);
-  if (k.requires_trait) need.push(`a ${names.traits[k.requires_trait] || k.requires_trait} general leading`);
-  if (k.requires_building) need.push(`a finished ${names.buildings[k.requires_building] || k.requires_building}`);
-  if (k.cost_material) need.push(`1 ${k.cost_material} per ${k.troops_per_material} troops`);
-  if (k.war_only) need.push('war only');
-  return `${k.name}: takes ${k.takes}; ${need.join('; ')}.`;
 }
 
 /** A MAX button's effect on an input: fill it, or say why nothing fits. */

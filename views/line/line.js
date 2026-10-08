@@ -13,6 +13,7 @@ import { SCI_TAB } from '../room/science.js';
 import { mountLook, clear as clearLook } from './looklab.js';
 import { mountThrone } from './throne.js';
 import { mountMilitary } from './military.js';
+import { mountAttack } from './attack.js';
 import { mountResources } from './resources.js';
 import { mountLand } from './land.js';
 import { mountBuild } from './build.js';
@@ -25,7 +26,7 @@ import { watchCards } from './cards.js';
 import { newsLine } from '../../core/words.js';
 
 // Straightline's own page parts (not War Room panels): mount(host, on) -> { update(c), tick(), destroy() }.
-const PARTS = { throne: mountThrone, military: mountMilitary, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState };
+const PARTS = { throne: mountThrone, military: mountMilitary, attack: mountAttack, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState };
 
 const KEY = 'realmstate.line.page';
 
@@ -43,7 +44,7 @@ const MENU = [
   ]],
   ['Military', [
     ['military', 'Military', null, null, 'train troops; draft and release; medics, upgrades, chariots', { part: 'military' }],
-    ['attack', 'Attack', 'act', ['act', 'attacks'], 'send an army'],
+    ['attack', 'Attack', null, null, 'send an army against another house', { part: 'attack' }],
     ['generals', 'Generals', 'mil', ['mil', 'generals'], 'raise and command generals'],
     ['hall', 'Hall of Deeds', 'mil', ['mil', 'hall'], 'trade generals and academics'],
   ]],

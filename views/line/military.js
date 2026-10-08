@@ -9,6 +9,7 @@ import { fmt, esc, when, TRAINABLE, UNIT_ORDER, isUpgrade, SOLDIER, THIEF, MERC 
 import { trainNote } from '../../core/train.js';
 import { armed, jobs, trainByTick } from '../../core/military.js';
 import { throneGlyph } from './throne.js';
+import { mountAdvisor } from './advisor.js';
 
 const n0 = (v) => Math.max(0, Math.floor(Number(v) || 0));
 const TABS = [['train', 'Train'], ['draft', 'Draft & Release'], ['shop', 'Workshop']];
@@ -291,10 +292,11 @@ export function mountMilitary(host, on) {
     if (!store.house || !race()) return;
     glance(); units(); totals(); timeline(); draft(); shop();
   }
+  const advisor = mountAdvisor(host.querySelector('.lmil'), 'military');
   showTab(tab);
   draw();
   return {
-    update(c) { if (!c || c.has('house') || c.has('rules') || c.has('me')) draw(); },
+    update(c) { if (!c || c.has('house') || c.has('rules') || c.has('me')) { draw(); advisor.update(); } },
     tick() { timeline(); },
     destroy() { host.replaceChildren(); },
   };
