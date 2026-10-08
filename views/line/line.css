@@ -878,3 +878,15 @@
   & dialog.atk-confirm .atk-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
   & dialog.atk-confirm { border-color: color-mix(in srgb, var(--l-bad) 60%, var(--l-frame)); }
 }
+
+:root[data-view="line"] {
+  /* Attack score: the offense, line by line, like a ledger. */
+  & .lpart.latk table.atk-score { width: 100%; max-width: 820px; margin: 8px 0 26px; }
+  & .latk .atk-score th[scope=row] { font: inherit; font-variant-caps: normal; letter-spacing: 0; color: var(--l-ink); text-align: left; width: 34%; }
+  & .latk .atk-score td.num { width: 110px; font-variant-numeric: tabular-nums; }
+  & .latk .atk-score td.dim { font-size: .88em; }
+  & .latk .atk-score tr.calc th { padding-left: 16px; color: var(--l-muted); }
+  & .latk .atk-score tr.sum > * { border-top: 1px solid var(--l-line); }
+  & .latk .atk-score tr.total > * { border-top: 3px double var(--l-line); font-weight: 600; }
+  & .latk .atk-score tr.total td.num { color: var(--l-gold); font-size: 1.1em; }
+}

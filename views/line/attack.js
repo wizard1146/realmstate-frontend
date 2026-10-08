@@ -4,7 +4,7 @@
 import { store, raceOf, raceName, unitPoints, setTarget, reportsOn } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc, addr, when, MERC } from '../../core/words.js';
-import { attackSlots, attackHint, buildingChoice, buildingOptions, attackQuote, extraMax, mercRatio } from '../../core/attack.js';
+import { attackSlots, attackHint, buildingChoice, buildingOptions, attackQuote, extraMax, mercRatio, offenseParts } from '../../core/attack.js';
 import { generalOptions, generalLine } from '../../core/generals.js';
 import { trainByTick } from '../../core/military.js';
 import { throneGlyph } from './throne.js';
@@ -64,6 +64,9 @@ export function mountAttack(host, on) {
     </table>
     <p class="note">Offense here is your troops' points before bonuses (buildings, science, the general); the battle uses the full figures. Thieves stay home.</p>
 
+    <h3 class="sub">Attack score <span class="dim">your offense with bonuses, as the battle will count it</span></h3>
+    <div id="la-score"></div>
+
     <h3 class="sub">Armies coming home <span class="dim">the next 24 ticks</span></h3>
     <div id="la-uw"></div>
 
@@ -117,7 +120,7 @@ export function mountAttack(host, on) {
     if (seq !== intelSeq) return;
     const x = (list || []).filter((r) => r.report?.units).sort((a, b) => b.at - a.at)[0];
     box.hidden = false;
-    if (!x) { box.innerHTML = '<p class="dim">No report on their troops yet. A Muster Roll or Full Dossier (Intrigue) counts them.</p>'; return; }
+    if (!x) { box.innerHTML = '<p class="dim">No report on their troops yet. Consider sending your <a href="#intrigue">spies</a> to gain more tactical information.</p>'; return; }
     const r = x.report, tr = raceOf(t.race), home = r.units || {}, away = r.away || {};
     // Their defence before bonuses: each kind's count × that race's base points (upgraded units counted at base).
     const def = tr ? (home.soldiers || 0) * tr.units[0].def + (home.offense || 0) * tr.units[1].def + (home.defense || 0) * tr.units[2].def + (home.elites || 0) * tr.units[3].def : null;
@@ -137,7 +140,7 @@ export function mountAttack(host, on) {
   const dpick = $('dpick');
   on($('pick'), 'click', () => { picks(); dpick.showModal(); $('filter').focus(); });
   on(dpick, 'click', (ev) => { if (ev.target === dpick || ev.target.closest('[data-close]')) dpick.close(); });
-  on(dpick, 'close', () => $('pick').focus());
+  on(dpick, 'close', () => $('pick')?.focus());
   on($('filter'), 'input', picks);
   const choose = (row) => { const x = (store.rankings || []).find((r) => String(r.id) === row.dataset.pick); if (x) { target = { ...x }; setTarget(target); $('addr').value = addr(target); dpick.close(); card(); order(); } };
   on($('picks'), 'click', (ev) => { const r = ev.target.closest('tr[data-pick]'); if (r) choose(r); });
@@ -180,6 +183,7 @@ export function mountAttack(host, on) {
     doing.textContent = q.own ? `You will send ${listText(sent)}${x.mercs ? ` with ${fmt(x.mercs)} hired ${merc.name}` : ''}: ${fmt(q.off)} offense${x.horses + x.chariots ? `, ${fmt(x.horses + x.chariots)} of ${fmt(q.riders)} mounted` : ''}${target ? `, against ${target.name} (${addr(target)})` : ''}.${problems.length ? ` Can't: ${problems.join('; ')}.` : ''}` : '';
     doing.classList.toggle('short', problems.length > 0);
     $('go').disabled = !q.own || problems.length > 0;
+    score(u, x);
     return { u, x, q };
   }
   on(host.querySelector('.atk-tbl'), 'input', () => { ask(false); order(); });
@@ -195,6 +199,24 @@ export function mountAttack(host, on) {
   });
   on($('all'), 'click', () => { const h = store.house; host.querySelectorAll('input[data-u]').forEach((i) => { const n = h.units[Number(i.dataset.u)]; i.value = n ? String(n) : ''; }); ask(false); order(); });
   on($('clear'), 'click', () => { host.querySelectorAll('.atk-tbl input[type=number]').forEach((i) => { i.value = ''; }); if ($('double')) $('double').checked = false; ask(false); order(); });
+
+  // ---------- the attack score: the offense, part by part ----------
+  const pct = (bp) => `${bp >= 0 ? '+' : '−'}${(Math.abs(bp) / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}%`;
+  function score(u, x) {
+    const mu = [...u]; mu[MERC] = x.mercs;
+    const s = offenseParts(race, mu, x, $('gen').value, target?.race, $('kind').value);
+    if (!s) { $('score').innerHTML = '<p class="dim">This game server doesn\'t send your bonuses yet.</p>'; return; }
+    const why = (h, g, b) => [h && `your house ${pct(h)}`, g && `the general ${pct(g)}`, b && `this battle ${pct(b)}`].filter(Boolean).join(', ') || 'none';
+    const row = (k, v, note = '', cls = '') => `<tr class="${cls}"><th scope="row">${k}</th><td class="num">${v}</td><td class="dim">${note}</td></tr>`;
+    $('score').innerHTML = `<table class="tbl atk-score"><tbody>
+      ${row('Troops', fmt(s.plain), 'attack points of every unit sent but elites, mercenaries included')}
+      ${s.elite ? row('Elites', fmt(s.elite), s.eliteBp ? '' : 'attack points of elites sent') + (s.eliteBp ? row(`Elite bonus ${pct(s.eliteBp)}`, fmt(s.eliteAfter), why(s.parts.eliteHouse, s.parts.eliteGeneral, s.parts.eliteBattle), 'calc') : '') : ''}
+      ${s.mounts ? row('Mounts', fmt(s.mounts), 'horses, chariots and upgraded mercenaries') : ''}
+      ${row('Before bonuses', fmt(s.sub), '', 'sum')}
+      ${row(`Offense bonus ${pct(s.offBp)}`, `${s.total - s.sub >= 0 ? '+' : '−'}${fmt(Math.abs(s.total - s.sub))}`, why(s.parts.house, s.parts.general, s.parts.battle), 'calc')}
+      ${row('Attack score', fmt(s.total), target ? `against ${esc(target.name)}` : 'choose a target for bonuses against its race', 'total')}
+    </tbody></table>`;
+  }
 
   // ---------- send, after a confirm ----------
   const dlg = $('confirm');
@@ -214,7 +236,7 @@ export function mountAttack(host, on) {
   on($('go'), 'click', () => { if (!$('go').disabled) ask(true); });
   on($('no'), 'click', () => ask(false));
   on(dlg, 'click', (ev) => { if (ev.target === dlg || ev.target.closest('[data-close]')) dlg.close(); });
-  on(dlg, 'close', () => $('go').focus());
+  on(dlg, 'close', () => $('go')?.focus());   // the page may be gone (a window closes as you leave)
   on($('yes'), 'click', async () => {
     const { u, x } = order();
     dlg.close();

@@ -9,6 +9,8 @@ import { store, slotUsed } from './store.js';
 import * as price from './prices.js';
 import { fmt, esc, names, MERC, THIEF, UNIT_ORDER } from './words.js';
 
+const ELITE_SLOTS = [3, 7, 9];
+
 /** The unit slots that can attack: anything with offense, thieves excepted. */
 export const attackSlots = (race) => UNIT_ORDER.filter((i) => i !== THIEF && (race.units[i]?.off || 0) > 0 && slotUsed(race, i));
 /** Kinds that let you choose the building the land comes from first (Flanked Ambush). */
@@ -105,4 +107,28 @@ export function quoteText(q, x) {
   if (x.mercs) parts.push(`${fmt(q.mercGold)}g hire`);
   if (x.horses || x.chariots) parts.push(`${fmt(x.horses + x.chariots)}/${fmt(q.riders)} mounted`);
   return { text: parts.join(' · '), title: `Raw offense: troops' offense + mercenaries (${ratio()}:1 max) + ${P.horse_offense} a horse + ${P.chariot_offense} a chariot, before modifiers. Mercenaries cost ${price.mercenaryCost(1) != null ? `exactly ${fmt(price.mercenaryCost(x.mercs || 1))} gold for ${fmt(x.mercs || 1)}, with your modifiers` : `${fmt(P.mercenary_gold)} gold each before modifiers`}; survivors leave after the battle.${q.problems.length ? ` Can't: ${q.problems.join('; ')}.` : ''}` };
+}
+
+/**
+ * The army's offense as the engine adds it up (commands.rs `strength`), part by part, from the server's bonuses
+ * (house.prices.offense). units: by slot, mercenaries in slot 8; x: the extras; general: an id or ''; vsRace: the
+ * target's race identity; kind: an attack id. Returns null on a server too old to send the bonuses.
+ *   plain + mounts + apply(elite, elite_bp), then apply(that, offense_bp)
+ */
+export function offenseParts(race, units, x, general, vsRace, kind) {
+  const o = store.house?.prices?.offense, P = store.rules.params;
+  if (!o) return null;
+  const pt = (k) => store.house.unit_points?.[k]?.[0] ?? race.units[k]?.off ?? 0;
+  let plain = 0, elite = 0;
+  units.forEach((n, k) => { if (n && k !== THIEF) { if (ELITE_SLOTS.includes(k)) elite += n * pt(k); else plain += n * pt(k); } });
+  const mounts = x.horses * P.horse_offense + x.chariots * P.chariot_offense + Math.floor((x.upmercs || 0) * pt(MERC) * P.upgrade_bonus_bp / 10000);
+  const vs = (store.rules.races || []).findIndex((r) => r?.identity === vsRace), at = P.attacks.findIndex((k) => k.id === kind);
+  const [base, eliteBase] = o.bp.none || [0, 0], [withG, eliteWithG] = (general && o.bp[String(general)]) || [base, eliteBase];
+  // The bonuses that hold for this battle only: against this race, or for this kind of attack.
+  const conds = (o.conds || []).filter(([, r, k]) => (r == null || r === vs) && (k == null || k === at));
+  const extra = (stat) => conds.filter(([s]) => s === stat).reduce((a, c) => a + c[3], 0);
+  const eliteBp = eliteWithG + extra('elite_offense'), offBp = withG + extra('offense');
+  const eliteAfter = price.apply(elite, eliteBp), sub = plain + mounts + eliteAfter;
+  return { plain, elite, eliteBp, eliteAfter, mounts, sub, offBp, total: price.apply(sub, offBp),
+    parts: { house: base, general: withG - base, battle: extra('offense'), eliteHouse: eliteBase, eliteGeneral: eliteWithG - eliteBase, eliteBattle: extra('elite_offense') } };
 }

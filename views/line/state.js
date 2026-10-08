@@ -133,7 +133,7 @@ export function mountState(host, on) {
   function openDlg(d, from) { opener.set(d, from); d.showModal(); }
   for (const d of host.querySelectorAll('dialog')) {
     on(d, 'click', (ev) => { if (ev.target === d || ev.target.closest('[data-close]')) d.close(); });
-    on(d, 'close', () => { opener.get(d)?.focus(); });
+    on(d, 'close', () => { if (opener.get(d)?.isConnected) opener.get(d).focus(); });
   }
   on($('open-stats'), 'click', (ev) => openDlg($('dstats'), ev.currentTarget));
   on($('open-aid'), 'click', (ev) => { openDlg($('daid'), ev.currentTarget); $('at').focus(); });
