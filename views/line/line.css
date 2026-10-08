@@ -890,3 +890,26 @@
   & .latk .atk-score tr.total > * { border-top: 3px double var(--l-line); font-weight: 600; }
   & .latk .atk-score tr.total td.num { color: var(--l-gold); font-size: 1.1em; }
 }
+
+:root[data-view="line"] {
+  /* Attack, laid out: your choices on the left (how, the army), the battle sheet on the right (who, the score, the
+     order), which stays in view as you scroll. One column on a narrow screen. */
+  & .latk .atk-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 400px); gap: 0 44px; align-items: start; max-width: 1300px; margin: 0 auto 10px; }
+  & .latk .atk-main > section { margin-bottom: 18px; }
+  & .latk .atk-grid { max-width: 640px; }
+  & .lpart.latk table.atk-tbl { max-width: none; }
+  & .latk .atk-sheet { position: sticky; top: 46px; padding: 6px 18px 18px; border: 1px solid var(--l-rule); border-radius: 8px;
+    background: color-mix(in srgb, var(--l-gold) 4%, var(--l-page)); box-shadow: 0 6px 20px rgba(0, 0, 0, .06); }
+  & .latk .atk-sheet h3.sub { margin-top: 12px; }
+  & .latk .atk-sheet .atk-find { margin: 8px 0 10px; }
+  & .latk .atk-sheet .atk-find input { width: 96px; }
+  & .latk .atk-sheet .atk-card { min-height: 0; background: var(--l-page); }
+  & .latk .atk-sheet .atk-intel table.tbl { max-width: none; }
+  & .lpart.latk .atk-sheet table.atk-score { max-width: none; margin: 6px 0 12px; }
+  & .latk .atk-score th[scope=row] { width: auto; }
+  & .latk .atk-score th[scope=row] small { display: block; font-size: .8em; color: var(--l-muted); }
+  & .latk .atk-sheet .doing { max-width: none; margin: 0 0 12px; font-size: .92em; }
+  & .latk .atk-go { display: flex; gap: 8px; justify-content: flex-end; }
+  & .latk .atk-go #la-go { margin-left: auto; }
+  @media (max-width: 1100px) { & .latk .atk-layout { grid-template-columns: 1fr; } & .latk .atk-sheet { position: static; margin-top: 10px; } }
+}

@@ -18,54 +18,54 @@ export function mountAttack(host, on) {
   const P = store.rules.params, race = raceOf(store.house.race);
   const merc = race.units[MERC] || { name: P.mercenary_name || 'Mercenaries', off: P.mercenary_off || 0 };
   host.innerHTML = `<div class="lpart lbuild latk${throneGlyph() ? ' glyph' : ''}">
-    <div class="atk-top">
-      <section class="atk-who"><h3 class="sub">Target</h3>
+    <div class="atk-layout">
+      <div class="atk-main">
+        <section class="atk-how"><h3 class="sub">How</h3>
+          <div class="lform atk-grid">
+            <label for="la-kind">Attack</label><select id="la-kind">${P.attacks.map((k) => `<option value="${esc(k.id)}">${esc(k.name)}</option>`).join('')}</select>
+            <p class="atk-note" id="la-hint"></p>
+            <label for="la-bld" id="la-bldl" hidden>Land from</label><select id="la-bld" hidden>${buildingOptions()}</select>
+            <label for="la-gen">General</label><select id="la-gen"></select>
+            <p class="atk-note" id="la-genl"></p>
+          </div>
+        </section>
+        <h3 class="sub">Army</h3>
+        <table class="tbl lb-tbl atk-tbl"><colgroup><col class="c-name"><col class="c-pt"><col class="c-home"><col class="c-n"><col class="c-max"><col class="c-sum"></colgroup>
+          <thead><tr><th>Send</th><th class="num" title="Attack points each">Off</th><th class="num">At home</th><th class="num">Count</th><th></th><th class="num">Offense</th></tr></thead>
+          <tbody id="la-troops">${attackSlots(race).map((i) => `<tr data-slot="${i}"><th scope="row">${esc(race.units[i].name)}</th><td class="num pt">${unitPoints(race, i)[0]}</td><td class="num" data-home></td>
+            <td class="num"><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-u="${i}" aria-label="${esc(race.units[i].name)} to send"></td>
+            <td class="acts"><button type="button" class="btn mini" data-umax="${i}" aria-label="Every ${esc(race.units[i].name)} at home">MAX</button><button type="button" class="x" data-ux="${i}" aria-label="Clear ${esc(race.units[i].name)}">×</button></td><td class="num sum" data-sum></td></tr>`).join('')}</tbody>
+          <tbody class="extras" id="la-extras">
+            <tr class="grp"><th colspan="6" scope="rowgroup">With the army</th></tr>
+            ${[['medics', 'Medics', '', 'Save some of your dead'], ['horses', 'Horses', P.horse_offense, 'One mount per troop'], ['chariots', 'Chariots', P.chariot_offense, 'One mount per troop'],
+        ['mercs', merc.name, merc.off, `Hired for this attack: ${fmt(P.mercenary_gold)} gold each, one per ${mercRatio()} of your troops; survivors leave after`],
+        ...(race.race?.mercenary_upgrades ? [['upmercs', `${merc.name}, upgraded`, '', `Of those hired, fight ${P.upgrade_bonus_bp / 100}% stronger, for ${P.upgrade_material}`]] : [])]
+        .map(([k, label, off, tip]) => `<tr data-x="${k}"><th scope="row" title="${esc(tip)}">${esc(label)}</th><td class="num pt">${off === '' ? '' : `+${off}`}</td><td class="num" data-xhome></td>
+              <td class="num"><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-xn="${k}" aria-label="${esc(label)} to send"></td>
+              <td class="acts"><button type="button" class="btn mini" data-xmax="${k}" aria-label="Most ${esc(label)}">MAX</button><button type="button" class="x" data-xx="${k}" aria-label="Clear ${esc(label)}">×</button></td><td class="num sum" data-xsum></td></tr>`).join('')}
+            ${race.race?.double_strike ? `<tr><th scope="row" colspan="6"><label class="atk-check"><input type="checkbox" id="la-double"> Keep a second strike <span class="dim">(at war, led by a general with ${race.race.double_strike.general_traits}+ traits)</span></label></th></tr>` : ''}
+          </tbody>
+        </table>
+        <p class="note">Offense here is your troops' points before bonuses (buildings, science, the general); the battle uses the full figures. Thieves stay home.</p>
+      </div>
+
+      <!-- The battle sheet: who, the score, and the order; it stays in view while you fill the army. -->
+      <aside class="atk-sheet" aria-label="The attack">
+        <h3 class="sub">Against</h3>
         <form id="la-tf" class="atk-find" novalidate>
           <label class="vh" for="la-addr">Target house, by address</label>
           <input id="la-addr" placeholder="r:s:seat" inputmode="numeric" autocomplete="off" spellcheck="false">
           <button class="btn">Look up</button>
-          <button type="button" class="btn" id="la-pick" aria-haspopup="dialog">Choose from the rankings</button>
+          <button type="button" class="btn" id="la-pick" aria-haspopup="dialog">Rankings…</button>
         </form>
         <div class="atk-card" id="la-card" aria-live="polite"><p class="dim">No target yet: type an address, or choose one.</p></div>
         <div class="atk-intel" id="la-intel" hidden></div>
-      </section>
-      <section class="atk-how"><h3 class="sub">How</h3>
-        <div class="lform atk-grid">
-          <label for="la-kind">Attack</label><select id="la-kind">${P.attacks.map((k) => `<option value="${esc(k.id)}">${esc(k.name)}</option>`).join('')}</select>
-          <p class="atk-note" id="la-hint"></p>
-          <label for="la-bld" id="la-bldl" hidden>Land from</label><select id="la-bld" hidden>${buildingOptions()}</select>
-          <label for="la-gen">General</label><select id="la-gen"></select>
-          <p class="atk-note" id="la-genl"></p>
-        </div>
-      </section>
+        <h3 class="sub">Attack score</h3>
+        <div id="la-score"></div>
+        <p class="doing" id="la-doing" aria-live="polite" hidden></p>
+        <div class="atk-go"><button type="button" class="btn" id="la-all">All at home</button><button type="button" class="btn" id="la-clear">Clear</button><button type="button" class="btn danger" id="la-go">Attack…</button></div>
+      </aside>
     </div>
-
-    <div class="lb-bar atk-bar">
-      <p class="doing" id="la-doing" aria-live="polite" hidden></p>
-      <span class="lb-btns"><button type="button" class="btn" id="la-all">All at home</button><button type="button" class="btn" id="la-clear">Clear</button><button type="button" class="btn danger" id="la-go">Attack…</button></span>
-    </div>
-
-    <h3 class="sub">Army</h3>
-    <table class="tbl lb-tbl atk-tbl"><colgroup><col class="c-name"><col class="c-pt"><col class="c-home"><col class="c-n"><col class="c-max"><col class="c-sum"></colgroup>
-      <thead><tr><th>Send</th><th class="num" title="Attack points each">Off</th><th class="num">At home</th><th class="num">Count</th><th></th><th class="num">Offense</th></tr></thead>
-      <tbody id="la-troops">${attackSlots(race).map((i) => `<tr data-slot="${i}"><th scope="row">${esc(race.units[i].name)}</th><td class="num pt">${unitPoints(race, i)[0]}</td><td class="num" data-home></td>
-        <td class="num"><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-u="${i}" aria-label="${esc(race.units[i].name)} to send"></td>
-        <td class="acts"><button type="button" class="btn mini" data-umax="${i}" aria-label="Every ${esc(race.units[i].name)} at home">MAX</button><button type="button" class="x" data-ux="${i}" aria-label="Clear ${esc(race.units[i].name)}">×</button></td><td class="num sum" data-sum></td></tr>`).join('')}</tbody>
-      <tbody class="extras" id="la-extras">
-        <tr class="grp"><th colspan="6" scope="rowgroup">With the army</th></tr>
-        ${[['medics', 'Medics', '', 'Save some of your dead'], ['horses', 'Horses', P.horse_offense, 'One mount per troop'], ['chariots', 'Chariots', P.chariot_offense, 'One mount per troop'],
-    ['mercs', merc.name, merc.off, `Hired for this attack: ${fmt(P.mercenary_gold)} gold each, one per ${mercRatio()} of your troops; survivors leave after`],
-    ...(race.race?.mercenary_upgrades ? [['upmercs', `${merc.name}, upgraded`, '', `Of those hired, fight ${P.upgrade_bonus_bp / 100}% stronger, for ${P.upgrade_material}`]] : [])]
-    .map(([k, label, off, tip]) => `<tr data-x="${k}"><th scope="row" title="${esc(tip)}">${esc(label)}</th><td class="num pt">${off === '' ? '' : `+${off}`}</td><td class="num" data-xhome></td>
-          <td class="num"><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-xn="${k}" aria-label="${esc(label)} to send"></td>
-          <td class="acts"><button type="button" class="btn mini" data-xmax="${k}" aria-label="Most ${esc(label)}">MAX</button><button type="button" class="x" data-xx="${k}" aria-label="Clear ${esc(label)}">×</button></td><td class="num sum" data-xsum></td></tr>`).join('')}
-        ${race.race?.double_strike ? `<tr><th scope="row" colspan="6"><label class="atk-check"><input type="checkbox" id="la-double"> Keep a second strike <span class="dim">(at war, led by a general with ${race.race.double_strike.general_traits}+ traits)</span></label></th></tr>` : ''}
-      </tbody>
-    </table>
-    <p class="note">Offense here is your troops' points before bonuses (buildings, science, the general); the battle uses the full figures. Thieves stay home.</p>
-
-    <h3 class="sub">Attack score <span class="dim">your offense with bonuses, as the battle will count it</span></h3>
-    <div id="la-score"></div>
 
     <h3 class="sub">Armies coming home <span class="dim">the next 24 ticks</span></h3>
     <div id="la-uw"></div>
@@ -206,15 +206,16 @@ export function mountAttack(host, on) {
     const mu = [...u]; mu[MERC] = x.mercs;
     const s = offenseParts(race, mu, x, $('gen').value, target?.race, $('kind').value);
     if (!s) { $('score').innerHTML = '<p class="dim">This game server doesn\'t send your bonuses yet.</p>'; return; }
+    if (!s.plain && !s.elite && !s.mounts) { $('score').innerHTML = '<p class="dim">Choose troops to send.</p>'; return; }
     const why = (h, g, b) => [h && `your house ${pct(h)}`, g && `the general ${pct(g)}`, b && `this battle ${pct(b)}`].filter(Boolean).join(', ') || 'none';
-    const row = (k, v, note = '', cls = '') => `<tr class="${cls}"><th scope="row">${k}</th><td class="num">${v}</td><td class="dim">${note}</td></tr>`;
+    const row = (k, v, note = '', cls = '') => `<tr class="${cls}"><th scope="row">${k}${note ? `<small>${note}</small>` : ''}</th><td class="num">${v}</td></tr>`;
     $('score').innerHTML = `<table class="tbl atk-score"><tbody>
-      ${row('Troops', fmt(s.plain), 'attack points of every unit sent but elites, mercenaries included')}
-      ${s.elite ? row('Elites', fmt(s.elite), s.eliteBp ? '' : 'attack points of elites sent') + (s.eliteBp ? row(`Elite bonus ${pct(s.eliteBp)}`, fmt(s.eliteAfter), why(s.parts.eliteHouse, s.parts.eliteGeneral, s.parts.eliteBattle), 'calc') : '') : ''}
+      ${row('Troops', fmt(s.plain), 'their attack points, mercenaries included')}
+ ${s.elite ? row('Elites', fmt(s.elite)) + (s.eliteBp ? row(`Elite bonus ${pct(s.eliteBp)}`, fmt(s.eliteAfter), why(s.parts.eliteHouse, s.parts.eliteGeneral, s.parts.eliteBattle), 'calc') : '') : ''}
       ${s.mounts ? row('Mounts', fmt(s.mounts), 'horses, chariots and upgraded mercenaries') : ''}
       ${row('Before bonuses', fmt(s.sub), '', 'sum')}
       ${row(`Offense bonus ${pct(s.offBp)}`, `${s.total - s.sub >= 0 ? '+' : '−'}${fmt(Math.abs(s.total - s.sub))}`, why(s.parts.house, s.parts.general, s.parts.battle), 'calc')}
-      ${row('Attack score', fmt(s.total), target ? `against ${esc(target.name)}` : 'choose a target for bonuses against its race', 'total')}
+      ${row('Attack score', fmt(s.total), target ? '' : 'a target may add bonuses against its race', 'total')}
     </tbody></table>`;
   }
 
