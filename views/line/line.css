@@ -221,7 +221,13 @@
   & .lstate .st-goto .short:empty { display: none; }
   & .lstate .st-nav #ls-home:disabled { visibility: hidden; }
   /* The banner placeholder: a dashed swallow-tail pennant, centred above the figures. */
-  & .lstate .st-banner { margin: 0 auto 18px; width: 92px; text-align: center; }
+  /* The banner and the state's picture (a wide frame, as Utopia's kingdom picture), side by side; stacked when narrow. */
+  & .lstate .st-arms { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 18px 28px; margin: 0 0 22px; }
+  & .lstate .st-picture { margin: 0; flex: 0 1 600px; }
+  & .lstate .st-picture .frame { aspect-ratio: 3 / 1; display: grid; place-items: center; border: 2px dashed color-mix(in srgb, var(--l-gold) 70%, transparent);
+    border-radius: 3px; background: color-mix(in srgb, var(--l-gold) 6%, transparent); }
+  & .lstate .st-picture span { font: 600 .78rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
+  & .lstate .st-banner { margin: 0; width: 92px; flex: none; text-align: center; }
   & .lstate .st-banner svg { display: block; width: 92px; height: auto; }
   & .lstate .st-banner path { fill: color-mix(in srgb, var(--l-gold) 6%, transparent); stroke: color-mix(in srgb, var(--l-gold) 70%, transparent); stroke-width: 2; stroke-dasharray: 6 4; }
   & .lstate .st-banner figcaption { margin-top: 4px; font: 600 .78rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }

@@ -84,7 +84,6 @@ function statsHTML(members) {
 
 export function mountState(host, on) {
   host.innerHTML = `<div class="lpart lstate${throneGlyph() ? ' glyph' : ''}">
-    <!-- The state's banner: a placeholder until states can choose one. -->
     <nav class="st-nav" aria-label="Other states">
       <button type="button" class="btn" data-step="-1" aria-label="Previous state">‹</button>
       <label class="vh" for="ls-realm">Realm</label><select id="ls-realm"></select>
@@ -95,8 +94,12 @@ export function mountState(host, on) {
         <span class="short small" id="ls-addr-why" aria-live="polite"></span></form>
       <button type="button" class="btn" id="ls-home">Your state</button>
     </nav>
-    <figure class="st-banner" aria-label="State banner (not yet chosen)"><svg viewBox="0 0 100 140" aria-hidden="true">
-      <path d="M8 6 H92 V128 L50 106 L8 128 Z" /></svg><figcaption>State banner</figcaption></figure>
+    <!-- The state's banner and picture: placeholders until states can choose them. -->
+    <div class="st-arms">
+      <figure class="st-banner" aria-label="State banner (not yet chosen)"><svg viewBox="0 0 100 140" aria-hidden="true">
+        <path d="M8 6 H92 V128 L50 106 L8 128 Z" /></svg><figcaption>State banner</figcaption></figure>
+      <figure class="st-picture" aria-label="State picture (not yet chosen)"><div class="frame"><span>State picture</span></div></figure>
+    </div>
     <dl class="st-glance" id="ls-glance"></dl>
     <section><div class="st-head"><h3 class="sub">Houses</h3><span class="st-btns">
         <button type="button" class="btn" id="ls-open-stats" aria-haspopup="dialog">Statistics</button>
