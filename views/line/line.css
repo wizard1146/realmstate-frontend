@@ -10,7 +10,7 @@
   --l-bg: #ede6d6; --l-page: #fffdf8; --l-ink: #26241f; --l-muted: #6c675d; --l-line: #ddd5c4; --l-rule: #ebe5d8;
   --l-nav: #23324a; --l-nav-ink: #e9e4d8; --l-nav-muted: #9fadc2; --l-gold: #b8892e; --l-blue: #2f5d8a; --l-blue-ink: #ffffff;
   --l-good: #2f6b3a; --l-bad: #a33a25; --l-self: #f6ecd3; --l-frame: #b9a57c; --l-lime: #437e0b;
-  --l-head-font: "IM Fell English", "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --l-head-font: Rosarivo, "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
   --l-body-font: "Source Sans 3", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --l-size: 15px;
   /* Shell tokens (sign-in, message line). */
@@ -169,8 +169,8 @@
     border-bottom: 3px double var(--l-line); display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; }
   & .line-page-h h1 { margin: 0; font: 600 1.4rem/1.2 var(--l-head-font); letter-spacing: .02em; }
   & .line-page-h .line-what { margin: 0; color: var(--l-muted); }
-  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"]) .line-page-h { justify-content: center; }
-  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"]) .line-what { display: none; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"]) .line-page-h { justify-content: center; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"]) .line-what { display: none; }
   & .line-main:is([data-page="throne"], [data-page="state"]) .line-page-h h1 { display: flex; flex-direction: column; align-items: center; text-align: center; }
   /* State: the state's name, grand, with its address and realm small beneath. */
   & .line-page-h h1 .h-state { font-size: 1.3rem; letter-spacing: .04em; line-height: 1.1; padding: 6px 0 2px; }
@@ -231,15 +231,15 @@
   & .lstate .st-banner svg { display: block; width: 92px; height: auto; }
   & .lstate .st-banner path { fill: color-mix(in srgb, var(--l-gold) 6%, transparent); stroke: color-mix(in srgb, var(--l-gold) 70%, transparent); stroke-width: 2; stroke-dasharray: 6 4; }
   & .lstate .st-banner figcaption { margin-top: 4px; font: 600 .78rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
-  & .lstate .st-glance { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 640px; gap: 0; margin: 4px auto 26px;
+  & :is(.lstate, .lmil) .st-glance { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 640px; gap: 0; margin: 4px auto 26px;
     border-block: 3px double var(--l-line); }
-  & .lstate .st-glance > div { padding: 12px 10px; text-align: center; }
-  & .lstate .st-glance > div + div { border-left: 1px solid var(--l-rule); }
-  & .lstate .st-glance dt { font: 600 .82rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
-  & .lstate .st-glance dd { margin: 2px 0 0; font: 1.35rem var(--l-head-font); font-variant-numeric: lining-nums tabular-nums; }
-  & .lstate .st-glance dd.rank { margin-top: 1px; font: 600 .95rem var(--l-body-font); color: var(--l-gold); font-variant-numeric: tabular-nums; }
-  & .lstate .st-glance dd.rank span { font-weight: 400; color: var(--l-muted); font-size: .9em; }
-  & .lstate .st-glance dd.note a { color: inherit; }
+  & :is(.lstate, .lmil) .st-glance > div { padding: 12px 10px; text-align: center; }
+  & :is(.lstate, .lmil) .st-glance > div + div { border-left: 1px solid var(--l-rule); }
+  & :is(.lstate, .lmil) .st-glance dt { font: 600 .82rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
+  & :is(.lstate, .lmil) .st-glance dd { margin: 2px 0 0; font: 1.35rem var(--l-head-font); font-variant-numeric: lining-nums tabular-nums; }
+  & :is(.lstate, .lmil) .st-glance dd.rank { margin-top: 1px; font: 600 .95rem var(--l-body-font); color: var(--l-gold); font-variant-numeric: tabular-nums; }
+  & :is(.lstate, .lmil) .st-glance dd.rank span { font-weight: 400; color: var(--l-muted); font-size: .9em; }
+  & :is(.lstate, .lmil) .st-glance dd.note a { color: inherit; }
   & .lstate section { margin-bottom: 26px; }
   & .lstate table.st-tbl { width: 100%; }
   & .lstate .st-tbl tbody :is(td, th) { vertical-align: middle; height: 34px; padding-block: 0; }   /* every row one height, buttons or not */
@@ -300,7 +300,7 @@
   & .lstate .st-tbl tr.open > * { color: var(--l-muted); }
   & .lstate .st-tbl tr.open th[scope=row] { color: var(--l-muted); font-style: italic; }
   & .lstate .st-tbl tr.open:hover > * { background: none; }
-  & .lstate .st-glance dd .of { font-size: .62em; color: var(--l-muted); }
+  & :is(.lstate, .lmil) .st-glance dd .of { font-size: .62em; color: var(--l-muted); }
   & .lstate .st-tbl .mark { display: inline-block; margin-right: 6px; padding: 0 6px; border: 1px solid var(--l-line); border-radius: 3px; font-size: .78em; color: var(--l-muted); }
   & .lstate .st-tbl .mark.lead { color: var(--l-gold); border-color: color-mix(in srgb, var(--l-gold) 60%, transparent); }
   & .lstate .st-tbl td.acts { white-space: nowrap; text-align: right; }
@@ -308,6 +308,8 @@
   /* Build & Raze: wood planks (same setting). */
   & .line-main > .room:has(.lbuild.glyph)::after { width: clamp(120px, 17%, 240px); -webkit-mask-image: url("assets/planks.png"); mask-image: url("assets/planks.png"); }
   & .line-main > .room:has(.lbuild.glyph[data-tab="raze"])::after { -webkit-mask-image: url("assets/sledgehammer.png"); mask-image: url("assets/sledgehammer.png"); }   /* a sledgehammer while razing */
+  /* Military: the War Room's templar shield (same setting). */
+  & .line-main > .room:has(.lmil.glyph)::after { -webkit-mask-image: url("assets/shield.svg"); mask-image: url("assets/shield.svg"); }
   & .line-main > .room:has(.lland.glyph)::after { width: clamp(120px, 17%, 240px); -webkit-mask-image: url("assets/compass.png"); mask-image: url("assets/compass.png"); }
   & .throne { container-type: inline-size; }
   & .throne .tgrid { columns: 430px 3; column-gap: 34px; max-width: 1500px; margin-inline: auto; }   /* as many 430px+ columns as fit, up to 3: the People table needs that much */
@@ -763,3 +765,57 @@
 @keyframes l-flash { 0%, 100% { background: var(--l-nav); color: var(--l-nav-ink); } 50% { background: var(--l-bad); border-color: var(--l-bad); color: #fff; } }
 @keyframes l-tab-flash { 0%, 100% { color: var(--l-ink); } 50% { color: var(--l-bad); } }
 @keyframes l-toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+:root[data-view="line"] {
+  /* Military: Build's layout (it carries .lbuild), with its own summary, unit table, draft meter and workshop. */
+  & .lmil .st-glance { grid-template-columns: repeat(4, 1fr); max-width: 820px; margin-bottom: 6px; }
+  & .lmil .mil-more { text-align: center; color: var(--l-muted); font-size: .9em; margin: 0 0 22px; }
+  & .lmil .mil-from { display: flex; gap: 14px; font-size: .92em; }
+  & .lmil .mil-from label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+  & .lpart.lmil table.mil-tbl { width: 100%; max-width: 1100px; table-layout: fixed; margin-top: 10px; }
+  & .lmil .mil-tbl col.c-name { width: auto; } & .lmil .mil-tbl col.c-pt { width: 52px; } & .lmil .mil-tbl col.c-n3 { width: 78px; }
+  & .lmil .mil-tbl col.c-n { width: 84px; } & .lmil .mil-tbl col.c-max { width: 76px; } & .lmil .mil-tbl col.c-each { width: 80px; } & .lmil .mil-tbl col.c-cost { width: 110px; }
+  /* One size for every row and cell (upgraded rows included): only colour sets them apart. */
+  & .lmil .mil-tbl tbody :is(td, th) { font-size: 1em; font-weight: 400; }
+  /* Off and Def stay quiet until you point at the row, or it has a count. */
+  & .lmil .mil-tbl td.pt { color: color-mix(in srgb, var(--l-muted) 70%, var(--l-page)); transition: color .12s; }
+  & .lmil .mil-tbl tr:is(:hover, :focus-within, .on) td.pt { color: var(--l-ink); }
+  & .lmil .mil-tbl th.pt { color: color-mix(in srgb, var(--l-muted) 70%, var(--l-page)); }
+  & .lmil .mil-tbl td.each { color: var(--l-muted); }
+  & .lmil .mil-tbl tbody :is(td, th) { vertical-align: middle; height: 36px; padding-block: 0; }
+  & .lmil .mil-tbl input[type=number] { width: 100%; }
+  & .lmil .mil-tbl tr.plus th[scope=row] { padding-left: 14px; }   /* "plus", not "upg": room.css shrinks tr.upg */
+  & .lmil .mil-tbl .sub-mark { color: var(--l-muted); }
+  & .lmil .note { color: var(--l-muted); font-size: .88em; margin: 8px 0 26px; }
+  & .lmil [role=tabpanel] > .what:first-child { margin-top: 16px; }
+  & .lmil .mil-card { max-width: 720px; margin: 18px 0 28px; }
+  & .lmil .mil-card .lform { margin-top: 10px; }
+  & .lmil .mil-now { margin: 10px 0 0; font-size: .92em; }
+  & .lmil .mil-now.short { color: var(--l-bad); }
+  /* The draft meter: how much is under arms, with a gold tick at the rate. */
+  & .lmil .mil-meter { position: relative; height: 8px; margin: 14px 0 0; border-radius: 4px; background: color-mix(in srgb, var(--l-ink) 8%, var(--l-page)); }
+  & .lmil .mil-meter .arm { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: color-mix(in srgb, var(--l-good) 65%, var(--l-page)); }
+  & .lmil .mil-meter .aim { position: absolute; top: -4px; bottom: -4px; width: 3px; margin-left: -1px; border-radius: 2px; background: var(--l-gold); }
+  /* Workshop. */
+  & .lpart.lmil table.mil-shop { width: 100%; max-width: 1000px; }
+  & .lmil .mil-shop tbody :is(td, th) { vertical-align: middle; }
+  & .lmil .mil-shop input[type=number] { width: 84px; }
+  & .lmil .mil-shop tr.grp th { padding-top: 14px; font: 600 .82rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); background: none; }
+  & .lmil .mil-shop td.cost.short { color: var(--l-bad); }
+  @media (max-width: 760px) { & .lmil .st-glance { grid-template-columns: repeat(2, 1fr); } & .lmil table.mil-tbl { min-width: 760px; } }
+}
+
+:root[data-view="line"] {
+  /* Resources: refining, below the tables. */
+  & .res2 .res-refine { max-width: 1000px; margin: 28px auto 0; }
+  & .res2 .res-refine table.tbl { width: 100%; }
+  & .res2 .res-refine tbody :is(td, th) { vertical-align: middle; }
+  & .res2 .res-refine tbody th[scope=row] { font: inherit; font-variant-caps: normal; letter-spacing: 0; color: var(--l-ink); text-align: left; }
+  & .res2 .res-refine input[type=number] { width: 84px; }
+  & .res2 .res-refine td.cost.short { color: var(--l-bad); }
+}
+
+:root[data-view="line"] {
+  /* Headings' numbers stand on the line, in faces that can (IM Fell can't: its numbers are old-style only). */
+  & :is(h1, h2, h3, .st-glance dd) { font-variant-numeric: lining-nums; }
+}

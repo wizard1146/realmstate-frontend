@@ -32,6 +32,13 @@ export const HEADS = [
   { name: 'Cormorant Garamond', css: '"Cormorant Garamond", Georgia, serif', src: WEB, gf: 'Cormorant+Garamond:wght@500;600;700' },
   { name: 'EB Garamond', css: '"EB Garamond", Georgia, serif', src: WEB, gf: 'EB+Garamond:wght@500;600;700' },
   { name: 'Uncial Antiqua', css: '"Uncial Antiqua", Georgia, serif', src: WEB, gf: 'Uncial+Antiqua' },
+  // Old-style faces with plain, full-height numbers (IM Fell's dip below the line and are hard to read in tables).
+  { name: 'Playfair Display', css: '"Playfair Display", Georgia, serif', src: WEB, gf: 'Playfair+Display:wght@500;600;700' },
+  { name: 'Fraunces', css: 'Fraunces, Georgia, serif', src: WEB, gf: 'Fraunces:wght@500;600;700' },
+  { name: 'Lora', css: 'Lora, Georgia, serif', src: WEB, gf: 'Lora:wght@500;600;700' },
+  { name: 'Bellefair', css: 'Bellefair, Georgia, serif', src: WEB, gf: 'Bellefair' },
+  { name: 'Forum', css: 'Forum, Georgia, serif', src: WEB, gf: 'Forum' },
+  { name: 'Rosarivo', css: 'Rosarivo, Georgia, serif', src: WEB, gf: 'Rosarivo' },
   { name: 'System sans', css: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', src: SYS },
 ];
 /** Body faces: everything else, numbers included (always set as lining, tabular figures). */
@@ -43,7 +50,7 @@ export const BODIES = [
   { name: 'Crimson Pro', css: '"Crimson Pro", Georgia, serif', src: WEB, gf: 'Crimson+Pro:wght@400;500;700' },
   { name: 'Source Sans 3', css: '"Source Sans 3", system-ui, sans-serif', src: WEB, gf: 'Source+Sans+3:wght@400;600;700' },
 ];
-const FONT_DEFAULT = { head: 'IM Fell English', body: 'Source Sans 3', size: 15 };
+const FONT_DEFAULT = { head: 'Rosarivo', body: 'Source Sans 3', size: 15 };
 
 const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
 const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage off */ } };

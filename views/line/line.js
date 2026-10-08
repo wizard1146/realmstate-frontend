@@ -12,7 +12,7 @@ import { STATE_TAB } from '../room/statedetail.js';
 import { SCI_TAB } from '../room/science.js';
 import { mountLook, clear as clearLook } from './looklab.js';
 import { mountThrone } from './throne.js';
-import { mountTrain } from './train.js';
+import { mountMilitary } from './military.js';
 import { mountResources } from './resources.js';
 import { mountLand } from './land.js';
 import { mountBuild } from './build.js';
@@ -25,7 +25,7 @@ import { watchCards } from './cards.js';
 import { newsLine } from '../../core/words.js';
 
 // Straightline's own page parts (not War Room panels): mount(host, on) -> { update(c), tick(), destroy() }.
-const PARTS = { throne: mountThrone, train: mountTrain, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState };
+const PARTS = { throne: mountThrone, military: mountMilitary, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState };
 
 const KEY = 'realmstate.line.page';
 
@@ -42,7 +42,7 @@ const MENU = [
     ['build', 'Build & Raze', null, null, 'put up buildings on barren land, or raze them', { part: 'build' }],
   ]],
   ['Military', [
-    ['military', 'Military', 'mil', ['mil', 'forces'], 'train troops; troops, draft, medics, upgrades', { top: 'train' }],
+    ['military', 'Military', null, null, 'train troops; draft and release; medics, upgrades, chariots', { part: 'military' }],
     ['attack', 'Attack', 'act', ['act', 'attacks'], 'send an army'],
     ['generals', 'Generals', 'mil', ['mil', 'generals'], 'raise and command generals'],
     ['hall', 'Hall of Deeds', 'mil', ['mil', 'hall'], 'trade generals and academics'],

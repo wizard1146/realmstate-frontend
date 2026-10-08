@@ -5,6 +5,7 @@ import { store } from '../../core/store.js';
 import { fmt, esc } from '../../core/words.js';
 import { WIKI } from '../../core/wiki.js';
 import { throneGlyph } from './throne.js';
+import { jobs } from '../../core/military.js';
 import * as trend from '../room/trend.js';
 import { mountGraph } from '../room/graph.js';
 
@@ -26,7 +27,9 @@ function groups(h) {
 
 export function mountResources(host, on) {
   // Throne's layout (line.css): the page's full width, tables flowing into up to three columns, each kept whole.
-  host.innerHTML = `<div class="throne res2${throneGlyph() ? ' glyph' : ''}"><div class="tgrid"></div><p class="dim small note" id="l-res-note"></p></div>`;
+  host.innerHTML = `<div class="throne res2${throneGlyph() ? ' glyph' : ''}"><div class="tgrid"></div><p class="dim small note" id="l-res-note"></p>
+    <section class="res-refine" id="l-ref" hidden><h3 class="sub">Refine <span class="dim">turn raw materials into refined ones, at once</span></h3>
+      <table class="tbl"><thead><tr><th>Make</th><th>Recipe</th><th class="num">Times</th><th></th><th>Uses and makes</th><th></th></tr></thead><tbody id="l-ref-rows"></tbody></table></section></div>`;
   const graph = mountGraph(host);
   const grid = host.querySelector('.tgrid');
 
@@ -52,12 +55,43 @@ export function mountResources(host, on) {
     host.querySelector('#l-res-note').textContent = store.ticks.length
       ? `From the last ${fmt(store.ticks.length)} tick reports. Select a row for its graph.` : 'Changes appear after the first tick.';
   }
+  // ---------- refining (moved here from Military): one row per recipe ----------
+  const refs = () => jobs().filter((j) => j.group === 'REFINE');
+  const rows = host.querySelector('#l-ref-rows'), n0 = (v) => Math.max(0, Math.floor(Number(v) || 0));
+  let shownRefs = '';
+  function refine() {
+    const list = refs(), key = list.map((j) => j.id + j.each).join('|');
+    host.querySelector('#l-ref').hidden = !list.length;
+    if (key !== shownRefs) {
+      shownRefs = key;
+      rows.innerHTML = list.map((j) => `<tr><th scope="row">${esc(j.label)}</th><td class="dim">${esc(j.each)}</td>
+        <td class="num"><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-job="${esc(j.id)}" aria-label="${esc(j.label)}: how many times"></td>
+        <td><button type="button" class="btn mini" data-jmax="${esc(j.id)}"${j.noMax ? ' disabled' : ''} aria-label="Most ${esc(j.label)} you can make">MAX</button></td>
+        <td class="cost" data-q="${esc(j.id)}"></td><td><button type="button" class="btn" data-make="${esc(j.id)}" disabled>Refine</button></td></tr>`).join('');
+    }
+    const byId = new Map(list.map((j) => [j.id, j]));
+    for (const i of rows.querySelectorAll('input[data-job]')) {
+      const j = byId.get(i.dataset.job), n = n0(i.value), q = n ? j.quote(n) : null, cell = rows.querySelector(`[data-q="${CSS.escape(j.id)}"]`);
+      cell.textContent = q ? (q.why ? `Can't: ${q.why}` : q.text) : '';
+      cell.title = q?.title || '';
+      cell.classList.toggle('short', !!q?.short);
+      rows.querySelector(`[data-make="${CSS.escape(j.id)}"]`).disabled = !n || !!q?.short;
+    }
+  }
+  on(rows, 'input', refine);
+  on(rows, 'click', async (ev) => {
+    const mx = ev.target.closest('[data-jmax]'), mk = ev.target.closest('[data-make]');
+    const job = (id) => refs().find((j) => j.id === id), inp = (id) => rows.querySelector(`input[data-job="${CSS.escape(id)}"]`);
+    if (mx) { const [n] = job(mx.dataset.jmax).max(); inp(mx.dataset.jmax).value = n ? String(n) : ''; refine(); inp(mx.dataset.jmax).focus(); }
+    if (mk) { const id = mk.dataset.make, n = n0(inp(id).value); if (n && await job(id).send(n, { button: mk })) inp(id).value = ''; refine(); }
+  });
+
   const go = (row) => graph.open(row.dataset.graph, row.querySelector('th').firstChild.textContent.trim(), row);
   on(host, 'click', (ev) => { const r = ev.target.closest('tr[data-graph]'); if (r) go(r); });
   on(host, 'keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches?.('tr[data-graph]')) { ev.preventDefault(); go(ev.target); } });
-  render();
+  render(); refine();
   return {
-    update(c) { if (!c || c.has('house') || c.has('ticks')) { render(); graph.update(); } },
+    update(c) { if (!c || c.has('house') || c.has('ticks')) { render(); refine(); graph.update(); } },
     tick() {},
     destroy() { graph.close(); host.replaceChildren(); },
   };
