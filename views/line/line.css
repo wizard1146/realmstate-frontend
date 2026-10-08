@@ -169,8 +169,8 @@
     border-bottom: 3px double var(--l-line); display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; }
   & .line-page-h h1 { margin: 0; font: 600 1.4rem/1.2 var(--l-head-font); letter-spacing: .02em; }
   & .line-page-h .line-what { margin: 0; color: var(--l-muted); }
-  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"]) .line-page-h { justify-content: center; }
-  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"]) .line-what { display: none; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"], [data-page="world"]) .line-page-h { justify-content: center; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"], [data-page="world"]) .line-what { display: none; }
   & .line-main:is([data-page="throne"], [data-page="state"]) .line-page-h h1 { display: flex; flex-direction: column; align-items: center; text-align: center; }
   /* State: the state's name, grand, with its address and realm small beneath. */
   & .line-page-h h1 .h-state { font-size: 1.3rem; letter-spacing: .04em; line-height: 1.1; padding: 6px 0 2px; }
@@ -181,9 +181,6 @@
   & .line-page-h h1 a { color: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--l-gold) 60%, transparent); text-underline-offset: 3px; }
   & .line-page-h h1 a:hover { color: var(--l-gold); }
   /* World: a realm at a time. */
-  & .lworld .wd-nav { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 14px; }
-  & .lworld .wd-nav select { min-width: 16rem; }
-  & .lworld tr.self > * { background: var(--l-self); }
   & .line-res .prot { margin-left: auto; padding: 0 8px; border: 1px solid var(--l-gold); border-radius: 3px; background: var(--l-self); }
   & .line-res .prot dd { font-weight: 600; }
   & .line-page-h .orn-rule { position: relative; height: 10px; margin: 8px auto 0; width: 230px;
@@ -231,15 +228,15 @@
   & .lstate .st-banner svg { display: block; width: 92px; height: auto; }
   & .lstate .st-banner path { fill: color-mix(in srgb, var(--l-gold) 6%, transparent); stroke: color-mix(in srgb, var(--l-gold) 70%, transparent); stroke-width: 2; stroke-dasharray: 6 4; }
   & .lstate .st-banner figcaption { margin-top: 4px; font: 600 .78rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
-  & :is(.lstate, .lmil) .st-glance { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 640px; gap: 0; margin: 4px auto 26px;
+  & :is(.lstate, .lmil, .lworld) .st-glance { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 640px; gap: 0; margin: 4px auto 26px;
     border-block: 3px double var(--l-line); }
-  & :is(.lstate, .lmil) .st-glance > div { padding: 12px 10px; text-align: center; }
-  & :is(.lstate, .lmil) .st-glance > div + div { border-left: 1px solid var(--l-rule); }
-  & :is(.lstate, .lmil) .st-glance dt { font: 600 .82rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
-  & :is(.lstate, .lmil) .st-glance dd { margin: 2px 0 0; font: 1.35rem var(--l-head-font); font-variant-numeric: lining-nums tabular-nums; }
-  & :is(.lstate, .lmil) .st-glance dd.rank { margin-top: 1px; font: 600 .95rem var(--l-body-font); color: var(--l-gold); font-variant-numeric: tabular-nums; }
-  & :is(.lstate, .lmil) .st-glance dd.rank span { font-weight: 400; color: var(--l-muted); font-size: .9em; }
-  & :is(.lstate, .lmil) .st-glance dd.note a { color: inherit; }
+  & :is(.lstate, .lmil, .lworld) .st-glance > div { padding: 12px 10px; text-align: center; }
+  & :is(.lstate, .lmil, .lworld) .st-glance > div + div { border-left: 1px solid var(--l-rule); }
+  & :is(.lstate, .lmil, .lworld) .st-glance dt { font: 600 .82rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
+  & :is(.lstate, .lmil, .lworld) .st-glance dd { margin: 2px 0 0; font: 1.35rem var(--l-head-font); font-variant-numeric: lining-nums tabular-nums; }
+  & :is(.lstate, .lmil, .lworld) .st-glance dd.rank { margin-top: 1px; font: 600 .95rem var(--l-body-font); color: var(--l-gold); font-variant-numeric: tabular-nums; }
+  & :is(.lstate, .lmil, .lworld) .st-glance dd.rank span { font-weight: 400; color: var(--l-muted); font-size: .9em; }
+  & :is(.lstate, .lmil, .lworld) .st-glance dd.note a { color: inherit; }
   & .lstate section { margin-bottom: 26px; }
   & .lstate table.st-tbl { width: 100%; }
   & .lstate .st-tbl tbody :is(td, th) { vertical-align: middle; height: 34px; padding-block: 0; }   /* every row one height, buttons or not */
@@ -300,7 +297,7 @@
   & .lstate .st-tbl tr.open > * { color: var(--l-muted); }
   & .lstate .st-tbl tr.open th[scope=row] { color: var(--l-muted); font-style: italic; }
   & .lstate .st-tbl tr.open:hover > * { background: none; }
-  & :is(.lstate, .lmil) .st-glance dd .of { font-size: .62em; color: var(--l-muted); }
+  & :is(.lstate, .lmil, .lworld) .st-glance dd .of { font-size: .62em; color: var(--l-muted); }
   & .lstate .st-tbl .mark { display: inline-block; margin-right: 6px; padding: 0 6px; border: 1px solid var(--l-line); border-radius: 3px; font-size: .78em; color: var(--l-muted); }
   & .lstate .st-tbl .mark.lead { color: var(--l-gold); border-color: color-mix(in srgb, var(--l-gold) 60%, transparent); }
   & .lstate .st-tbl td.acts { white-space: nowrap; text-align: right; }
@@ -912,4 +909,44 @@
   & .latk .atk-go { display: flex; gap: 8px; justify-content: flex-end; }
   & .latk .atk-go #la-go { margin-left: auto; }
   @media (max-width: 1100px) { & .latk .atk-layout { grid-template-columns: 1fr; } & .latk .atk-sheet { position: static; margin-top: 10px; } }
+}
+
+:root[data-view="line"] {
+  /* World: the page's full width; totals, then realm cards and the chosen realm, or every state ranked. */
+  & .line-main > .room:has(.lworld) { max-width: none; width: auto; min-width: 0; }
+  & .lpart.lworld { max-width: 1400px; width: 100%; margin-inline: auto; }
+  & .lworld .wd-glance { grid-template-columns: repeat(4, 1fr); max-width: 860px; margin-bottom: 22px; }
+  & .lworld [role=tabpanel][hidden] { display: none; }
+  & .lworld [role=tabpanel] { padding-top: 16px; }
+  & .lworld .wd-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+  & .lworld .wd-card { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 10px 12px; border: 1px solid var(--l-rule); border-radius: 6px;
+    background: var(--l-page); color: var(--l-ink); font: inherit; cursor: pointer; transition: border-color .12s, background .12s; }
+  & .lworld .wd-card:hover { border-color: color-mix(in srgb, var(--l-gold) 60%, var(--l-rule)); }
+  & .lworld .wd-card:focus-visible { outline: 2px solid var(--l-gold); outline-offset: 1px; }
+  & .lworld .wd-card.on { border-color: var(--l-gold); background: color-mix(in srgb, var(--l-gold) 9%, var(--l-page)); box-shadow: inset 0 0 0 1px var(--l-gold); }
+  & .lworld .wd-card.yours .wd-n { color: var(--l-gold); }
+  & .lworld .wd-card.empty { opacity: .72; }
+  & .lworld .wd-n { font-size: .74em; letter-spacing: .08em; text-transform: uppercase; color: var(--l-muted); }
+  & .lworld .wd-name { font: 1.05rem/1.25 var(--l-head-font); }
+  & .lworld .wd-mat { font-size: .85em; color: var(--l-muted); }
+  & .lworld .wd-figs { font-size: .88em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  & .lworld .wd-lead { font-size: .82em; color: var(--l-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  & .lworld .wd-realm { margin-top: 28px; }
+  & .lworld .wd-rhead { display: flex; align-items: center; gap: 10px; border-bottom: 3px double var(--l-line); padding-bottom: 6px; }
+  & .lworld .wd-rhead h3 { flex: 1; margin: 0; font: 1.3rem var(--l-head-font); }
+  & .lworld .wd-rhead h3 .dim { font: .9rem var(--l-body-font); margin-left: 8px; }
+  & .lpart.lworld table.wd-tbl, & .lpart.lworld table.wd-rank { width: 100%; margin-top: 8px; }
+  & .lworld :is(.wd-tbl, .wd-rank) tbody th[scope=row] { font: inherit; font-variant-caps: normal; letter-spacing: 0; color: var(--l-ink); text-align: left; }
+  & .lworld :is(.wd-tbl, .wd-rank) tbody tr:hover > * { background: color-mix(in srgb, var(--l-gold) 12%, var(--l-page)); }
+  & .lworld :is(.wd-tbl, .wd-rank) tbody tr.alt > * { background: color-mix(in srgb, var(--l-ink) 1.25%, transparent); }
+  & .lworld :is(.wd-tbl, .wd-rank) tr.self > * { background: color-mix(in srgb, var(--l-gold) 10%, var(--l-page)); }
+  & .lworld .wd-tbl tr.empty > * { color: var(--l-muted); }
+  & .lworld .wd-tbl tr.empty a { color: inherit; }
+  & .lworld .wd-rk { display: inline-block; min-width: 2.4em; margin-left: 4px; font-size: .82em; color: var(--l-gold); text-align: right; }
+  & .lworld .wd-war { color: var(--l-bad); }
+  & .lworld .wd-rank td.on { font-weight: 600; }
+  & .lworld .wd-sort { border: 0; background: none; font: inherit; color: inherit; cursor: pointer; padding: 0; text-transform: inherit; letter-spacing: inherit; }
+  & .lworld [aria-sort=descending] .wd-sort { color: var(--l-ink); text-decoration: underline; text-decoration-color: var(--l-gold); text-underline-offset: 3px; }
+  & .lworld .note { color: var(--l-muted); font-size: .88em; margin: 8px 0 0; }
+  @media (max-width: 760px) { & .lworld .wd-glance { grid-template-columns: repeat(2, 1fr); } }
 }
