@@ -9,6 +9,7 @@ import { esc } from './core/words.js';
 import { WIKI } from './core/wiki.js';
 import { nameRoll } from './core/names.js';
 import { VIEWS, savedView, saveView, nextView } from './core/viewswitch.js';
+import { installAddressSpace } from './core/addr.js';
 import { mountAgeBar } from './views/ages/agebar.js';
 import { mountAges } from './views/ages/ages.js';
 
@@ -126,6 +127,8 @@ const agesWindow = mountAges();
 mountAgeBar($('agebar'), (tab) => agesWindow.open(tab));
 
 // ---------- wiring ----------
+installAddressSpace();   // in any address box, a space types ":"
+
 subscribe((c) => {
   // A new age: new rules, so the founding form's races and personalities are read again.
   if (c.has('age:changed')) { $('c-race').replaceChildren(); $('c-pers').replaceChildren(); renderGate(); }

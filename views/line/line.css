@@ -212,6 +212,14 @@
     width: clamp(120px, 17%, 240px); aspect-ratio: 1; background: var(--l-ink); opacity: .045;
     -webkit-mask: url("assets/fort.svg") no-repeat center / contain; mask: url("assets/fort.svg") no-repeat center / contain; }
   & .lpart.lstate { max-width: 1500px; width: 100%; margin-inline: auto; }
+  /* Moving between states: ‹ realm · state › and back to yours, centred above the banner. */
+  & .lstate .st-nav { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; margin: 0 0 18px; }
+  & .lstate .st-nav select { max-width: 280px; }
+  & .lstate .st-nav #ls-home { margin-left: 8px; }
+  & .lstate .st-goto { display: flex; align-items: center; gap: 6px; margin-left: 8px; }
+  & .lstate .st-goto input { width: 76px; text-align: center; font-variant-numeric: tabular-nums; }
+  & .lstate .st-goto .short:empty { display: none; }
+  & .lstate .st-nav #ls-home:disabled { visibility: hidden; }
   /* The banner placeholder: a dashed swallow-tail pennant, centred above the figures. */
   & .lstate .st-banner { margin: 0 auto 18px; width: 92px; text-align: center; }
   & .lstate .st-banner svg { display: block; width: 92px; height: auto; }

@@ -7,6 +7,8 @@ import { fmt, esc } from '../../core/words.js';
 let shown = null;   // the realm last looked at, kept while the page is open again
 /** The next time World opens, it opens on your own realm (the Throne's realm link). */
 export function homeRealm() { shown = null; }
+/** The next time World opens, it opens on this realm (a state's realm link). */
+export function showRealm(n) { shown = n || null; }
 
 export function mountWorld(host, on) {
   const realms = store.rules?.params.realms || 13;
@@ -41,7 +43,7 @@ export function mountWorld(host, on) {
       <table class="tbl"><thead><tr><th class="num">State</th><th>Name</th><th class="num">Houses</th><th>Leader</th><th class="num"><abbr title="Its share of the realm's ${esc(r.material)}">Share</abbr></th></tr></thead><tbody>
       ${r.states.map((s) => {
         const yours = store.house && store.house.realm === realm && store.house.state === s.state;
-        return `<tr${yours ? ' class="self"' : ''}><td class="num">${realm}:${s.state}</td><td>${esc(s.name)}${yours ? ' <span class="dim">(yours)</span>' : ''}</td>
+        return `<tr${yours ? ' class="self"' : ''}><td class="num">${realm}:${s.state}</td><td><a href="#state" data-open-state="${realm}:${s.state}">${esc(s.name)}</a>${yours ? ' <span class="dim">(yours)</span>' : ''}</td>
           <td class="num">${fmt(s.houses)}</td><td>${s.leader ? esc(s.leader.name) : '<span class="dim">none</span>'}</td><td class="num">${(s.share_bp / 100).toFixed(1)}%</td></tr>`;
       }).join('')}</tbody></table>`;
   }

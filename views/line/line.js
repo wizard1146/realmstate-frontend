@@ -19,8 +19,8 @@ import { mountBuild } from './build.js';
 import { mountChatbox } from './chatbox.js';
 import { mountConfig } from './config.js';
 import { mountProfile } from './profile.js';
-import { mountWorld, homeRealm } from './world.js';
-import { mountState } from './state.js';
+import { mountWorld, homeRealm, showRealm } from './world.js';
+import { mountState, openState, stateTitle } from './state.js';
 import { watchCards } from './cards.js';
 import { newsLine } from '../../core/words.js';
 
@@ -177,7 +177,8 @@ export function mount(root) {
     const st = store.state && store.state.realm === h.realm && store.state.state === h.state ? store.state : null;
     // State's heading is the state's own name, grand; under it its address and realm (the realm opens World).
     if (current === 'state') {
-      $('title').innerHTML = `<span class="h-state">${esc(st?.name || `State ${h.realm}:${h.state}`)}</span> <span class="h-of">State ${h.state} of <a href="#world" data-home-realm>${esc(st?.realm_name || `Realm ${h.realm}`)}</a></span>`;
+      // The state being looked at (yours, or another: state.js knows which).
+      $('title').innerHTML = stateTitle() || `<span class="h-state">${esc(st?.name || `State ${h.realm}:${h.state}`)}</span> <span class="h-of">State ${h.state} of <a href="#world" data-home-realm>${esc(st?.realm_name || `Realm ${h.realm}`)}</a></span>`;
       return;
     }
     $('title').innerHTML = `<span class="h-page">Throne</span> <span class="h-house">${esc(h.name)} <span class="h-of">of ${esc(st?.name || `State ${h.realm}:${h.state}`)}, ${esc(st?.realm_name || `Realm ${h.realm}`)}</span></span>`;
@@ -202,7 +203,17 @@ export function mount(root) {
   }
 
   // Throne's realm link opens World on your own realm.
-  on($('main'), 'click', (ev) => { if (ev.target.closest('[data-home-realm]')) homeRealm(); });
+  // A state's realm link opens World on that realm; World's state links open that state; Throne's opens yours.
+  on($('main'), 'click', (ev) => {
+    if (ev.target.closest('[data-home-realm]')) homeRealm();
+    const r = ev.target.closest('[data-realm]');
+    if (r) showRealm(Number(r.dataset.realm));
+    const s = ev.target.closest('[data-open-state]');
+    if (s) { const [a, b] = s.dataset.openState.split(':').map(Number); openState(a, b); }
+    if (ev.target.closest('[data-home-state]')) openState();
+  });
+  // The menu's State opens your own state.
+  on(root.querySelector('.line-side'), 'click', (ev) => { if (ev.target.closest('[data-page="state"]')) openState(); });
   on(root.querySelector('.line-side'), 'click', (ev) => {
     if (ev.target.closest('[data-chat]')) { ev.preventDefault(); chat.open(); return; }
     const a = ev.target.closest('[data-page]');

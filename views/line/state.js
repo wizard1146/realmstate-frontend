@@ -1,4 +1,5 @@
-// Straightline's State: the state's banner and standing, then its houses. Two windows open over the page: the
+// Straightline's State: any state, yours first. ‹ › and the lists move between states (World's rows open one too).
+// The state's banner and standing, then its houses. Two windows open over the page: the
 // state's statistics (spread, distribution, races) and Send aid. The page's heading is the state's own name (line.js).
 // Leadership (votes in detail, treasury, tax, grants) is its own page.
 import { store, raceName } from '../../core/store.js';
@@ -9,6 +10,13 @@ import { throneGlyph } from './throne.js';
 
 const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
 const leaderOf = (s) => (s?.leader ? (s.leader.house ?? s.leader.id) : null);
+
+let viewing = null;   // { realm, state } another state being looked at; null for your own. Kept while you move about.
+/** Opens the State page on a state (World's rows); with no state, on your own. */
+export function openState(realm, state) { viewing = realm && state ? { realm, state } : null; }
+/** The page heading for the state being looked at: its name, grand, and "State n of <realm>" (line.js). */
+let titleOf = null;
+export function stateTitle() { return titleOf?.() ?? null; }
 
 // ---------- statistics ----------
 const median = (xs) => { const a = [...xs].sort((x, y) => x - y), n = a.length; return n ? (n % 2 ? a[(n - 1) / 2] : (a[n / 2 - 1] + a[n / 2]) / 2) : 0; };
@@ -77,6 +85,16 @@ function statsHTML(members) {
 export function mountState(host, on) {
   host.innerHTML = `<div class="lpart lstate${throneGlyph() ? ' glyph' : ''}">
     <!-- The state's banner: a placeholder until states can choose one. -->
+    <nav class="st-nav" aria-label="Other states">
+      <button type="button" class="btn" data-step="-1" aria-label="Previous state">‹</button>
+      <label class="vh" for="ls-realm">Realm</label><select id="ls-realm"></select>
+      <label class="vh" for="ls-state">State</label><select id="ls-state"></select>
+      <button type="button" class="btn" data-step="1" aria-label="Next state">›</button>
+      <form id="ls-goto" class="st-goto" novalidate><label class="vh" for="ls-addr">Go to a state by its address, realm:state</label>
+        <input id="ls-addr" placeholder="1:3" inputmode="numeric" autocomplete="off" spellcheck="false" aria-describedby="ls-addr-why"><button class="btn">Go</button>
+        <span class="short small" id="ls-addr-why" aria-live="polite"></span></form>
+      <button type="button" class="btn" id="ls-home">Your state</button>
+    </nav>
     <figure class="st-banner" aria-label="State banner (not yet chosen)"><svg viewBox="0 0 100 140" aria-hidden="true">
       <path d="M8 6 H92 V128 L50 106 L8 128 Z" /></svg><figcaption>State banner</figcaption></figure>
     <dl class="st-glance" id="ls-glance"></dl>
@@ -84,7 +102,7 @@ export function mountState(host, on) {
         <button type="button" class="btn" id="ls-open-stats" aria-haspopup="dialog">Statistics</button>
         <button type="button" class="btn" id="ls-open-aid" aria-haspopup="dialog">Send aid</button></span></div>
       <div class="scrollx"><table class="tbl st-tbl"><thead><tr><th class="num">Seat</th><th>House</th><th>Race</th><th class="num">Land</th><th class="num">Might</th>
-        <th class="num">Renown</th><th class="num">Votes</th><th><span class="vh">Marks</span></th><th><span class="vh">Actions</span></th></tr></thead><tbody id="ls-rows"></tbody></table></div>
+        <th class="num">Renown</th><th class="num" data-votes>Votes</th><th><span class="vh">Marks</span></th><th><span class="vh">Actions</span></th></tr></thead><tbody id="ls-rows"></tbody></table></div>
       <p class="dim small" id="ls-votes"></p></section>
 
     <dialog class="ldlg st-stats" id="ls-dstats" aria-labelledby="ls-dstats-h">
@@ -124,10 +142,79 @@ export function mountState(host, on) {
     return { gold: h.gold, food: h.food, soldiers: h.units[0], horses: h.horses, aether: h.aether, explorable: h.explorable?.acres ?? 0 }[what] ?? 0;
   }
 
+  // ---------- which state: yours (from /state, with votes) or another (public: /realms/:n and /states/:r/:s) ----------
+  const P0 = store.rules?.params || {}, REALMS = P0.realms || 13, PER = P0.states_per_realm || 7;
+  const realmInfo = new Map();   // realm -> /realms/:n, as loaded
+  let other = null;              // another state's view: { realm, state, name, realm_name, members, leader, ranks }
+  const mine = () => !viewing || (store.house && viewing.realm === store.house.realm && viewing.state === store.house.state);
+  const at = () => (mine() ? { realm: store.house?.realm, state: store.house?.state } : viewing);
+  const view = () => (mine() ? store.state : other);
+  titleOf = () => {
+    const s = view(), a = at();
+    if (!a?.realm) return null;
+    const rn = s?.realm_name || realmInfo.get(a.realm)?.name || `Realm ${a.realm}`;
+    return `<span class="h-state">${esc(s?.name || `State ${a.realm}:${a.state}`)}</span> <span class="h-of">State ${a.state} of <a href="#world" data-realm="${a.realm}">${esc(rn)}</a></span>`;
+  };
+  const retitle = () => { const t = document.getElementById('l-title'), html = titleOf(); if (t && html) t.innerHTML = html; };
+  async function realmOf(r) {
+    if (!realmInfo.has(r)) realmInfo.set(r, await api(`/realms/${r}`));
+    return realmInfo.get(r);
+  }
+  function lists() {
+    const a = at(), info = realmInfo.get(a.realm);
+    $('realm').innerHTML = Array.from({ length: REALMS }, (_, k) => k + 1).map((n) =>
+      `<option value="${n}"${n === a.realm ? ' selected' : ''}>Realm ${n}${realmInfo.get(n) ? ` · ${esc(realmInfo.get(n).name)}` : ''}${n === store.house?.realm ? ' (yours)' : ''}</option>`).join('');
+    $('state').innerHTML = Array.from({ length: PER }, (_, k) => k + 1).map((n) => {
+      const st = info?.states.find((x) => x.state === n);
+      return `<option value="${n}"${n === a.state ? ' selected' : ''}>State ${n}${st?.name ? ` · ${esc(st.name)}` : ''}${a.realm === store.house?.realm && n === store.house?.state ? ' (yours)' : ''}</option>`;
+    }).join('');
+    $('home').disabled = mine();
+  }
+  let loadSeq = 0;
+  async function go(realm, state) {
+    viewing = { realm, state };
+    other = null;
+    const seq = ++loadSeq;
+    lists(); draw(); retitle();
+    try {
+      const info = await realmOf(realm);
+      if (seq !== loadSeq) return;
+      lists(); retitle();
+      if (mine()) { draw(); return; }
+      const members = await api(`/states/${realm}/${state}`);
+      if (seq !== loadSeq) return;
+      const st = info.states.find((x) => x.state === state) || {};
+      other = { realm, state, name: st.name, realm_name: info.name, members, leader: st.leader, ranks: st.ranks };
+      draw(); retitle();
+    } catch (e) { if (seq === loadSeq) { $('rows').innerHTML = `<tr><td colspan="9" class="short">${esc(e.message)}</td></tr>`; } }
+  }
+  on(host.querySelector('.st-nav'), 'click', (ev) => {
+    const b = ev.target.closest('button');
+    if (!b) return;
+    if (b.id === 'ls-home') { go(store.house.realm, store.house.state); return; }
+    // Step through every state in order, realm by realm, round the world.
+    const a = at(), n = ((a.realm - 1) * PER + (a.state - 1) + Number(b.dataset.step) + REALMS * PER) % (REALMS * PER);
+    go(Math.floor(n / PER) + 1, (n % PER) + 1);
+  });
+  on($('realm'), 'change', () => go(Number($('realm').value), 1));
+  // An address typed in: realm:state (a house's realm:state:seat goes to its state).
+  on($('goto'), 'submit', (ev) => {
+    ev.preventDefault();
+    const m = $('addr').value.trim().match(/^(\d+)\s*[:.\/ ]\s*(\d+)(?:\s*[:.\/ ]\s*\d+)?$/), why = $('addr-why');
+    const r = m && Number(m[1]), st = m && Number(m[2]);
+    if (!m) { why.textContent = 'Write it as realm:state, like 1:3.'; return; }
+    if (r < 1 || r > REALMS || st < 1 || st > PER) { why.textContent = `There are ${REALMS} realms of ${PER} states.`; return; }
+    why.textContent = ''; $('addr').value = '';
+    go(r, st);
+  });
+  on($('addr'), 'input', () => { $('addr-why').textContent = ''; });
+  on($('state'), 'change', () => go(at().realm, Number($('state').value)));
+
   let shownStats = '';
   function draw() {
-    const s = store.state, h = store.house, P = store.rules?.params;
-    if (!s || !h) return;
+    const s = view(), h = store.house, P = store.rules?.params, yours = mine();
+    host.querySelector('.lstate').classList.toggle('theirs', !yours);
+    if (!s || !h) { if (!yours) { $('glance').innerHTML = ''; $('rows').innerHTML = '<tr><td colspan="9" class="dim">Loading…</td></tr>'; } return; }
     const lead = leaderOf(s), votes = new Map((s.votes?.for || []).map((v) => [v.house, v.votes]));
     const mv = s.my_vote || {};
     // Standing: the state's totals, and its place among all states (the server ranks them; an old one doesn't).
@@ -141,20 +228,21 @@ export function mountState(host, on) {
     const seats = Math.max(P?.houses_per_state || 0, ...s.members.map((m) => m.seat));
     const bySeat = new Map(s.members.map((m) => [m.seat, m]));
     $('rows').innerHTML = Array.from({ length: seats }, (_, k) => bySeat.get(k + 1) || { seat: k + 1, open: true }).map((m, k) => {
-      if (m.open) return `<tr class="open${k % 2 ? ' alt' : ''}"><td class="num dim">${m.seat}</td><th scope="row">Open seat</th><td colspan="7"></td></tr>`;
+      if (m.open) return `<tr class="open${k % 2 ? ' alt' : ''}"><td class="num dim">${m.seat}</td><th scope="row">Open seat</th><td colspan="${yours ? 7 : 6}"></td></tr>`;
       const me = m.id === h.id, marks = [lead === m.id ? '<span class="mark lead">Leader</span>' : '', m.protected ? '<span class="mark prot" title="Under protection">Protected</span>' : '', me ? '<span class="mark you">You</span>' : ''].join('');
       return `<tr class="${[me ? 'self' : '', k % 2 ? 'alt' : ''].join(' ').trim()}"><td class="num dim">${m.seat}</td><th scope="row">${esc(m.name)}</th><td>${esc(raceName(m.race))}</td>`
-        + `<td class="num">${fmt(m.land)}</td><td class="num">${fmt(m.might)}</td><td class="num">${fmt(m.renown)}</td><td class="num">${fmt(votes.get(m.id) || 0)}</td><td class="marks">${marks}</td>`
-        + `<td class="acts"><button type="button" class="btn mini" data-vote-for="${m.id}"${mv.type === 'for' && mv.house === m.id ? ' disabled title="Your vote already"' : ''} aria-label="Vote for ${esc(m.name)} to lead">Vote</button>`
-        + `${me ? '' : `<button type="button" class="btn mini" data-aid-to="${m.id}" aria-label="Send aid to ${esc(m.name)}">Aid</button>`}</td></tr>`;
+        + `<td class="num">${fmt(m.land)}</td><td class="num">${fmt(m.might)}</td><td class="num">${fmt(m.renown)}</td>${yours ? `<td class="num">${fmt(votes.get(m.id) || 0)}</td>` : ''}<td class="marks">${marks}</td>`
+        + (yours ? `<td class="acts"><button type="button" class="btn mini" data-vote-for="${m.id}"${mv.type === 'for' && mv.house === m.id ? ' disabled title="Your vote already"' : ''} aria-label="Vote for ${esc(m.name)} to lead">Vote</button>`
+        + `${me ? '' : `<button type="button" class="btn mini" data-aid-to="${m.id}" aria-label="Send aid to ${esc(m.name)}">Aid</button>`}</td></tr>` : '<td></td></tr>');
     }).join('');
-    $('votes').textContent = s.votes?.against ? `${fmt(s.votes.against)} vote${s.votes.against === 1 ? '' : 's'} against any leader.` : '';
+    host.querySelector('[data-votes]').hidden = !yours;
+    $('votes').textContent = yours && s.votes?.against ? `${fmt(s.votes.against)} vote${s.votes.against === 1 ? '' : 's'} against any leader.` : '';
     // Statistics: redrawn only when the houses' figures change.
     const key = JSON.stringify(s.members.map((m) => [m.id, m.land, m.might, m.race]));
     if (key !== shownStats) { shownStats = key; $('stats').innerHTML = statsHTML(s.members); }
     $('dstats-of').textContent = s.name ? `· ${s.name}` : '';
     // Aid: who to, what, and your balance; the row's Aid and the Send aid button only where the age has aid.
-    const aidOn = !!(P?.aid_ticks > 0), others = s.members.filter((m) => m.id !== h.id);
+    const aidOn = yours && !!(P?.aid_ticks > 0), others = s.members.filter((m) => m.id !== h.id);
     $('open-aid').hidden = !aidOn;
     host.querySelectorAll('[data-aid-to]').forEach((b) => { b.hidden = !aidOn; });
     if (!aidOn) return;
@@ -200,10 +288,10 @@ export function mountState(host, on) {
     if (await act.sendAid($('at').value, $('aw').value, n, { button: $('ago') })) { $('an').value = ''; quote(); }
   });
 
-  draw();
+  if (mine()) { lists(); draw(); realmOf(at().realm).then(() => { lists(); retitle(); }).catch(() => {}); } else go(viewing.realm, viewing.state);
   return {
-    update(c) { if (!c || c.has('state') || c.has('house') || c.has('rules')) draw(); },
+    update(c) { if (!c || c.has('state') || c.has('house') || c.has('rules')) { draw(); if (mine()) retitle(); } },
     tick() {},
-    destroy() { host.replaceChildren(); },
+    destroy() { titleOf = null; host.replaceChildren(); },
   };
 }

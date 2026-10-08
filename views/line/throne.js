@@ -43,7 +43,7 @@ export function mountThrone(host, on) {
     // Your house: who you are and where.
     const house = table('Your house', [
       ['House', esc(h.name)],
-      ['State', `<a href="#state">${st?.name ? esc(st.name) : `State ${h.realm}:${h.state}`}</a>`],
+      ['State', `<a href="#state" data-home-state>${st?.name ? esc(st.name) : `State ${h.realm}:${h.state}`}</a>`],
       ['Realm', `<a href="#world" data-home-realm>${st?.realm_name ? esc(st.realm_name) : `Realm ${h.realm}`}</a>`],
       // Race and personality open their wiki pages in a new tab (this page stays put).
       ['Race', wikiLink(`race-${h.race}.html`, raceName(h.race))],
