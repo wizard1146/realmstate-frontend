@@ -169,8 +169,8 @@
     border-bottom: 3px double var(--l-line); display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; }
   & .line-page-h h1 { margin: 0; font: 600 1.4rem/1.2 var(--l-head-font); letter-spacing: .02em; }
   & .line-page-h .line-what { margin: 0; color: var(--l-muted); }
-  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"], [data-page="world"], [data-page="wars"], [data-page="intrigue"], [data-page="rites"], [data-page="science"], [data-page="academics"], [data-page="generals"]) .line-page-h { justify-content: center; }
-  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"], [data-page="world"], [data-page="wars"], [data-page="intrigue"], [data-page="rites"], [data-page="science"], [data-page="academics"], [data-page="generals"]) .line-what { display: none; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"], [data-page="world"], [data-page="wars"], [data-page="intrigue"], [data-page="rites"], [data-page="science"], [data-page="academics"], [data-page="generals"], [data-page="heirs"]) .line-page-h { justify-content: center; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"], [data-page="world"], [data-page="wars"], [data-page="intrigue"], [data-page="rites"], [data-page="science"], [data-page="academics"], [data-page="generals"], [data-page="heirs"]) .line-what { display: none; }
   & .line-main:is([data-page="throne"], [data-page="state"]) .line-page-h h1 { display: flex; flex-direction: column; align-items: center; text-align: center; }
   /* State: the state's name, grand, with its address and realm small beneath. */
   & .line-page-h h1 .h-state { font-size: 1.3rem; letter-spacing: .04em; line-height: 1.1; padding: 6px 0 2px; }
@@ -228,15 +228,15 @@
   & .lstate .st-banner svg { display: block; width: 92px; height: auto; }
   & .lstate .st-banner path { fill: color-mix(in srgb, var(--l-gold) 6%, transparent); stroke: color-mix(in srgb, var(--l-gold) 70%, transparent); stroke-width: 2; stroke-dasharray: 6 4; }
   & .lstate .st-banner figcaption { margin-top: 4px; font: 600 .78rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
-  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen) .st-glance { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 640px; gap: 0; margin: 4px auto 26px;
+  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs) .st-glance { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 640px; gap: 0; margin: 4px auto 26px;
     border-block: 3px double var(--l-line); }
-  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen) .st-glance > div { padding: 12px 10px; text-align: center; }
-  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen) .st-glance > div + div { border-left: 1px solid var(--l-rule); }
-  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen) .st-glance dt { font: 600 .82rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
-  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen) .st-glance dd { margin: 2px 0 0; font: 1.35rem var(--l-head-font); font-variant-numeric: lining-nums tabular-nums; }
-  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen) .st-glance dd.rank { margin-top: 1px; font: 600 .95rem var(--l-body-font); color: var(--l-gold); font-variant-numeric: tabular-nums; }
-  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen) .st-glance dd.rank span { font-weight: 400; color: var(--l-muted); font-size: .9em; }
-  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen) .st-glance dd.note a { color: inherit; }
+  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs) .st-glance > div { padding: 12px 10px; text-align: center; }
+  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs) .st-glance > div + div { border-left: 1px solid var(--l-rule); }
+  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs) .st-glance dt { font: 600 .82rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
+  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs) .st-glance dd { margin: 2px 0 0; font: 1.35rem var(--l-head-font); font-variant-numeric: lining-nums tabular-nums; }
+  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs) .st-glance dd.rank { margin-top: 1px; font: 600 .95rem var(--l-body-font); color: var(--l-gold); font-variant-numeric: tabular-nums; }
+  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs) .st-glance dd.rank span { font-weight: 400; color: var(--l-muted); font-size: .9em; }
+  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs) .st-glance dd.note a { color: inherit; }
   & .lstate section { margin-bottom: 26px; }
   & .lstate table.st-tbl { width: 100%; }
   & .lstate .st-tbl tbody :is(td, th) { vertical-align: middle; height: 34px; padding-block: 0; }   /* every row one height, buttons or not */
@@ -297,7 +297,7 @@
   & .lstate .st-tbl tr.open > * { color: var(--l-muted); }
   & .lstate .st-tbl tr.open th[scope=row] { color: var(--l-muted); font-style: italic; }
   & .lstate .st-tbl tr.open:hover > * { background: none; }
-  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen) .st-glance dd .of { font-size: .62em; color: var(--l-muted); }
+  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs) .st-glance dd .of { font-size: .62em; color: var(--l-muted); }
   & .lstate .st-tbl .mark { display: inline-block; margin-right: 6px; padding: 0 6px; border: 1px solid var(--l-line); border-radius: 3px; font-size: .78em; color: var(--l-muted); }
   & .lstate .st-tbl .mark.lead { color: var(--l-gold); border-color: color-mix(in srgb, var(--l-gold) 60%, transparent); }
   & .lstate .st-tbl td.acts { white-space: nowrap; text-align: right; }
@@ -1250,3 +1250,34 @@
   & .lgen .atk-sheet .lform .field input { flex: 1; min-width: 0; }
   & .lgen .atk-sheet .doing { max-width: none; margin: 12px 0; font-size: .9em; }
 }
+
+:root[data-view="line"] {
+  /* Heirs: one ordered list, rows you drag (a gold line shows where it lands), a rule where your slots end. */
+  & .line-main > .room:has(.lheirs) { max-width: none; width: auto; min-width: 0; }
+  & .lpart.lheirs { max-width: 900px; width: 100%; margin-inline: auto; }
+  & .lheirs .hr-glance { grid-template-columns: repeat(4, 1fr); margin-bottom: 16px; }
+  & .lheirs .what { max-width: none; text-align: center; }
+  & .lheirs .hr-list { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  & .lheirs .hr-row { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border: 1px solid var(--l-rule); border-radius: 6px; background: var(--l-page); cursor: grab; position: relative; }
+  & .lheirs .hr-row:focus-visible { outline: 2px solid var(--l-gold); outline-offset: 1px; }
+  & .lheirs .hr-row:hover { border-color: color-mix(in srgb, var(--l-gold) 55%, var(--l-rule)); }
+  & .lheirs .hr-row.dragging { opacity: .45; }
+  & .lheirs .hr-row.drop-above::before, & .lheirs .hr-row.drop-below::after { content: ""; position: absolute; left: 0; right: 0; height: 3px; border-radius: 2px; background: var(--l-gold); }
+  & .lheirs .hr-row.drop-above::before { top: -5px; } & .lheirs .hr-row.drop-below::after { bottom: -5px; }
+  & .lheirs .hr-row.over { opacity: .62; }
+  & .lheirs .hr-grip { color: var(--l-muted); letter-spacing: -2px; cursor: grab; }
+  & .lheirs .hr-n { min-width: 1.6em; font: 1.2rem var(--l-head-font); color: var(--l-gold); text-align: center; }
+  & .lheirs .hr-who { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; flex: 1; min-width: 0; }
+  & .lheirs .hr-who .dim { flex-basis: 100%; font-size: .85em; }
+  & .lheirs .hr-kind { font-size: .7em; padding: 0 6px; border: 1px solid var(--l-rule); border-radius: 6px; color: var(--l-muted); text-transform: uppercase; letter-spacing: .06em; }
+  & .lheirs .hr-b { display: flex; gap: 4px; }
+  & .lheirs .hr-cut { display: flex; align-items: center; gap: 10px; margin: 4px 0; font-size: .82em; color: var(--l-bad); }
+  & .lheirs .hr-cut::before, & .lheirs .hr-cut::after { content: ""; flex: 1; border-top: 1px dashed var(--l-bad); }
+  & .lheirs .hr-empty { padding: 12px; text-align: center; }
+  & .lheirs .hr-rest { margin-top: 28px; }
+  & .lheirs .hr-others { list-style: none; margin: 8px 0 0; padding: 0; }
+  & .lheirs .hr-others li { display: flex; align-items: center; gap: 12px; padding: 7px 4px; border-bottom: 1px solid var(--l-rule); }
+  @media (max-width: 760px) { & .lheirs .hr-glance { grid-template-columns: repeat(2, 1fr); } }
+}
+
+:root[data-view="line"] { & .lheirs .hr-full { margin: 6px 0 0; font-size: .88em; color: var(--l-muted); } }

@@ -1,15 +1,15 @@
 // Straightline's Generals: your generals at a glance; each as a card (where it is, settling in, traits and what they
-// do, its record; main general, heir and the Hall of Deeds; Reassure while another house courts it); a Raise sheet
-// (a name, traits as chips once your renown lets you choose, the exact cost); and your heirs, generals and academics
-// in one ordered list. Logic: core/generals.js, actions.
-import { store, notify } from '../../core/store.js';
+// do, its record; main general, heir and the Hall of Deeds; Reassure while another house courts it); and a Raise sheet
+// (a name, traits as chips once your renown lets you choose, the exact cost). Heirs are ordered on the Heirs page.
+// Logic: core/generals.js, core/heirs.js, actions.
+import { store } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc, when } from '../../core/words.js';
 import { nameRoll } from '../../core/names.js';
 import { pctBp } from '../../core/does.js';
 import * as G from '../../core/generals.js';
+import { heirAt, toggleHeir } from '../../core/heirs.js';
 
-const same = (a, b) => a.kind === b.kind && a.id === b.id;
 
 export function mountGenerals(host, on) {
   const P = store.rules.params;
@@ -19,7 +19,7 @@ export function mountGenerals(host, on) {
       <div class="atk-main">
         <h3 class="sub">Your generals</h3><div class="ac-cards" id="lg-list"></div>
         <p class="note">The main general commands your home defence; one sent with an army stops commanding it. A general that just changed house settles in for ${fmt(P.settling_ticks)} ticks (${pctBp(P.settling_penalty_bp)} offense and defence). A failed attack kills its general ${fmt(P.general_death_bp / 100)}% of the time.</p>
-        <section class="gn-heirs"><h3 class="sub">Heirs <span class="dim" id="lg-hline"></span></h3><div id="lg-heirs"></div></section>
+        <p class="note">Your heirs, generals and academics together, are ordered on the <a href="#heirs">Heirs</a> page.</p>
       </div>
       <aside class="atk-sheet" aria-label="Raise a general">
         <h3 class="sub">Raise a general</h3>
@@ -44,28 +44,6 @@ export function mountGenerals(host, on) {
       + card('Trait slots', fmt(slots.total), slots.next != null ? `another at ${fmt(slots.next)} renown` : esc(slots.parts.join(', ')))
       + card('Heir slots', fmt(hs.now), `${fmt(hs.ifWon)} if your state wins the age`);
   }
-
-  // ---------- heirs: one ordered list for generals and academics ----------
-  async function sendMarks(list, button) {
-    const out = await act.markHeirs(list.map((m) => act.charRef(m.kind, m.id)), { button });
-    // Taken: the page's copy follows at once, so a quick second click doesn't work from the old list (/me lags).
-    if (out) { G.saveMarks(list); if (Array.isArray(store.house.heirs)) store.house.heirs = list.map((m) => ({ ...m })); notify('heirs'); }
-    return out;
-  }
-  const heirAt = (kind, id) => G.liveMarks().findIndex((m) => same(m, { kind, id }));
-  function heirs() {
-    const list = G.liveMarks(), hs = G.heirSlots();
-    $('hline').textContent = `carried into the next age, in this order; ${fmt(hs.now)} slot${hs.now === 1 ? '' : 's'} now (${fmt(hs.ifWon)} if your state wins)`;
-    $('heirs').innerHTML = list.length ? `<ol class="gn-hlist">${list.map((m, i) => `<li class="${i >= hs.now ? 'over' : ''}"><span class="gn-hn">${esc(G.charName(m))}</span><span class="dim">${m.kind}${i >= hs.now ? ' · beyond your slots' : ''}</span>
-        <span class="gn-hb"><button type="button" class="btn mini" data-hmove="${i}:-1" aria-label="Move ${esc(G.charName(m))} up"${i ? '' : ' disabled'}>↑</button><button type="button" class="btn mini" data-hmove="${i}:1" aria-label="Move ${esc(G.charName(m))} down"${i < list.length - 1 ? '' : ' disabled'}>↓</button><button type="button" class="btn mini" data-hdrop="${i}" aria-label="Unmark ${esc(G.charName(m))}">Remove</button></span></li>`).join('')}</ol>`
-      : '<p class="dim">No heirs marked. Mark a general below, or an academic on the Academics page.</p>';
-  }
-  on($('heirs'), 'click', (ev) => {
-    const mv = ev.target.closest('[data-hmove]'), dr = ev.target.closest('[data-hdrop]');
-    const list = G.liveMarks();
-    if (mv) { const [i, d] = mv.dataset.hmove.split(':').map(Number); [list[i], list[i + d]] = [list[i + d], list[i]]; sendMarks(list, mv); }
-    if (dr) { list.splice(Number(dr.dataset.hdrop), 1); sendMarks(list, dr); }
-  });
 
   // ---------- the generals ----------
   function cards() {
@@ -95,7 +73,7 @@ export function mountGenerals(host, on) {
     const d = ev.target.closest('[data-defend]'), u = ev.target.closest('[data-undefend]'), hb = ev.target.closest('[data-heir]'), sb = ev.target.closest('[data-sell]'), rb = ev.target.closest('[data-reassure]');
     if (d) act.setDefender(d.dataset.defend, { button: d });
     if (u) act.setDefender(null, { button: u });
-    if (hb) { const id = Number(hb.dataset.heir), list = G.liveMarks(), k = list.findIndex((m) => same(m, { kind: 'general', id })); if (k >= 0) list.splice(k, 1); else list.push({ kind: 'general', id }); sendMarks(list, hb); }
+    if (hb) toggleHeir('general', hb.dataset.heir, hb);
     if (sb) { G.sellPick.set({ kind: 'general', id: Number(sb.dataset.sell) }); location.hash = '#hall'; }
     if (rb) act.reassure({ kind: 'general', id: Number(rb.dataset.reassure) }, { button: rb });
   });
@@ -122,7 +100,7 @@ export function mountGenerals(host, on) {
     sheet();
   });
 
-  function draw() { if (!store.house) return; glance(); cards(); heirs(); sheet(); }
+  function draw() { if (!store.house) return; glance(); cards(); sheet(); }
   draw();
   return {
     update(c) { if (!c || c.has('house') || c.has('rules') || c.has('hall') || c.has('heirs') || c.has('colloquium')) draw(); },

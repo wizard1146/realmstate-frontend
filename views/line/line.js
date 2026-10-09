@@ -28,11 +28,12 @@ import { mountRites } from './rites.js';
 import { mountScience } from './science.js';
 import { mountAcademics } from './academics.js';
 import { mountGenerals } from './generals.js';
+import { mountHeirs } from './heirs.js';
 import { watchCards } from './cards.js';
 import { newsLine } from '../../core/words.js';
 
 // Straightline's own page parts (not War Room panels): mount(host, on) -> { update(c), tick(), destroy() }.
-const PARTS = { throne: mountThrone, military: mountMilitary, attack: mountAttack, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState, wars: mountWars, intrigue: mountIntrigue, rites: mountRites, science: mountScience, academics: mountAcademics, generals: mountGenerals };
+const PARTS = { throne: mountThrone, military: mountMilitary, attack: mountAttack, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState, wars: mountWars, intrigue: mountIntrigue, rites: mountRites, science: mountScience, academics: mountAcademics, generals: mountGenerals, heirs: mountHeirs };
 
 const KEY = 'realmstate.line.page';
 
@@ -47,6 +48,7 @@ const MENU = [
     ['resources', 'Resources', null, null, 'what you hold, and how it moved each tick', { part: 'resources' }],
     ['land', 'Land & Exploration', null, null, 'what land you hold, and explore for more', { part: 'land' }],
     ['build', 'Build & Raze', null, null, 'put up buildings on barren land, or raze them', { part: 'build' }],
+    ['heirs', 'Heirs', null, null, 'the generals and academics you keep into the next age, in order', { part: 'heirs' }],
   ]],
   ['Military', [
     ['military', 'Military', null, null, 'train troops; draft and release; medics, upgrades, chariots', { part: 'military' }],

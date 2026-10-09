@@ -7,6 +7,7 @@ import { fmt, esc } from '../../core/words.js';
 import { nameRoll } from '../../core/names.js';
 import { STATS, pctBp } from '../../core/does.js';
 import { CATS, sci } from '../../core/science.js';
+import { heirAt, toggleHeir } from '../../core/heirs.js';
 
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
 const attrs = () => store.rules.attributes || [];
@@ -20,7 +21,7 @@ export function mountAcademics(host, on) {
     <dl class="st-glance ac-glance" id="la2-glance"></dl>
     <div class="atk-layout">
       <div class="atk-main"><h3 class="sub">Your academics</h3><div class="ac-cards" id="la2-list"></div>
-        <p class="note">Academics can be named heirs, to carry into the next age: set the order on the Generals page.</p></div>
+        <p class="note">Mark academics as heirs to carry them into the next age; order them with your generals on the <a href="#heirs">Heirs</a> page.</p></div>
       <aside class="atk-sheet" aria-label="Recruit an academic">
         <h3 class="sub">Recruit</h3>
         <form id="la2-form" class="lform atk-grid" novalidate>
@@ -46,16 +47,23 @@ export function mountAcademics(host, on) {
       + card('Choosing attributes', canPick ? 'Yes' : 'Not yet', canPick ? 'pick them when you recruit' : `drawn at random until ${fmt(P.academic_pick_books)} books are invested`);
   }
   function list(s) {
+    const focus = host.contains(document.activeElement) && document.activeElement.id;   // kept across the redraw
     const waver = new Map((store.house.wavering || []).filter((w) => w.character?.kind === 'academic').map((w) => [w.character.id, w]));
     $('list').innerHTML = s.academics.length ? s.academics.map((a) => {
       const r = a.record || {}, w = waver.get(a.id), left = w ? Math.max(0, w.until_tick - store.tick) : 0;
       return `<article class="ac-card${w ? ' waver' : ''}"><h4>${esc(a.name)}</h4>
         <ul class="ac-attrs">${a.attributes.length ? a.attributes.map((t) => `<li><b>${esc(attrName(t))}</b> <span class="dim">${esc(attrDoes(t))}</span></li>`).join('') : '<li class="dim">No attributes</li>'}</ul>
         <dl class="ac-rec"><div><dt>Served</dt><dd>${fmt(r.ticks_served || 0)} ticks</dd></div><div><dt>Supervised</dt><dd>${fmt(r.books_supervised || 0)}</dd></div><div><dt>Invested</dt><dd>${fmt(r.books_invested || 0)}</dd></div><div><dt>To the Colloquium</dt><dd>${fmt(r.colloquium_books || 0)}</dd></div></dl>
+        <div class="gn-acts"><button type="button" class="btn mini" id="la2-heir-${a.id}" data-heir="${a.id}" aria-pressed="${heirAt('academic', a.id) >= 0}">${heirAt('academic', a.id) >= 0 ? `Heir ${heirAt('academic', a.id) + 1} · unmark` : 'Mark as heir'}</button></div>
         ${w ? `<p class="ac-waver">Courted by another house: it goes to auction in ${fmt(left)} tick${left === 1 ? '' : 's'} unless you reassure it. <button type="button" class="btn mini primary" data-reassure="${a.id}"${store.house.gold < w.reassure_gold ? ' disabled' : ''}>Reassure, ${fmt(w.reassure_gold)} gold</button></p>` : ''}</article>`;
     }).join('') : `<p class="dim">No academics yet. ${s.academic_cap ? 'Recruit one on the right.' : `You need ${fmt(P.academic_universities)} ${esc(P.academic_building)} for the first.`}</p>`;
+    if (focus) host.querySelector(`#${CSS.escape(focus)}`)?.focus();
   }
-  on($('list'), 'click', (ev) => { const b = ev.target.closest('[data-reassure]'); if (b) act.reassure({ kind: 'academic', id: Number(b.dataset.reassure) }, { button: b }); });
+  on($('list'), 'click', (ev) => {
+    const b = ev.target.closest('[data-reassure]'), hb = ev.target.closest('[data-heir]');
+    if (b) act.reassure({ kind: 'academic', id: Number(b.dataset.reassure) }, { button: b });
+    if (hb) toggleHeir('academic', hb.dataset.heir, hb);
+  });
 
   /** The recruit sheet: chips limited to your slots (or off until you may choose), the cost, and why not. */
   function sheet() {
@@ -85,7 +93,7 @@ export function mountAcademics(host, on) {
   function draw() { const s = sci(); if (!s) { host.querySelector('.lacad').innerHTML = '<p class="dim">No science data from the server.</p>'; return; } glance(s); list(s); sheet(); }
   draw();
   return {
-    update(c) { if (!c || c.has('house') || c.has('rules')) draw(); },
+    update(c) { if (!c || c.has('house') || c.has('rules') || c.has('heirs')) draw(); },
     tick() {},
     destroy() { host.replaceChildren(); },
   };

@@ -1,10 +1,22 @@
 // Everything a player can do. Both views call these; neither talks to the server directly.
 // Each action reports its result in the message line and returns the outcome (or null on failure).
 import { api, command, auth } from './api.js';
-import { loadColloquium, loadHall, loadHeirs, loadMarket, loadState, loadWars, loadRelations, raceOf, store, say, refreshMe, refreshMeSoon, loadStateMembers, loadRankings, loadReports, addLocalNews, addChat, clearPrivate, setTarget, unitNames, CHANNELS } from './store.js';
+import { loadColloquium, loadHall, loadHeirs, loadMarket, loadState, loadWars, loadRelations, raceOf, store, say, notify, refreshMe, refreshMeSoon, loadStateMembers, loadRankings, loadReports, addLocalNews, addChat, clearPrivate, setTarget, unitNames, CHANNELS } from './store.js';
 import { describe, outcomeTone, fmt, names } from './words.js';
 import * as commands from './commands.js';
 import { have as havePrices } from './prices.js';
+
+// The answer's "after": your house's resources the moment the command was taken (gold spent, troops in training,
+// materials used), read from the world in the same step. Copied as they are, so MAX and every quote are exact at
+// once; the /me read that follows brings the rest.
+const AFTER = ['gold', 'food', 'peasants', 'units', 'away', 'training', 'medics', 'horses', 'chariots', 'aether', 'adepts', 'land', 'incoming_land', 'materials'];
+function takeAfter(out) {
+  const a = out?.after, h = store.house;
+  if (!a || !h || (a.id != null && a.id !== h.id)) return;
+  for (const k of AFTER) if (a[k] !== undefined) h[k] = a[k];
+  if (a.explorable_acres !== undefined && h.explorable) h.explorable = { ...h.explorable, acres: a.explorable_acres };
+  notify('house');
+}
 
 /**
  * After a command: read /me once the server has published a view that holds it. The command is applied before its
@@ -36,6 +48,7 @@ async function run(cmd, { estimate, quote, button } = {}) {
       if (out.gold != null && out.gold !== quote) est = ` (Quoted ${fmt(quote)} gold; prices changed before the order landed.)`;
     } else if (estimate != null && Number.isFinite(estimate) && !havePrices()) est = ` (Estimated ≈${fmt(estimate)} before modifiers.)`;
     say(describe(out, cmd) + est, outcomeTone(out));
+    takeAfter(out);
     refreshAfter();
     return out;
   } catch (e) {
