@@ -15,3 +15,16 @@
   roster.svg, background removed. Credited in Configuration and on the wiki's About page.
 - shield.svg: "templar shield" by Delapouite, game-icons.net (delapouite/templar-shield.svg), CC BY 3.0; the War
   Room's mil.svg, background removed. Credited in Configuration and on the wiki's About page.
+- materials/bauxite.png: "Gold" by Magnific, Flaticon (https://www.flaticon.com/free-icon/gold_9921041), free licence
+  with attribution; the World page's bauxite. Credited in Configuration and on the wiki's About page.
+- materials/limestone.png: "Nature" by FACH, Flaticon (https://www.flaticon.com/free-icon/nature_18891485), free
+  licence with attribution; the World page's limestone. Credited in Configuration and on the wiki's About page.
+- materials/amber.png: "Dried insect in amber" by Smashicons, Flaticon
+  (https://www.flaticon.com/free-icon/dried-insect-in-amber_1674503), free licence with attribution.
+- materials/pine.png: "Pines" by KP Arts, Flaticon (https://www.flaticon.com/free-icon/pines_6960250), free licence
+  with attribution. Both on the World page; credited in Configuration and on the wiki's About page.
+- materials/sulfur.png: "Sulphur" by Magnific, Flaticon (https://www.flaticon.com/free-icon/sulphur_1999794), free
+  licence with attribution; the World page's sulfur. Credited in Configuration and on the wiki's About page.
+- materials/paper.png: "Stationery stacked papers" by Magnific, Flaticon
+  (https://www.flaticon.com/free-icon/stationery-stacked-papers_29343), free licence with attribution; the World
+  page's paper. Credited in Configuration and on the wiki's About page.

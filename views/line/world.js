@@ -16,11 +16,16 @@ const TABS = [['realms', 'Realms'], ['states', 'States']];
 const KEY = 'realmstate.line.world.tab';
 const SORTS = [['land', 'Land'], ['might', 'Might'], ['renown', 'Renown']];
 const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : '');
+/** Materials with an icon (views/line/assets/materials/<id>.png; the path is the stylesheet's, line.css, where the mask is drawn). */
+const MAT_ICONS = new Set(['bauxite', 'limestone', 'amber', 'pine', 'sulfur', 'paper']);
+/** A realm card's watermark: its material, faint, as Throne's throne (line.css draws it as a mask). */
+const matMark = (m) => (MAT_ICONS.has(m) ? ` style="--ico:url('assets/materials/${m}.png')"` : '');
 
 export function mountWorld(host, on) {
   const P = store.rules?.params || {}, REALMS = P.realms || 13, SEATS = P.houses_per_state || 15;
   const mine = store.house?.realm || 1, myState = store.house?.state;
-  let realm = shown || mine, tab = 'realms', sort = 'land';
+  let realm = shown || mine, tab = 'realms', sort = 'land', sview = 'cards';   // States opens as cards unless you chose the list
+  try { if (localStorage.getItem(`${KEY}.states`) === 'list') sview = 'list'; } catch { /* storage off */ }
   try { const t = localStorage.getItem(KEY); if (TABS.some(([k]) => k === t)) tab = t; } catch { /* storage off */ }
   host.innerHTML = `<div class="lpart lworld">
     <dl class="st-glance wd-glance" id="wd-glance"></dl>
@@ -31,8 +36,10 @@ export function mountWorld(host, on) {
       <section class="wd-realm" id="wd-realm" aria-live="polite"></section>
     </div>
     <div role="tabpanel" id="wd-states" aria-labelledby="wd-tab-states" data-panel="states">
-      <p class="what">Every state that holds a house, ranked. Sort by land, might or renown.</p>
-      <div class="scrollx"><table class="tbl wd-rank"><thead><tr><th class="num">#</th><th>State</th><th>Realm</th><th class="num">Houses</th>
+      <div class="wd-shead"><p class="what" id="wd-swhat"></p>
+        <span class="wd-views" role="group" aria-label="Show states as"><button type="button" class="btn" data-sview="list">List</button><button type="button" class="btn" data-sview="cards">Cards</button></span></div>
+      <div class="wd-grid" id="wd-grid" hidden></div>
+      <div class="scrollx" id="wd-list"><table class="tbl wd-rank"><thead><tr><th class="num">#</th><th>State</th><th>Realm</th><th class="num">Houses</th>
         ${SORTS.map(([k, label]) => `<th class="num" data-sorth="${k}"><button type="button" class="wd-sort" data-sort="${k}">${label}</button></th>`).join('')}</tr></thead><tbody id="wd-rows"></tbody></table></div>
     </div>
   </div>`;
@@ -91,13 +98,12 @@ export function mountWorld(host, on) {
   function cards() {
     $('cards').innerHTML = Array.from({ length: REALMS }, (_, k) => k + 1).map((n) => {
       const r = realms.get(n), sts = statesOf(n).filter((s) => s.houses), houses = sts.reduce((a, s) => a + s.houses, 0);
-      const lead = [...sts].sort((a, b) => (a.ranks?.land?.rank ?? 1e9) - (b.ranks?.land?.rank ?? 1e9))[0];
       const cls = ['wd-card', n === realm ? 'on' : '', n === mine ? 'yours' : '', houses ? '' : 'empty'].filter(Boolean).join(' ');
-      return `<button type="button" role="listitem" class="${cls}" data-realm="${n}" aria-pressed="${n === realm}">
+      return `<button type="button" role="listitem" class="${cls}${MAT_ICONS.has(r?.material) ? ' marked' : ''}" data-realm="${n}" aria-pressed="${n === realm}"${matMark(r?.material)}>
         <span class="wd-n">Realm ${n}${n === mine ? ' · yours' : ''}</span><span class="wd-name">${esc(r?.name || '…')}</span>
-        <span class="wd-mat">${esc(cap(r?.material))}</span>
+        ${r?.material ? `<span class="wd-mat" data-mat="${esc(r.material)}">${esc(cap(r.material))}</span>` : ''}
         <span class="wd-figs">${houses ? `${fmt(houses)} house${houses === 1 ? '' : 's'} · ${fmt(total(n, 'land'))} acres` : 'No houses yet'}</span>
-        ${lead ? `<span class="wd-lead">Leading: ${esc(lead.name)}</span>` : ''}</button>`;
+</button>`;
     }).join('');
   }
   function realmPanel() {
@@ -132,7 +138,28 @@ export function mountWorld(host, on) {
         ${SORTS.map(([k]) => `<td class="num${k === sort ? ' on' : ''}">${fmt(s.ranks[k].total)}</td>`).join('')}</tr>`;
     }).join('') || '<tr><td colspan="7" class="dim">Loading…</td></tr>';
   }
-  function draw() { glance(); cards(); realmPanel(); ranking(); }
+  /** States as cards: one row a realm, its seven states in order; a state at war names its foe (data-foe). */
+  function grid() {
+    $('grid').innerHTML = Array.from({ length: REALMS }, (_, k) => k + 1).map((n) => {
+      const r = realms.get(n);
+      return `<div class="wd-grow" role="list" aria-label="${esc(r?.name || `Realm ${n}`)}"><span class="wd-rlabel">${n}<span>${esc(r?.name || '')}</span></span>${statesOf(n).map((s) => {
+        const yours = n === mine && s.state === myState, foe = warOf(n, s.state);
+        const fig = (k, label) => `<span class="wd-gf"><span>${label}</span>${s.ranks ? `#${s.ranks[k].rank}` : '–'}</span>`;
+        return `<a href="#state" role="listitem" data-open-state="${n}:${s.state}" data-addr="${n}:${s.state}"${foe ? ` data-foe="${foe.realm}:${foe.state}"` : ''}
+          class="${['wd-gcard', yours ? 'yours' : '', s.houses ? '' : 'empty', foe ? 'war' : ''].filter(Boolean).join(' ')}" title="${esc(s.name)} (${n}:${s.state})${foe ? `, at war with ${foe.realm}:${foe.state}` : ''}">
+          <span class="wd-n">${n}:${s.state}${yours ? ' · yours' : ''}</span><span class="wd-gname">${esc(s.name)}</span>
+          <span class="wd-hs">${fmt(s.houses)}/${SEATS} houses</span>
+          <span class="wd-gfigs">${fig('land', 'Land')}${fig('might', 'Might')}${fig('renown', 'Ren.')}</span>
+          ${foe ? `<span class="wd-gwar">War · ${foe.realm}:${foe.state}</span>` : ''}</a>`;
+      }).join('')}</div>`;
+    }).join('');
+  }
+  function views() {
+    host.querySelectorAll('[data-sview]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sview === sview)));
+    $('grid').hidden = sview !== 'cards'; $('list').hidden = sview !== 'list';
+    $('swhat').textContent = sview === 'cards' ? 'Every state, realm by realm; ranks (#) are among every state that holds a house. Point at a state at war to see its foe.' : 'Every state that holds a house, ranked. Sort by land, might or renown.';
+  }
+  function draw() { glance(); cards(); realmPanel(); ranking(); grid(); views(); }
 
   function pick(n) { realm = shown = ((n - 1 + REALMS) % REALMS) + 1; cards(); realmPanel(); }
   on($('cards'), 'click', (ev) => { const b = ev.target.closest('[data-realm]'); if (b) pick(Number(b.dataset.realm)); });
@@ -142,11 +169,22 @@ export function mountWorld(host, on) {
     if (b && 'home' in b.dataset) pick(mine);
   });
   on($('states'), 'click', (ev) => {
+    const v = ev.target.closest('[data-sview]');
+    if (v) { sview = v.dataset.sview; try { localStorage.setItem(`${KEY}.states`, sview); } catch { /* storage off */ } views(); return; }
     const s = ev.target.closest('[data-sort]');
     if (s) { sort = s.dataset.sort; ranking(); }
     const r = ev.target.closest('[data-pick-realm]');
     if (r) { ev.preventDefault(); pick(Number(r.dataset.pickRealm)); showTab('realms'); $('realm').scrollIntoView({ block: 'start' }); }
   });
+
+  // A state at war, pointed at or focused: it and its foe light up together.
+  const lit = (card, on2) => {
+    const foe = card?.dataset.foe && $('grid').querySelector(`[data-addr="${card.dataset.foe}"]`);
+    card?.classList.toggle('lit', on2); foe?.classList.toggle('lit', on2); foe?.classList.toggle('foe', on2);
+  };
+  for (const [ev, on2] of [['mouseover', true], ['focusin', true], ['mouseout', false], ['focusout', false]]) {
+    on($('grid'), ev, (e) => { const c = e.target.closest('.wd-gcard.war'); if (c && !(e.relatedTarget && c.contains(e.relatedTarget))) lit(c, on2); });
+  }
 
   showTab(tab);
   draw();

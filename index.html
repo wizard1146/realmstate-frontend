@@ -23,6 +23,17 @@
 <div id="agebar" class="agebar" role="region" aria-label="The age" hidden></div>
 <p id="status" class="status" role="status" aria-live="polite"></p>
 
+<!-- The game can't be reached: shown while the page keeps trying (app.js boot). -->
+<section class="gate offline" id="offline" hidden aria-labelledby="off-title" aria-describedby="off-why">
+  <header class="gate-head"><h1><span class="pre">Hegemoney:</span> Realmstate</h1></header>
+  <div class="off-mark" aria-hidden="true"><i></i><i></i><i></i></div>
+  <h2 id="off-title">The game can't be reached</h2>
+  <p class="lede" id="off-why">The game server isn't answering. It may be restarting, or your connection may have dropped. This page keeps trying and carries on by itself as soon as it answers.</p>
+  <p class="off-next" id="off-next" aria-live="polite"></p>
+  <div class="row end"><button type="button" class="primary" id="off-try">Try now</button></div>
+  <p class="off-detail" id="off-detail"></p>
+</section>
+
 <!-- Sign in / found a house. -->
 <section class="gate" id="gate" hidden aria-labelledby="gate-title">
   <header class="gate-head">

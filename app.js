@@ -150,9 +150,23 @@ if (answer?.error) say(answer.error, 'bad');
 else if (answer?.ok) say('Connected. This page now plays for you.', 'good');
 if (configProblem) say(configProblem, 'bad');
 
-(function boot() {
-  start().catch((e) => {
-    say(`Can't reach the game: ${e.message.replace(/\.?$/, '.')} Trying again in 5 seconds.`, 'bad');
-    setTimeout(boot, 5000);
-  });
-})();
+// ---------- can't reach the game: a card that counts down to the next try (sooner with Try now) ----------
+let tries = 0, retryAt = 0, retryTimer = 0, countTimer = 0;
+function offline(e) {
+  tries += 1;
+  const wait = Math.min(30, 5 * 2 ** Math.min(tries - 1, 3)) * 1000;   // 5, 10, 20, then every 30 seconds
+  retryAt = Date.now() + wait;
+  $('offline').hidden = false;
+  $('off-detail').textContent = `${API ? `${API} · ` : ''}${e.message}${tries > 1 ? ` · ${tries} tries so far` : ''}`;
+  const count = () => { const s = Math.max(0, Math.ceil((retryAt - Date.now()) / 1000)); $('off-next').textContent = s ? `Trying again in ${s} second${s === 1 ? '' : 's'}…` : 'Trying again…'; };
+  count();
+  clearInterval(countTimer); countTimer = setInterval(count, 1000);
+  clearTimeout(retryTimer); retryTimer = setTimeout(boot, wait);
+}
+function boot() {
+  clearTimeout(retryTimer); clearInterval(countTimer);
+  $('off-next').textContent = 'Trying again…';
+  start().then(() => { $('offline').hidden = true; }).catch(offline);
+}
+$('off-try').addEventListener('click', boot);
+boot();
