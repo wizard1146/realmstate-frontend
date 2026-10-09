@@ -23,11 +23,13 @@ import { mountProfile } from './profile.js';
 import { mountWorld, homeRealm, showRealm } from './world.js';
 import { mountState, openState, stateTitle } from './state.js';
 import { mountWars } from './wars.js';
+import { mountIntrigue } from './intrigue.js';
+import { mountRites } from './rites.js';
 import { watchCards } from './cards.js';
 import { newsLine } from '../../core/words.js';
 
 // Straightline's own page parts (not War Room panels): mount(host, on) -> { update(c), tick(), destroy() }.
-const PARTS = { throne: mountThrone, military: mountMilitary, attack: mountAttack, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState, wars: mountWars };
+const PARTS = { throne: mountThrone, military: mountMilitary, attack: mountAttack, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState, wars: mountWars, intrigue: mountIntrigue, rites: mountRites };
 
 const KEY = 'realmstate.line.page';
 
@@ -50,8 +52,8 @@ const MENU = [
     ['hall', 'Hall of Deeds', 'mil', ['mil', 'hall'], 'trade generals and academics'],
   ]],
   ['Shadows & Magic', [
-    ['intrigue', 'Intrigue', 'act', ['act', 'intrigue'], 'thieves’ operations and reports'],
-    ['rites', 'Rites', 'act', ['act', 'rites'], 'rites and hexes'],
+    ['intrigue', 'Intrigue', null, null, 'your thieves: operations and your state\'s spy reports', { part: 'intrigue' }],
+    ['rites', 'Rites', null, null, 'self rites, divinations and hexes; what is on you; your adepts', { part: 'rites' }],
   ]],
   ['Learning', [
     ['science', 'Science', 'sci', ['sci', 'science'], 'books and sciences'],

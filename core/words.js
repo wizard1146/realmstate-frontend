@@ -328,7 +328,8 @@ function castLine(o) {
 /** Was this outcome a setback (for colouring the message)? */
 export const outcomeTone = (o) => ((o.type === 'attack' || o.type === 'operation' || o.type === 'cast' || o.type === 'spy') && (!o.success || o.reflected) ? 'bad' : 'good');
 
-const listing = (m) => Object.entries(m || {}).filter(([, n]) => n).map(([k, n]) => `${fmt(n)} ${k}`).join(', ') || 'none';
+/** "302 Banks, 120 Farms": counts by key, buildings by their names (materials keep theirs). */
+const listing = (m) => Object.entries(m || {}).filter(([, n]) => n).map(([k, n]) => `${fmt(n)} ${names.buildings[k] || k}`).join(', ') || 'none';
 /** Troops as a spy sees them: {soldiers, offense, defense, elites} (base and upgraded together, no thieves). */
 export function forcesText(f) {
   if (!f) return 'none';
