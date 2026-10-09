@@ -341,6 +341,14 @@ export async function createHouse({ name, race, personality, realm, state }, opt
   if (realm && state) Object.assign(cmd, { realm: Number(realm), state: Number(state) });
   else if (realm || state) { say('Give both realm and state, or leave both blank.', 'bad'); return null; }
   const out = await run(cmd, opts);
-  if (out) { await new Promise((r) => setTimeout(r, 450)); await refreshMe(); } // reads lag writes by ~¼ s
+  // Reads lag writes: the server republishes its view every ¼ s or so, but a busy world (robots after a tick) can take
+  // seconds. Read /me again until the house shows (up to 15 s), so the page moves on from this form by itself.
+  if (out) {
+    for (let waited = 0; waited < 15000 && !store.house; waited += 500) {
+      await new Promise((r) => setTimeout(r, 500));
+      await refreshMe();
+    }
+    if (!store.house) say('Your house is founded; the game is busy. Reload the page in a moment if it doesn\'t appear.', 'bad');
+  }
   return out;
 }

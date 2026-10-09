@@ -20,15 +20,6 @@ export function mountAttack(host, on) {
   host.innerHTML = `<div class="lpart lbuild latk${throneGlyph() ? ' glyph' : ''}">
     <div class="atk-layout">
       <div class="atk-main">
-        <section class="atk-how"><h3 class="sub">How</h3>
-          <div class="lform atk-grid">
-            <label for="la-kind">Attack</label><select id="la-kind">${P.attacks.map((k) => `<option value="${esc(k.id)}">${esc(k.name)}</option>`).join('')}</select>
-            <p class="atk-note" id="la-hint"></p>
-            <label for="la-bld" id="la-bldl" hidden>Land from</label><select id="la-bld" hidden>${buildingOptions()}</select>
-            <label for="la-gen">General</label><select id="la-gen"></select>
-            <p class="atk-note" id="la-genl"></p>
-          </div>
-        </section>
         <h3 class="sub">Army</h3>
         <table class="tbl lb-tbl atk-tbl"><colgroup><col class="c-name"><col class="c-pt"><col class="c-home"><col class="c-n"><col class="c-max"><col class="c-sum"></colgroup>
           <thead><tr><th>Send</th><th class="num" title="Attack points each">Off</th><th class="num">At home</th><th class="num">Count</th><th></th><th class="num">Offense</th></tr></thead>
@@ -49,7 +40,7 @@ export function mountAttack(host, on) {
         <p class="note">Offense here is your troops' points before bonuses (buildings, science, the general); the battle uses the full figures. Thieves stay home.</p>
       </div>
 
-      <!-- The battle sheet: who, the score, and the order; it stays in view while you fill the army. -->
+      <!-- The battle sheet: who, how, the score and the order; it stays in view while you fill the army. -->
       <aside class="atk-sheet" aria-label="The attack">
         <h3 class="sub">Against</h3>
         <form id="la-tf" class="atk-find" novalidate>
@@ -60,6 +51,14 @@ export function mountAttack(host, on) {
         </form>
         <div class="atk-card" id="la-card" aria-live="polite"><p class="dim">No target yet: type an address, or choose one.</p></div>
         <div class="atk-intel" id="la-intel" hidden></div>
+        <h3 class="sub">How</h3>
+        <div class="lform atk-grid">
+          <label for="la-kind">Attack</label><select id="la-kind">${P.attacks.map((k) => `<option value="${esc(k.id)}">${esc(k.name)}</option>`).join('')}</select>
+          <p class="atk-note" id="la-hint"></p>
+          <label for="la-bld" id="la-bldl" hidden>Land from</label><select id="la-bld" hidden>${buildingOptions()}</select>
+          <label for="la-gen">General</label><select id="la-gen"></select>
+          <p class="atk-note" id="la-genl"></p>
+        </div>
         <h3 class="sub">Attack score</h3>
         <div id="la-score"></div>
         <p class="doing" id="la-doing" aria-live="polite" hidden></p>

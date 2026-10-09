@@ -115,12 +115,12 @@ export function mountBuild(host, on) {
     // Grouped by purpose: a small table each, flowing into two columns where there's room (line.css).
     const groups = groupsOf();
     tbody.innerHTML = groups.map(([g, ds]) => `<section class="lb-grp"><h3 class="sub">${esc(g)}</h3><table class="tbl lb-tbl">
-      <colgroup><col class="c-name"><col class="c-does"><col class="c-own"><col class="c-n"><col class="c-max"><col class="c-cost"></colgroup>
-      <thead><tr><th>Building</th><th>What it does</th><th class="num">Owned</th><th class="num">Count</th><th></th><th class="num">Cost</th></tr></thead><tbody>` + ds.map((d, k) => {
+      <colgroup><col class="c-name"><col class="c-does"><col class="c-own"><col class="c-pct"><col class="c-n"><col class="c-max"><col class="c-cost"></colgroup>
+      <thead><tr><th>Building</th><th title="What it gives you now; point at a building's name for what the next 1% of your land in it would add">Benefits</th><th class="num">Owned</th><th class="num" title="Its share of your acres">Share</th><th class="num">Count</th><th></th><th class="num">Cost</th></tr></thead><tbody>` + ds.map((d, k) => {
       const id = esc(d.building);
       return `<tr data-row="${id}"${k % 2 ? ' class="alt"' : ''}><th scope="row">${wikiName(d)}<span class="dim small" data-cap></span></th>
         <td class="does small" title="${esc(d.description)}" data-does></td>
-        <td class="num" data-own></td>
+        <td class="num" data-own></td><td class="num pct" data-pct></td>
         <td class="num"><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-b="${id}" aria-label="${esc(d.name)} to build"></td>
         <td class="acts"><button type="button" class="btn mini" data-max="${id}" aria-label="Most ${esc(d.name)} you can build with what the other rows leave">MAX</button><button type="button" class="x" data-x="${id}" aria-label="Clear ${esc(d.name)}" title="Clear this row">×</button></td>
         <td class="num cost" data-cost="${id}"></td></tr>`;
@@ -132,14 +132,20 @@ export function mountBuild(host, on) {
       const id = d.building, tr = tbody.querySelector(`tr[data-row="${CSS.escape(id)}"]`);
       if (!tr) continue;
       const p = price.buildingPrice(id), x = does(id, h), k = h.constructing[id] || 0;
-      tr.querySelector('[data-cap]').textContent = p?.max_count ? ` (up to ${fmt(p.max_count)})` : '';
+      tr.querySelector('[data-cap]').textContent = p?.max_count ? ` (Max ${fmt(p.max_count)})` : '';
       // What it needs beyond the shared price (said once above): extra gold, and materials.
       const golds = Object.values(h.prices?.build?.buildings || {}).map((b) => b.gold), base = golds.length ? Math.min(...golds) : 0;
       const needs = p ? [p.gold > base ? `+${fmt(p.gold - base)} gold` : '', matText(p.materials)].filter(Boolean).join(', ') : `≈${fmt(act.estimate.build(id, 1))} gold each`;
-      // What it does now; nothing yet is a muted dash. The +1% land line is in the hover, with the description.
+      // What it gives now (nothing yet: a muted dash); pointing at the name swaps in what the next 1% of land would add.
       const now = x ? x.now.map((y) => y.short).join(' · ') : '';
+      const next = x ? x.more.map((y) => y.short).join(' · ') : '';
       const cell = tr.querySelector('[data-does]');
-      cell.innerHTML = (x ? (now ? esc(now) : '<span class="nil" aria-label="nothing yet">–</span>') : esc(d.description)) + (needs ? `<span class="needs">needs ${esc(needs)}</span>` : '');
+      // Both in one place (stacked), so the row is as tall as the longer and doesn't move when they swap.
+      cell.innerHTML = (x ? `<span class="bn"><span class="bn-now">${now ? esc(now) : '<span class="nil" aria-label="nothing yet">–</span>'}</span>`
+        + `<span class="bn-next" aria-hidden="true"><b>Next 1%${x.extra ? ` (+${fmt(x.extra)})` : ''}:</b> ${esc(next || 'no change')}</span></span>` : esc(d.description))
+        + (needs ? `<span class="needs">needs ${esc(needs)}</span>` : '');
+      // Its share of your acres.
+      tr.querySelector('[data-pct]').textContent = h.land ? `${(((h.buildings[id] || 0) * 100) / h.land).toFixed(1)}%` : '';
       cell.title = `${x ? `+1% land: ${x.more.map((y) => y.short).join(' · ') || 'no change'}\n\n` : ''}${d.description}`;
       // Owned, and (+n) while n more are being built.
       tr.querySelector('[data-own]').innerHTML = `${fmt(h.buildings[id] || 0)}${k ? ` <span class="bld" title="${fmt(k)} being built">+${fmt(k)}</span>` : ''}`;

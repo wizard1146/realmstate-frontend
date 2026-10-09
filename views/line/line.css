@@ -499,6 +499,8 @@
   /* The same column widths in every group, so they fit a column and line up group to group. */
   & .lbuild .lb-grp .lb-tbl col.c-name { width: 21%; } & .lbuild .lb-grp .lb-tbl col.c-own { width: 58px; } & .lbuild .lb-grp .lb-tbl col.c-n { width: 76px; }
   & .lbuild .lb-grp .lb-tbl col.c-max { width: 76px; } & .lbuild .lb-grp .lb-tbl col.c-cost { width: 84px; }
+  & .lbuild .lb-grp .lb-tbl col.c-pct { width: 54px; }
+  & .lbuild .lb-tbl td.pct { color: var(--l-muted); }
   & .lbuild .lb-grp .lb-tbl th[scope=row] { white-space: normal; }
   & .lbuild .lb-grp .lb-tbl .does { max-width: none; }
   & .lbuild .lb-grp .lb-tbl input[type=number] { width: 100%; }
@@ -949,4 +951,47 @@
   & .lworld [aria-sort=descending] .wd-sort { color: var(--l-ink); text-decoration: underline; text-decoration-color: var(--l-gold); text-underline-offset: 3px; }
   & .lworld .note { color: var(--l-muted); font-size: .88em; margin: 8px 0 0; }
   @media (max-width: 760px) { & .lworld .wd-glance { grid-template-columns: repeat(2, 1fr); } }
+}
+
+:root[data-view="line"] {
+  /* Build's Benefits: what a building gives now; resting on (or tabbing to) its name for 1.5 s fades in the next 1%.
+     The two share one grid cell, so the row keeps the height of the longer and never jumps. Leaving swaps back at once. */
+  & .lbuild .lb-tbl .bn { display: grid; }
+  & .lbuild .lb-tbl .bn > * { grid-area: 1 / 1; align-self: center; transition: opacity .2s, visibility 0s; }
+  & .lbuild .lb-tbl .bn-next { opacity: 0; visibility: hidden; color: color-mix(in srgb, var(--l-gold) 75%, var(--l-ink)); }
+  & .lbuild .lb-tbl .bn-next b { font-weight: 600; }
+  & .lbuild .lb-tbl tr:has(th[scope=row]:is(:hover, :focus-within)) .bn-now { opacity: 0; visibility: hidden; transition: opacity .25s 1.5s, visibility 0s 1.75s; }
+  & .lbuild .lb-tbl tr:has(th[scope=row]:is(:hover, :focus-within)) .bn-next { opacity: 1; visibility: visible; transition: opacity .25s 1.5s, visibility 0s 1.5s; }
+  @media (prefers-reduced-motion: reduce) { & .lbuild .lb-tbl .bn > * { transition-duration: 0s !important; } }
+}
+
+:root[data-view="line"] {
+  /* Build & Raze: building names semibold (Military and Attack share .lbuild, so this names the two lists). */
+  & :is(#lb-rows, #lb-rz-rows) .lb-tbl tbody th[scope=row] { font-weight: 600; }
+}
+
+:root[data-view="line"] {
+  /* Attack's sheet now holds How too: a narrower label column, and it scrolls itself if it outgrows the window. */
+  & .latk .atk-sheet .atk-grid { grid-template-columns: 64px 1fr; gap: 6px 10px; max-width: none; }
+  & .latk .atk-sheet { max-height: calc(100dvh - 60px); overflow-y: auto; }
+  & .latk .atk-main > h3.sub:first-child { margin-top: 0; }
+}
+
+:root[data-view="line"] {
+  /* World: a realm's states as cards too; each one opens that state's page. */
+  & .lworld .wd-scards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; margin-top: 12px; }
+  & .lworld .wd-scard { display: flex; flex-direction: column; gap: 3px; padding: 11px 13px; border: 1px solid var(--l-rule); border-radius: 6px;
+    background: var(--l-page); color: var(--l-ink); text-decoration: none; transition: border-color .12s, background .12s, transform .12s; }
+  & .lworld .wd-scard:hover { border-color: color-mix(in srgb, var(--l-gold) 60%, var(--l-rule)); background: color-mix(in srgb, var(--l-gold) 5%, var(--l-page)); }
+  & .lworld .wd-scard:focus-visible { outline: 2px solid var(--l-gold); outline-offset: 1px; }
+  & .lworld .wd-scard.yours { border-color: var(--l-gold); background: color-mix(in srgb, var(--l-gold) 9%, var(--l-page)); }
+  & .lworld .wd-scard.yours .wd-n { color: var(--l-gold); }
+  & .lworld .wd-scard.empty { opacity: .72; }
+  & .lworld .wd-scard.war { border-left: 3px solid var(--l-bad); }
+  & .lworld .wd-hs { font-size: .85em; color: var(--l-muted); }
+  & .lworld .wd-figs3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 6px 0 2px; padding-top: 6px; border-top: 1px solid var(--l-rule); font-variant-numeric: tabular-nums; }
+  & .lworld .wd-f { display: flex; flex-direction: column; font-size: .9em; }
+  & .lworld .wd-fl { font-size: .72em; letter-spacing: .08em; text-transform: uppercase; color: var(--l-muted); }
+  & .lworld .wd-f .wd-rk { min-width: 0; margin-left: 5px; text-align: left; }
+  & .lworld .wd-foot { font-size: .8em; color: var(--l-muted); }
 }

@@ -1,6 +1,6 @@
 // Straightline's Military: your army at a glance, then three tabs. Train: every unit in one table (what it does,
 // where it is, a count to train), one order for the lot, and what finishes tick by tick. Draft & Release: the share
-// of your people kept under arms, and sending troops home. Workshop: medics, upgrades and chariots. Logic is core's
+// of your people kept under arms, and sending troops home. Arms & Aid: medics, upgrades and chariots. Logic is core's
 // (prices, actions, military.js); this file only draws.
 import { store, raceOf, trainableSlots, unitPoints, slotUsed, say } from '../../core/store.js';
 import * as act from '../../core/actions.js';
@@ -12,7 +12,7 @@ import { throneGlyph } from './throne.js';
 import { mountAdvisor } from './advisor.js';
 
 const n0 = (v) => Math.max(0, Math.floor(Number(v) || 0));
-const TABS = [['train', 'Train'], ['draft', 'Draft & Release'], ['shop', 'Workshop']];
+const TABS = [['train', 'Train'], ['draft', 'Draft & Release'], ['shop', 'Arms & Aid']];
 const KEY = 'realmstate.line.military.tab';
 const listText = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 
@@ -104,7 +104,7 @@ export function mountMilitary(host, on) {
       + card('Under arms', `${a.pct.toFixed(1)}%`, `<span>aim ${rate}%</span>`)
       + card('Might', fmt(h.might), rk?.might_rank ? `#${fmt(rk.might_rank)} <span>of ${fmt(rk.houses)}</span>` : '');
     $('glance').title = 'Attack and defence: your troops\' points, before bonuses from buildings, science and generals.';
-    $('more').textContent = `Medics ${fmt(h.medics)}${h.medics_away ? ` (+${fmt(h.medics_away)} away)` : ''} · Horses ${fmt(h.horses)}${h.horses_away ? ` (+${fmt(h.horses_away)} away)` : ''} · Chariots ${fmt(h.chariots)}${h.chariots_away ? ` (+${fmt(h.chariots_away)} away)` : ''} · Generals ${fmt(h.generals.length)} · Nerve ${h.nerve_bp / 100}%`;
+    $('more').textContent = `Medics ${fmt(h.medics)}${h.medics_away ? ` (+${fmt(h.medics_away)} away)` : ''} · Horses ${fmt(h.horses)}${h.horses_away ? ` (+${fmt(h.horses_away)} away)` : ''} · Chariots ${fmt(h.chariots)}${h.chariots_away ? ` (+${fmt(h.chariots_away)} away)` : ''} · Generals ${fmt(h.generals.length)}`;
   }
 
   // ---------- train: one table of every unit ----------
@@ -129,7 +129,7 @@ export function mountMilitary(host, on) {
         ? `<td class="num"><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-slot="${i}" value="${esc(keep[i] || '')}" aria-label="${esc(u.name)} to train"></td>
            <td class="acts"><button type="button" class="btn mini" data-max="${i}" aria-label="Most ${esc(u.name)} with what the other rows leave">MAX</button><button type="button" class="x" data-x="${i}" aria-label="Clear ${esc(u.name)}" title="Clear this row">×</button></td>
            <td class="num each">${each}</td><td class="num cost" data-cost="${i}"></td>`
-        : '<td class="num dim">–</td><td></td><td class="num dim">–</td><td class="num dim">–</td>';   // not trained here (drafted, or upgraded in the Workshop)
+        : '<td class="num dim">–</td><td></td><td class="num dim">–</td><td class="num dim">–</td>';   // not trained here (drafted, or upgraded under Arms & Aid)
       return `<tr class="${[up ? 'plus' : '', k % 2 ? 'alt' : ''].join(' ').trim()}"><th scope="row">${name}</th><td class="num pt">${o}</td><td class="num pt">${d}</td>`
         + `<td class="num">${fmt(h.units[i])}</td><td class="num${h.away[i] ? '' : ' dim'}">${fmt(h.away[i])}</td><td class="num${training[i] ? '' : ' dim'}">${fmt(training[i])}</td>${cnt}</tr>`;
     }).join('');

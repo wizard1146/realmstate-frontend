@@ -110,17 +110,16 @@ export function mountWorld(host, on) {
         <h3>${esc(r.name)} <span class="dim">Realm ${realm} · ${esc(cap(r.material))} · ${fmt(houses)} house${houses === 1 ? '' : 's'} · ${fmt(total(realm, 'land'))} acres · ${fmt(total(realm, 'might'))} might</span></h3>
         <button type="button" class="btn" data-step="1" aria-label="Next realm">›</button>
         ${realm !== mine ? '<button type="button" class="btn" data-home>Your realm</button>' : ''}</div>
-      <div class="scrollx"><table class="tbl wd-tbl"><thead><tr><th class="num">State</th><th>Name</th><th class="num">Houses</th><th class="num">Land</th><th class="num">Might</th><th class="num">Renown</th><th>Leader</th>
-        <th class="num"><abbr title="Its share of the realm's ${esc(r.material)}">${esc(cap(r.material))}</abbr></th><th>At war</th></tr></thead><tbody>
-      ${statesOf(realm).map((s, k) => {
+      <div class="wd-scards" role="list" aria-label="States of ${esc(r.name)}">${statesOf(realm).map((s) => {
         const yours = realm === mine && s.state === myState, foe = warOf(realm, s.state);
-        return `<tr class="${[yours ? 'self' : '', s.houses ? '' : 'empty', k % 2 ? 'alt' : ''].filter(Boolean).join(' ')}"><td class="num dim">${realm}:${s.state}</td>
-          <th scope="row"><a href="#state" data-open-state="${realm}:${s.state}">${esc(s.name)}</a>${yours ? ' <span class="dim">(yours)</span>' : ''}</th>
-          <td class="num">${fmt(s.houses)}<span class="dim">/${SEATS}</span></td><td class="num">${rank(s, 'land')}</td><td class="num">${rank(s, 'might')}</td><td class="num">${rank(s, 'renown')}</td>
-          <td>${s.leader ? esc(s.leader.name) : '<span class="dim">–</span>'}</td><td class="num">${(s.share_bp / 100).toFixed(1)}%</td>
-          <td>${foe ? `<a href="#state" data-open-state="${foe.realm}:${foe.state}" class="wd-war">with ${foe.realm}:${foe.state}</a>` : '<span class="dim">–</span>'}</td></tr>`;
-      }).join('')}</tbody></table></div>
-      <p class="note">Ranks (#) are among every state that holds a house. A state's name opens its page.</p>`;
+        const fig = (k, label) => `<span class="wd-f"><span class="wd-fl">${label}</span>${s.ranks ? `${fmt(s.ranks[k].total)}<span class="wd-rk">#${s.ranks[k].rank}</span>` : '<span class="dim">–</span>'}</span>`;
+        return `<a href="#state" role="listitem" data-open-state="${realm}:${s.state}" class="${['wd-scard', yours ? 'yours' : '', s.houses ? '' : 'empty', foe ? 'war' : ''].filter(Boolean).join(' ')}">
+          <span class="wd-n">State ${realm}:${s.state}${yours ? ' · yours' : ''}</span><span class="wd-name">${esc(s.name)}</span>
+          <span class="wd-hs">${fmt(s.houses)} of ${SEATS} houses${s.leader ? ` · led by ${esc(s.leader.name)}` : ''}</span>
+          <span class="wd-figs3">${fig('land', 'Land')}${fig('might', 'Might')}${fig('renown', 'Renown')}</span>
+          <span class="wd-foot">${esc(cap(r.material))} ${(s.share_bp / 100).toFixed(1)}%${foe ? ` · <span class="wd-war">at war with ${foe.realm}:${foe.state}</span>` : ''}</span></a>`;
+      }).join('')}</div>
+      <p class="note">Ranks (#) are among every state that holds a house. Select a state to open its page.</p>`;
   }
   function ranking() {
     const list = allStates().filter((s) => s.houses && s.ranks).sort((a, b) => a.ranks[sort].rank - b.ranks[sort].rank || a.realm - b.realm || a.state - b.state);
