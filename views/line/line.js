@@ -25,11 +25,14 @@ import { mountState, openState, stateTitle } from './state.js';
 import { mountWars } from './wars.js';
 import { mountIntrigue } from './intrigue.js';
 import { mountRites } from './rites.js';
+import { mountScience } from './science.js';
+import { mountAcademics } from './academics.js';
+import { mountGenerals } from './generals.js';
 import { watchCards } from './cards.js';
 import { newsLine } from '../../core/words.js';
 
 // Straightline's own page parts (not War Room panels): mount(host, on) -> { update(c), tick(), destroy() }.
-const PARTS = { throne: mountThrone, military: mountMilitary, attack: mountAttack, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState, wars: mountWars, intrigue: mountIntrigue, rites: mountRites };
+const PARTS = { throne: mountThrone, military: mountMilitary, attack: mountAttack, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState, wars: mountWars, intrigue: mountIntrigue, rites: mountRites, science: mountScience, academics: mountAcademics, generals: mountGenerals };
 
 const KEY = 'realmstate.line.page';
 
@@ -48,7 +51,7 @@ const MENU = [
   ['Military', [
     ['military', 'Military', null, null, 'train troops; draft and release; medics, upgrades, chariots', { part: 'military' }],
     ['attack', 'Attack', null, null, 'send an army against another house', { part: 'attack' }],
-    ['generals', 'Generals', 'mil', ['mil', 'generals'], 'raise and command generals'],
+    ['generals', 'Generals', null, null, 'raise and command generals; your heirs', { part: 'generals' }],
     ['hall', 'Hall of Deeds', 'mil', ['mil', 'hall'], 'trade generals and academics'],
   ]],
   ['Shadows & Magic', [
@@ -56,8 +59,8 @@ const MENU = [
     ['rites', 'Rites', null, null, 'self rites, divinations and hexes; what is on you; your adepts', { part: 'rites' }],
   ]],
   ['Learning', [
-    ['science', 'Science', 'sci', ['sci', 'science'], 'books and sciences'],
-    ['academics', 'Academics', 'sci', ['sci', 'academics'], 'your scholars and their attributes'],
+    ['science', 'Science', null, null, 'books, scientists and the sciences you invest in', { part: 'science' }],
+    ['academics', 'Academics', null, null, 'your scholars: who you keep, and recruiting more', { part: 'academics' }],
     ['colloquium', 'Colloquium', 'sci', ['sci', 'colloquium'], 'your state’s shared research'],
     ['truths', 'Truths & Quests', 'sci', ['sci', 'truths'], 'your quest, the Truths you know, transmutation'],
   ]],

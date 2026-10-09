@@ -7,6 +7,22 @@ import * as commands from './commands.js';
 import { have as havePrices } from './prices.js';
 
 /**
+ * After a command: read /me once the server has published a view that holds it. The command is applied before its
+ * reply, but the view players read is republished a moment later (longer when the world is busy), so a /me read too
+ * soon brings back the old house and undoes what the page just showed. The view published at the reply can't hold
+ * the command yet; any later one does: wait for /world's seq to move past it (at most 6 s), then read /me.
+ */
+async function refreshAfter() {
+  let seq0;
+  try { seq0 = (await api('/world')).seq; } catch { refreshMeSoon(); return; }
+  for (let waited = 0; waited < 6000; waited += 250) {
+    await new Promise((r) => setTimeout(r, 250));
+    try { if ((await api('/world')).seq > seq0) break; } catch { break; }
+  }
+  refreshMeSoon(0);
+}
+
+/**
  * Run a command. `estimate` (gold, before modifiers) is quoted next to the real cost from the
  * outcome, only from an old server that sends no exact prices. `quote` (exact gold, from core/prices.js) replaces it: the outcome's own cost is the
  * cross-check, and the line says so only if the two differ.
@@ -20,7 +36,7 @@ async function run(cmd, { estimate, quote, button } = {}) {
       if (out.gold != null && out.gold !== quote) est = ` (Quoted ${fmt(quote)} gold; prices changed before the order landed.)`;
     } else if (estimate != null && Number.isFinite(estimate) && !havePrices()) est = ` (Estimated ≈${fmt(estimate)} before modifiers.)`;
     say(describe(out, cmd) + est, outcomeTone(out));
-    refreshMeSoon();
+    refreshAfter();
     return out;
   } catch (e) {
     say(e.message, 'bad');

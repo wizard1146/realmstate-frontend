@@ -12,7 +12,8 @@ export const isMarked = (kind, id) => G.liveMarks().some((m) => same(m, { kind, 
 /** Sends a new list; remembers it if the server took it. */
 export async function sendMarks(list, button) {
   const out = await act.markHeirs(list.map((m) => act.charRef(m.kind, m.id)), { button });
-  if (out) { G.saveMarks(list); notify('heirs'); }
+  // Taken: the page's copy follows at once, so a quick second click doesn't work from the old list (/me lags).
+  if (out) { G.saveMarks(list); if (Array.isArray(store.house.heirs)) store.house.heirs = list.map((m) => ({ ...m })); notify('heirs'); }
   // The button was disabled while the command ran (so it lost focus); find it again after the redraw.
   const id = button?.id;
   if (id && !pendingFocus) setTimeout(() => document.getElementById(id)?.focus());
