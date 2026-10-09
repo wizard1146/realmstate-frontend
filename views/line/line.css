@@ -169,8 +169,8 @@
     border-bottom: 3px double var(--l-line); display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; }
   & .line-page-h h1 { margin: 0; font: 600 1.4rem/1.2 var(--l-head-font); letter-spacing: .02em; }
   & .line-page-h .line-what { margin: 0; color: var(--l-muted); }
-  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"], [data-page="world"]) .line-page-h { justify-content: center; }
-  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"], [data-page="world"]) .line-what { display: none; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"], [data-page="world"], [data-page="wars"]) .line-page-h { justify-content: center; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"], [data-page="world"], [data-page="wars"]) .line-what { display: none; }
   & .line-main:is([data-page="throne"], [data-page="state"]) .line-page-h h1 { display: flex; flex-direction: column; align-items: center; text-align: center; }
   /* State: the state's name, grand, with its address and realm small beneath. */
   & .line-page-h h1 .h-state { font-size: 1.3rem; letter-spacing: .04em; line-height: 1.1; padding: 6px 0 2px; }
@@ -228,15 +228,15 @@
   & .lstate .st-banner svg { display: block; width: 92px; height: auto; }
   & .lstate .st-banner path { fill: color-mix(in srgb, var(--l-gold) 6%, transparent); stroke: color-mix(in srgb, var(--l-gold) 70%, transparent); stroke-width: 2; stroke-dasharray: 6 4; }
   & .lstate .st-banner figcaption { margin-top: 4px; font: 600 .78rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
-  & :is(.lstate, .lmil, .lworld) .st-glance { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 640px; gap: 0; margin: 4px auto 26px;
+  & :is(.lstate, .lmil, .lworld, .lwars) .st-glance { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 640px; gap: 0; margin: 4px auto 26px;
     border-block: 3px double var(--l-line); }
-  & :is(.lstate, .lmil, .lworld) .st-glance > div { padding: 12px 10px; text-align: center; }
-  & :is(.lstate, .lmil, .lworld) .st-glance > div + div { border-left: 1px solid var(--l-rule); }
-  & :is(.lstate, .lmil, .lworld) .st-glance dt { font: 600 .82rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
-  & :is(.lstate, .lmil, .lworld) .st-glance dd { margin: 2px 0 0; font: 1.35rem var(--l-head-font); font-variant-numeric: lining-nums tabular-nums; }
-  & :is(.lstate, .lmil, .lworld) .st-glance dd.rank { margin-top: 1px; font: 600 .95rem var(--l-body-font); color: var(--l-gold); font-variant-numeric: tabular-nums; }
-  & :is(.lstate, .lmil, .lworld) .st-glance dd.rank span { font-weight: 400; color: var(--l-muted); font-size: .9em; }
-  & :is(.lstate, .lmil, .lworld) .st-glance dd.note a { color: inherit; }
+  & :is(.lstate, .lmil, .lworld, .lwars) .st-glance > div { padding: 12px 10px; text-align: center; }
+  & :is(.lstate, .lmil, .lworld, .lwars) .st-glance > div + div { border-left: 1px solid var(--l-rule); }
+  & :is(.lstate, .lmil, .lworld, .lwars) .st-glance dt { font: 600 .82rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
+  & :is(.lstate, .lmil, .lworld, .lwars) .st-glance dd { margin: 2px 0 0; font: 1.35rem var(--l-head-font); font-variant-numeric: lining-nums tabular-nums; }
+  & :is(.lstate, .lmil, .lworld, .lwars) .st-glance dd.rank { margin-top: 1px; font: 600 .95rem var(--l-body-font); color: var(--l-gold); font-variant-numeric: tabular-nums; }
+  & :is(.lstate, .lmil, .lworld, .lwars) .st-glance dd.rank span { font-weight: 400; color: var(--l-muted); font-size: .9em; }
+  & :is(.lstate, .lmil, .lworld, .lwars) .st-glance dd.note a { color: inherit; }
   & .lstate section { margin-bottom: 26px; }
   & .lstate table.st-tbl { width: 100%; }
   & .lstate .st-tbl tbody :is(td, th) { vertical-align: middle; height: 34px; padding-block: 0; }   /* every row one height, buttons or not */
@@ -297,7 +297,7 @@
   & .lstate .st-tbl tr.open > * { color: var(--l-muted); }
   & .lstate .st-tbl tr.open th[scope=row] { color: var(--l-muted); font-style: italic; }
   & .lstate .st-tbl tr.open:hover > * { background: none; }
-  & :is(.lstate, .lmil, .lworld) .st-glance dd .of { font-size: .62em; color: var(--l-muted); }
+  & :is(.lstate, .lmil, .lworld, .lwars) .st-glance dd .of { font-size: .62em; color: var(--l-muted); }
   & .lstate .st-tbl .mark { display: inline-block; margin-right: 6px; padding: 0 6px; border: 1px solid var(--l-line); border-radius: 3px; font-size: .78em; color: var(--l-muted); }
   & .lstate .st-tbl .mark.lead { color: var(--l-gold); border-color: color-mix(in srgb, var(--l-gold) 60%, transparent); }
   & .lstate .st-tbl td.acts { white-space: nowrap; text-align: right; }
@@ -1048,4 +1048,56 @@
   & .lworld .wd-gcard.war { border-color: color-mix(in srgb, var(--l-bad) 45%, var(--l-rule)); background: color-mix(in srgb, var(--l-bad) 7%, var(--l-page)); }
   & .lworld .wd-gcard.lit { border-color: var(--l-bad); background: color-mix(in srgb, var(--l-bad) 16%, var(--l-page)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--l-bad) 45%, transparent); }
   @media (max-width: 1100px) { & .lworld .wd-grid { overflow-x: auto; } & .lworld .wd-grow { min-width: 980px; } }
+}
+
+:root[data-view="line"] {
+  /* Wars: totals, then the wars being fought, ceasefires and wars ended; your state's rows tinted gold. */
+  & .line-main > .room:has(.lwars) { max-width: none; width: auto; min-width: 0; }
+  & .lpart.lwars { max-width: 1400px; width: 100%; margin-inline: auto; }
+  & .lwars .wr-glance { grid-template-columns: repeat(4, 1fr); max-width: 860px; margin-bottom: 22px; }
+  & .lwars section { margin-bottom: 28px; }
+  & .lpart.lwars table.wr-tbl { width: 100%; }
+  & .lwars .wr-tbl tbody :is(td, th) { vertical-align: middle; }
+  & .lwars .wr-tbl td.vs, & .lwars .wr-tbl th.vs { text-align: center; color: var(--l-bad); font-variant-caps: all-small-caps; letter-spacing: .06em; width: 3em; }
+  & .lwars .wr-tbl td.lead { color: var(--l-good); font-weight: 600; }
+  & .lwars .wr-tbl td:not(:has(a)) { white-space: nowrap; }   /* ticks, kinds and points on one line; only names wrap */
+  & .lwars .wr-tbl tbody tr.alt > * { background: color-mix(in srgb, var(--l-ink) 1.25%, transparent); }
+  & .lwars .wr-tbl tbody tr:hover > * { background: color-mix(in srgb, var(--l-gold) 12%, var(--l-page)); }
+  & .lwars .wr-tbl tr.self > * { background: color-mix(in srgb, var(--l-gold) 10%, var(--l-page)); }
+  & .lwars .wr-you { font-size: .75em; padding: 0 5px; border: 1px solid var(--l-gold); border-radius: 4px; color: var(--l-gold); }
+  @media (max-width: 760px) { & .lwars .wr-glance { grid-template-columns: repeat(2, 1fr); } }
+}
+
+:root[data-view="line"] {
+  /* Wars: the balance of land, side A's share of the two now (filled) and when the war began (the gold mark). */
+  & .lwars .wr-bal { min-width: 130px; }
+  & .lwars .wr-bar { position: relative; display: block; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--l-bad) 30%, var(--l-page)); overflow: visible; }
+  & .lwars .wr-bar i { position: absolute; inset: 0 auto 0 0; border-radius: 4px 0 0 4px; background: color-mix(in srgb, var(--l-ink) 45%, var(--l-page)); }
+  & .lwars .wr-bar b { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--l-gold); }
+  & .lwars .wr-delta { display: block; margin-top: 3px; font-size: .82em; font-variant-numeric: tabular-nums; }
+  & .lwars .wr-delta .up { color: var(--l-good); } & .lwars .wr-delta .down { color: var(--l-bad); }
+}
+
+:root[data-view="line"] {
+  /* Wars: tracking one war, four small charts (houses, land, might, renown), side A ink, side B red. */
+  & .lwars tr.wr-trackrow > td { background: color-mix(in srgb, var(--l-gold) 4%, var(--l-page)) !important; padding: 12px 14px; }
+  & .lwars .wr-legend { margin: 0 0 8px; font-size: .9em; color: var(--l-muted); }
+  & .lwars :is(.wr-legend, .wr-chart) b.a { color: var(--l-ink); } & .lwars :is(.wr-legend, .wr-chart) b.b { color: var(--l-bad); }
+  & .lwars .wr-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+  & .lwars .wr-chart { margin: 0; padding: 8px 10px 6px; border: 1px solid var(--l-rule); border-radius: 6px; background: var(--l-page); }
+  & .lwars .wr-chart figcaption { display: flex; justify-content: space-between; font-weight: 600; font-size: .88em; margin-bottom: 4px; }
+  & .lwars .wr-chart figcaption span { font-weight: 400; font-variant-numeric: tabular-nums; }
+  & .lwars .wr-chart svg { display: block; width: 100%; height: 84px; }
+  & .lwars .wr-chart polyline { fill: none; stroke-width: 1.6; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+  & .lwars .wr-chart polyline.a { stroke: color-mix(in srgb, var(--l-ink) 75%, var(--l-page)); }
+  & .lwars .wr-chart polyline.b { stroke: var(--l-bad); }
+  & .lwars .wr-chart line.start { stroke: var(--l-gold); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
+  & .lwars .wr-axis { display: flex; justify-content: space-between; font-size: .72em; color: var(--l-muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+}
+
+:root[data-view="line"] {
+  & dialog.wr-dlg { width: min(1000px, calc(100vw - 32px)); }
+  & dialog.wr-dlg h2 .vs { color: var(--l-bad); font-size: .75em; font-variant-caps: all-small-caps; margin: 0 4px; }
+  & dialog.wr-dlg .wr-legend { margin: 12px 0 10px; font-size: .9em; color: var(--l-muted); }
+  & dialog.wr-dlg .wr-legend b.a { color: var(--l-ink); } & dialog.wr-dlg .wr-legend b.b { color: var(--l-bad); }
 }

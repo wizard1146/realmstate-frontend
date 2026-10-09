@@ -22,11 +22,12 @@ import { mountConfig } from './config.js';
 import { mountProfile } from './profile.js';
 import { mountWorld, homeRealm, showRealm } from './world.js';
 import { mountState, openState, stateTitle } from './state.js';
+import { mountWars } from './wars.js';
 import { watchCards } from './cards.js';
 import { newsLine } from '../../core/words.js';
 
 // Straightline's own page parts (not War Room panels): mount(host, on) -> { update(c), tick(), destroy() }.
-const PARTS = { throne: mountThrone, military: mountMilitary, attack: mountAttack, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState };
+const PARTS = { throne: mountThrone, military: mountMilitary, attack: mountAttack, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState, wars: mountWars };
 
 const KEY = 'realmstate.line.page';
 
@@ -61,13 +62,18 @@ const MENU = [
   ['State Matters', [
     ['state', 'State', null, null, 'the houses of your state', { part: 'state' }],
     ['leadership', 'Leadership', 'roster', ['state', 'leadership'], 'votes, treasury, tax'],
-    ['world', 'World', null, null, 'the realms, and the states in each', { part: 'world' }],
     ['war', 'War', 'roster', ['state', 'war'], 'wars and relations'],
+  ]],
+  ['World Matters', [
+    ['world', 'World', null, null, 'the realms, and the states in each', { part: 'world' }],
+    ['wars', 'Wars', null, null, 'every war in the world: who, since when, and how they ended', { part: 'wars' }],
     ['work', 'Realm Work', 'roster', ['state', 'work'], 'your realm’s Specialised Materials Production'],
     ['wonders', 'World Wonders', 'roster', ['state', 'wonders'], 'start, fund and use wonders'],
+  ]],
+  ['Market', [
     ['market', 'Market', 'res', ['res', 'market'], 'buy and sell materials'],
   ]],
-  ['The world', [
+  ['Chronicle', [
     ['news', 'News', 'news', null, 'what happened to your house'],
     ['ranks', 'Rankings', 'rank', null, 'houses and states'],
   ]],
