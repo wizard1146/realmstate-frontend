@@ -90,7 +90,7 @@ export function mountAcademics(host, on) {
     sheet();
   });
 
-  function draw() { const s = sci(); if (!s) { host.querySelector('.lacad').innerHTML = '<p class="dim">No science data from the server.</p>'; return; } glance(s); list(s); sheet(); }
+  function draw() { const s = sci(), root = host.querySelector('.lacad'); if (!root) return; if (!s) { root.innerHTML = '<p class="dim">No science data from the server.</p>'; return; } glance(s); list(s); sheet(); }
   draw();
   return {
     update(c) { if (!c || c.has('house') || c.has('rules') || c.has('heirs')) draw(); },

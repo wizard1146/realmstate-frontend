@@ -169,8 +169,8 @@
     border-bottom: 3px double var(--l-line); display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; }
   & .line-page-h h1 { margin: 0; font: 600 1.4rem/1.2 var(--l-head-font); letter-spacing: .02em; }
   & .line-page-h .line-what { margin: 0; color: var(--l-muted); }
-  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"], [data-page="world"], [data-page="wars"], [data-page="intrigue"], [data-page="rites"], [data-page="science"], [data-page="academics"], [data-page="generals"], [data-page="heirs"]) .line-page-h { justify-content: center; }
-  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"], [data-page="world"], [data-page="wars"], [data-page="intrigue"], [data-page="rites"], [data-page="science"], [data-page="academics"], [data-page="generals"], [data-page="heirs"]) .line-what { display: none; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"], [data-page="world"], [data-page="wars"], [data-page="intrigue"], [data-page="rites"], [data-page="science"], [data-page="academics"], [data-page="generals"], [data-page="heirs"], [data-page="colloquium"], [data-page="truths"], [data-page="work"], [data-page="wonders"]) .line-page-h { justify-content: center; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"], [data-page="world"], [data-page="wars"], [data-page="intrigue"], [data-page="rites"], [data-page="science"], [data-page="academics"], [data-page="generals"], [data-page="heirs"], [data-page="colloquium"], [data-page="truths"], [data-page="work"], [data-page="wonders"]) .line-what { display: none; }
   & .line-main:is([data-page="throne"], [data-page="state"]) .line-page-h h1 { display: flex; flex-direction: column; align-items: center; text-align: center; }
   /* State: the state's name, grand, with its address and realm small beneath. */
   & .line-page-h h1 .h-state { font-size: 1.3rem; letter-spacing: .04em; line-height: 1.1; padding: 6px 0 2px; }
@@ -228,15 +228,15 @@
   & .lstate .st-banner svg { display: block; width: 92px; height: auto; }
   & .lstate .st-banner path { fill: color-mix(in srgb, var(--l-gold) 6%, transparent); stroke: color-mix(in srgb, var(--l-gold) 70%, transparent); stroke-width: 2; stroke-dasharray: 6 4; }
   & .lstate .st-banner figcaption { margin-top: 4px; font: 600 .78rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
-  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs) .st-glance { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 640px; gap: 0; margin: 4px auto 26px;
+  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs, .lcol, .ltru) .st-glance { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 640px; gap: 0; margin: 4px auto 26px;
     border-block: 3px double var(--l-line); }
-  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs) .st-glance > div { padding: 12px 10px; text-align: center; }
-  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs) .st-glance > div + div { border-left: 1px solid var(--l-rule); }
-  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs) .st-glance dt { font: 600 .82rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
-  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs) .st-glance dd { margin: 2px 0 0; font: 1.35rem var(--l-head-font); font-variant-numeric: lining-nums tabular-nums; }
-  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs) .st-glance dd.rank { margin-top: 1px; font: 600 .95rem var(--l-body-font); color: var(--l-gold); font-variant-numeric: tabular-nums; }
-  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs) .st-glance dd.rank span { font-weight: 400; color: var(--l-muted); font-size: .9em; }
-  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs) .st-glance dd.note a { color: inherit; }
+  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs, .lcol, .ltru) .st-glance > div { padding: 12px 10px; text-align: center; }
+  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs, .lcol, .ltru) .st-glance > div + div { border-left: 1px solid var(--l-rule); }
+  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs, .lcol, .ltru) .st-glance dt { font: 600 .82rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
+  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs, .lcol, .ltru) .st-glance dd { margin: 2px 0 0; font: 1.35rem var(--l-head-font); font-variant-numeric: lining-nums tabular-nums; }
+  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs, .lcol, .ltru) .st-glance dd.rank { margin-top: 1px; font: 600 .95rem var(--l-body-font); color: var(--l-gold); font-variant-numeric: tabular-nums; }
+  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs, .lcol, .ltru) .st-glance dd.rank span { font-weight: 400; color: var(--l-muted); font-size: .9em; }
+  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs, .lcol, .ltru) .st-glance dd.note a { color: inherit; }
   & .lstate section { margin-bottom: 26px; }
   & .lstate table.st-tbl { width: 100%; }
   & .lstate .st-tbl tbody :is(td, th) { vertical-align: middle; height: 34px; padding-block: 0; }   /* every row one height, buttons or not */
@@ -297,7 +297,7 @@
   & .lstate .st-tbl tr.open > * { color: var(--l-muted); }
   & .lstate .st-tbl tr.open th[scope=row] { color: var(--l-muted); font-style: italic; }
   & .lstate .st-tbl tr.open:hover > * { background: none; }
-  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs) .st-glance dd .of { font-size: .62em; color: var(--l-muted); }
+  & :is(.lstate, .lmil, .lworld, .lwars, .lint, .lsci, .lacad, .lgen, .lheirs, .lcol, .ltru) .st-glance dd .of { font-size: .62em; color: var(--l-muted); }
   & .lstate .st-tbl .mark { display: inline-block; margin-right: 6px; padding: 0 6px; border: 1px solid var(--l-line); border-radius: 3px; font-size: .78em; color: var(--l-muted); }
   & .lstate .st-tbl .mark.lead { color: var(--l-gold); border-color: color-mix(in srgb, var(--l-gold) 60%, transparent); }
   & .lstate .st-tbl td.acts { white-space: nowrap; text-align: right; }
@@ -823,21 +823,21 @@
   /* Attack: target and how side by side, the order bar, the army table, armies coming home. Build's layout (.lbuild). */
   & .line-main > .room:has(.latk.glyph)::after { -webkit-mask-image: url("assets/sword.png"); mask-image: url("assets/sword.png"); }
   & .latk .atk-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 12px 40px; max-width: 1100px; margin-bottom: 18px; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-find { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 12px; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-find input { width: 110px; text-align: center; font-variant-numeric: tabular-nums; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-card { min-height: 92px; padding: 12px 14px; border: 1px solid var(--l-rule); border-radius: 6px; background: color-mix(in srgb, var(--l-gold) 4%, var(--l-page)); }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-card p { margin: 0; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-name { font: 1.15rem var(--l-head-font); }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-name .addr { margin-left: 8px; font: .85rem var(--l-body-font); color: var(--l-muted); }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-facts { display: flex; flex-wrap: wrap; gap: 6px 28px; margin: 8px 0 0; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-facts dt { font-size: .78em; color: var(--l-muted); font-variant-caps: all-small-caps; letter-spacing: .08em; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-facts dd { margin: 0; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-card .short { margin-top: 8px; color: var(--l-bad); }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-grid { display: grid; grid-template-columns: 90px 1fr; gap: 8px 12px; align-items: center; margin-top: 8px; max-width: none; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-grid label { margin: 0; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-grid select { width: 100%; margin: 0; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-grid [hidden] { display: none; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-note { grid-column: 2; margin: -2px 0 4px; color: var(--l-muted); font-size: .88em; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-find { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 12px; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-find input { width: 110px; text-align: center; font-variant-numeric: tabular-nums; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-card { min-height: 92px; padding: 12px 14px; border: 1px solid var(--l-rule); border-radius: 6px; background: color-mix(in srgb, var(--l-gold) 4%, var(--l-page)); }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-card p { margin: 0; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-name { font: 1.15rem var(--l-head-font); }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-name .addr { margin-left: 8px; font: .85rem var(--l-body-font); color: var(--l-muted); }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-facts { display: flex; flex-wrap: wrap; gap: 6px 28px; margin: 8px 0 0; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-facts dt { font-size: .78em; color: var(--l-muted); font-variant-caps: all-small-caps; letter-spacing: .08em; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-facts dd { margin: 0; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-card .short { margin-top: 8px; color: var(--l-bad); }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-grid { display: grid; grid-template-columns: 90px 1fr; gap: 8px 12px; align-items: center; margin-top: 8px; max-width: none; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-grid label { margin: 0; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-grid select { width: 100%; margin: 0; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-grid [hidden] { display: none; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-note { grid-column: 2; margin: -2px 0 4px; color: var(--l-muted); font-size: .88em; }
   & .latk .atk-bar { top: 36px; }
   & .lpart.latk table.atk-tbl { width: 100%; max-width: 820px; table-layout: fixed; margin-top: 8px; }
   & .latk .atk-tbl col.c-name { width: auto; } & .latk .atk-tbl col.c-pt { width: 56px; } & .latk .atk-tbl col.c-home { width: 92px; }
@@ -893,24 +893,24 @@
 :root[data-view="line"] {
   /* Attack, laid out: your choices on the left (how, the army), the battle sheet on the right (who, the score, the
      order), which stays in view as you scroll. One column on a narrow screen. */
-  & :is(.latk, .lint, .lacad, .lgen) .atk-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 400px); gap: 0 44px; align-items: start; max-width: 1300px; margin: 0 auto 10px; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-main > section { margin-bottom: 18px; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-grid { max-width: 640px; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 400px); gap: 0 44px; align-items: start; max-width: 1300px; margin: 0 auto 10px; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-main > section { margin-bottom: 18px; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-grid { max-width: 640px; }
   & .lpart.latk table.atk-tbl { max-width: none; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-sheet { position: sticky; top: 46px; padding: 6px 18px 18px; border: 1px solid var(--l-rule); border-radius: 8px;
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-sheet { position: sticky; top: 46px; padding: 6px 18px 18px; border: 1px solid var(--l-rule); border-radius: 8px;
     background: color-mix(in srgb, var(--l-gold) 4%, var(--l-page)); box-shadow: 0 6px 20px rgba(0, 0, 0, .06); }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-sheet h3.sub { margin-top: 12px; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-sheet .atk-find { margin: 8px 0 10px; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-sheet .atk-find input { width: 96px; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-sheet .atk-card { min-height: 0; background: var(--l-page); }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-sheet .atk-intel table.tbl { max-width: none; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-sheet h3.sub { margin-top: 12px; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-sheet .atk-find { margin: 8px 0 10px; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-sheet .atk-find input { width: 96px; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-sheet .atk-card { min-height: 0; background: var(--l-page); }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-sheet .atk-intel table.tbl { max-width: none; }
   & .lpart.latk .atk-sheet table.atk-score { max-width: none; margin: 6px 0 12px; }
   & .latk .atk-score th[scope=row] { width: auto; }
   & .latk .atk-score th[scope=row] small { display: block; font-size: .8em; color: var(--l-muted); }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-sheet .doing { max-width: none; margin: 0 0 12px; font-size: .92em; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-go { display: flex; gap: 8px; justify-content: flex-end; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-go #la-go { margin-left: auto; }
-  @media (max-width: 1100px) { & :is(.latk, .lint, .lacad, .lgen) .atk-layout { grid-template-columns: 1fr; } & :is(.latk, .lint, .lacad, .lgen) .atk-sheet { position: static; margin-top: 10px; } }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-sheet .doing { max-width: none; margin: 0 0 12px; font-size: .92em; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-go { display: flex; gap: 8px; justify-content: flex-end; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-go #la-go { margin-left: auto; }
+  @media (max-width: 1100px) { & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-layout { grid-template-columns: 1fr; } & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-sheet { position: static; margin-top: 10px; } }
 }
 
 :root[data-view="line"] {
@@ -985,9 +985,9 @@
 
 :root[data-view="line"] {
   /* Attack's sheet now holds How too: a narrower label column, and it scrolls itself if it outgrows the window. */
-  & :is(.latk, .lint, .lacad, .lgen) .atk-sheet .atk-grid { grid-template-columns: 64px 1fr; gap: 6px 10px; max-width: none; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-sheet { max-height: calc(100dvh - 60px); overflow-y: auto; }
-  & :is(.latk, .lint, .lacad, .lgen) .atk-main > h3.sub:first-child { margin-top: 0; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-sheet .atk-grid { grid-template-columns: 64px 1fr; gap: 6px 10px; max-width: none; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-sheet { max-height: calc(100dvh - 60px); overflow-y: auto; }
+  & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .atk-main > h3.sub:first-child { margin-top: 0; }
 }
 
 :root[data-view="line"] {
@@ -1171,8 +1171,8 @@
   & .lsci .sc-figs dd { margin: 0; font-variant-numeric: tabular-nums; }
   & .lsci .sc-rank, & .lsci .sc-next { margin: 0; font-size: .88em; }
   & .lsci .sc-next { color: var(--l-muted); font-size: .8em; margin-top: 3px; }
-  & .lsci .sc-bar { height: 6px; margin-top: 6px; border-radius: 3px; background: color-mix(in srgb, var(--l-ink) 8%, var(--l-page)); overflow: hidden; }
-  & .lsci .sc-bar i { display: block; height: 100%; background: var(--l-gold); }
+  & :is(.lsci, .lcol, .lwork, .lwon) .sc-bar { height: 6px; margin-top: 6px; border-radius: 3px; background: color-mix(in srgb, var(--l-ink) 8%, var(--l-page)); overflow: hidden; }
+  & :is(.lsci, .lcol, .lwork, .lwon) .sc-bar i { display: block; height: 100%; background: var(--l-gold); }
   & .lsci .sc-tools { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 12px; margin-top: 14px; }
   & .lsci .sc-tool { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px 12px; border: 1px solid var(--l-rule); border-radius: 6px; }
   & .lsci .sc-tool h3.sub { flex-basis: 100%; margin: 0; }
@@ -1200,29 +1200,29 @@
   /* Academics: Attack's layout; academics as cards on the left, the Recruit sheet (attributes as chips) on the right. */
   & .line-main > .room:has(.lacad) { max-width: none; width: auto; min-width: 0; }
   & .lpart.lacad { max-width: 1300px; width: 100%; margin-inline: auto; }
-  & :is(.lacad, .lgen) .ac-glance { grid-template-columns: repeat(4, 1fr); max-width: 900px; margin-bottom: 20px; }
-  & :is(.lacad, .lgen) .ac-glance dd .of { font-size: .62em; color: var(--l-muted); }
-  & :is(.lacad, .lgen) .ac-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; margin-top: 8px; }
-  & :is(.lacad, .lgen) .ac-card { padding: 11px 13px; border: 1px solid var(--l-rule); border-radius: 6px; background: var(--l-page); }
-  & :is(.lacad, .lgen) .ac-card.waver { border-color: var(--l-bad); background: color-mix(in srgb, var(--l-bad) 6%, var(--l-page)); }
-  & :is(.lacad, .lgen) .ac-card h4 { margin: 0 0 6px; font: 1.1rem var(--l-head-font); }
-  & :is(.lacad, .lgen) .ac-attrs { margin: 0 0 8px; padding: 0; list-style: none; font-size: .9em; }
-  & :is(.lacad, .lgen) .ac-attrs li { margin: 2px 0; }
-  & :is(.lacad, .lgen) .ac-rec { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 0; padding-top: 6px; border-top: 1px solid var(--l-rule); }
-  & :is(.lacad, .lgen) .ac-rec dt { font-size: .68em; letter-spacing: .06em; text-transform: uppercase; color: var(--l-muted); }
-  & :is(.lacad, .lgen) .ac-rec dd { margin: 0; font-size: .88em; font-variant-numeric: tabular-nums; }
-  & :is(.lacad, .lgen) .ac-waver { margin: 8px 0 0; font-size: .86em; color: var(--l-bad); }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-glance { grid-template-columns: repeat(4, 1fr); max-width: 900px; margin-bottom: 20px; }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-glance dd .of { font-size: .62em; color: var(--l-muted); }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; margin-top: 8px; }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-card { padding: 11px 13px; border: 1px solid var(--l-rule); border-radius: 6px; background: var(--l-page); }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-card.waver { border-color: var(--l-bad); background: color-mix(in srgb, var(--l-bad) 6%, var(--l-page)); }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-card h4 { margin: 0 0 6px; font: 1.1rem var(--l-head-font); }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-attrs { margin: 0 0 8px; padding: 0; list-style: none; font-size: .9em; }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-attrs li { margin: 2px 0; }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-rec { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 0; padding-top: 6px; border-top: 1px solid var(--l-rule); }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-rec dt { font-size: .68em; letter-spacing: .06em; text-transform: uppercase; color: var(--l-muted); }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-rec dd { margin: 0; font-size: .88em; font-variant-numeric: tabular-nums; }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-waver { margin: 8px 0 0; font-size: .86em; color: var(--l-bad); }
   & .lacad .note { color: var(--l-muted); font-size: .86em; margin: 12px 0 0; }
   & .lacad .atk-sheet .lform .field { display: flex; gap: 6px; }
   & .lacad .atk-sheet .lform .field input { flex: 1; min-width: 0; }
-  & :is(.lacad, .lgen) .ac-chips { border: 0; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; gap: 6px; }
-  & :is(.lacad, .lgen) .ac-chips legend { font-size: .86em; color: var(--l-muted); margin-bottom: 4px; padding: 0; }
-  & :is(.lacad, .lgen) .ac-chip { display: flex; gap: 8px; align-items: flex-start; padding: 7px 9px; border: 1px solid var(--l-rule); border-radius: 6px; cursor: pointer; }
-  & :is(.lacad, .lgen) .ac-chip:has(input:disabled:not(:checked)) { opacity: .55; cursor: default; }
-  & :is(.lacad, .lgen) .ac-chip.on { border-color: var(--l-gold); background: color-mix(in srgb, var(--l-gold) 10%, var(--l-page)); }
-  & :is(.lacad, .lgen) .ac-chip input { margin-top: 3px; }
-  & :is(.lacad, .lgen) .ac-chip > span { display: flex; flex-direction: column; font-size: .9em; }
-  & :is(.lacad, .lgen) .ac-chip .dim { font-size: .88em; }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-chips { border: 0; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; gap: 6px; }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-chips legend { font-size: .86em; color: var(--l-muted); margin-bottom: 4px; padding: 0; }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-chip { display: flex; gap: 8px; align-items: flex-start; padding: 7px 9px; border: 1px solid var(--l-rule); border-radius: 6px; cursor: pointer; }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-chip:has(input:disabled:not(:checked)) { opacity: .55; cursor: default; }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-chip.on { border-color: var(--l-gold); background: color-mix(in srgb, var(--l-gold) 10%, var(--l-page)); }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-chip input { margin-top: 3px; }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-chip > span { display: flex; flex-direction: column; font-size: .9em; }
+  & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon) .ac-chip .dim { font-size: .88em; }
   & .lacad .atk-sheet .doing { max-width: none; margin: 12px 0; font-size: .9em; }
 }
 
@@ -1232,13 +1232,13 @@
   & .lpart.lgen { max-width: 1300px; width: 100%; margin-inline: auto; }
   & .lgen .gn-glance { grid-template-columns: repeat(4, 1fr); max-width: 900px; margin-bottom: 20px; }
   & .lgen .gn-glance dd .of { font-size: .62em; color: var(--l-muted); }
-  & .lgen .gn-card header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  & .lgen .gn-card header h4 { margin: 0; }
+  & :is(.lgen, .lcol, .ltru, .lwork, .lwon) .ac-card header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  & :is(.lgen, .lcol, .ltru, .lwork, .lwon) .ac-card header h4 { margin: 0; }
   & .lgen .gn-card.def { border-color: var(--l-gold); background: color-mix(in srgb, var(--l-gold) 6%, var(--l-page)); }
-  & .lgen .gn-badge { font-size: .72em; padding: 1px 8px; border: 1px solid var(--l-gold); border-radius: 6px; color: var(--l-gold); }
+  & :is(.lgen, .lcol, .ltru, .lwork, .lwon) .gn-badge { font-size: .72em; padding: 1px 8px; border: 1px solid var(--l-gold); border-radius: 6px; color: var(--l-gold); }
   & .lgen .gn-where { margin: 4px 0 6px; font-size: .86em; color: var(--l-muted); }
   & .lgen .gn-rec { grid-template-columns: repeat(3, 1fr); }
-  & .lgen .gn-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  & :is(.lgen, .lcol, .ltru, .lwork, .lwon, .lacad) .gn-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   & .lgen .note { color: var(--l-muted); font-size: .86em; margin: 12px 0 0; }
   & .lgen .gn-heirs { margin-top: 24px; }
   & .lgen .gn-hlist { margin: 8px 0 0; padding-left: 22px; }
@@ -1281,3 +1281,40 @@
 }
 
 :root[data-view="line"] { & .lheirs .hr-full { margin: 6px 0 0; font-size: .88em; color: var(--l-muted); } }
+
+:root[data-view="line"] {
+  /* Colloquium, Truths & Quests, Realm Work, World Wonders: the card-and-sheet pages. */
+  & .line-main > .room:has(:is(.lcol, .ltru, .lwork, .lwon)) { max-width: none; width: auto; min-width: 0; }
+  & .lpart:is(.lcol, .ltru, .lwork, .lwon) { max-width: 1300px; width: 100%; margin-inline: auto; }
+  & :is(.lcol, .ltru) .st-glance { grid-template-columns: repeat(4, 1fr); max-width: 900px; margin-bottom: 20px; }
+  & :is(.lcol, .ltru, .lwork, .lwon) .atk-main > h3.sub:not(:first-child) { margin-top: 24px; }
+  & :is(.lcol, .lwork, .lwon) .co-does { margin: 4px 0 8px; font-size: .9em; }
+  & .lcol .co-card.on { border-color: var(--l-gold); background: color-mix(in srgb, var(--l-gold) 7%, var(--l-page)); }
+  & .lcol .co-card.locked { opacity: .6; }
+  & .lcol .co-tier, & .lcol .co-meta { margin: 4px 0; font-size: .86em; }
+  & .lcol .co-meta { color: var(--l-muted); font-size: .8em; }
+  & .lcol .co-meta .down { color: var(--l-bad); }
+  & .lcol .co-lock { color: var(--l-bad); font-size: .86em; margin: 0; }
+  & .ltru .tq-card .tq-ask { margin: 8px 0 4px; }
+  & .ltru .tq-ok { color: var(--l-good); margin: 0 0 4px; }
+  & .ltru .tq-truth.known { border-color: color-mix(in srgb, var(--l-good) 50%, var(--l-rule)); }
+  & .ltru .tq-truth p { margin: 6px 0 0; }
+  & .ltru .tq-none { padding: 10px 0; }
+  & :is(.ltru, .lwon) dialog.tq-dlg { width: min(480px, calc(100vw - 32px)); }
+  & :is(.ltru, .lwon) dialog.tq-dlg .atk-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+  & .lwork .wk-steps { display: flex; gap: 6px; list-style: none; padding: 0; margin: 4px auto 22px; max-width: 760px; }
+  & .lwork .wk-steps li { flex: 1; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--l-rule); border-radius: 6px; color: var(--l-muted); }
+  & .lwork .wk-steps li span { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid currentColor; font-size: .8em; }
+  & .lwork .wk-steps li.done { color: var(--l-good); border-color: color-mix(in srgb, var(--l-good) 45%, var(--l-rule)); }
+  & .lwork .wk-steps li.now { color: var(--l-ink); border-color: var(--l-gold); background: color-mix(in srgb, var(--l-gold) 9%, var(--l-page)); }
+  & :is(.lwork, .lwon) .wk-fund, & .lwork .wk-votes { margin: 8px 0 2px; font-size: .9em; }
+  & .lwon .wo-cost { margin: 0 0 6px; font-size: .84em; color: var(--l-muted); }
+  & .lwon .wo-card.standing { border-color: color-mix(in srgb, var(--l-good) 50%, var(--l-rule)); }
+  & .lwon .wo-card.known { border-color: var(--l-gold); }
+  & .lwon .wo-halls { margin-top: 24px; }
+  & :is(.lcol, .ltru, .lwork, .lwon) .atk-sheet .lform .field { display: flex; gap: 6px; }
+  & :is(.lcol, .ltru, .lwork, .lwon) .atk-sheet .lform .field input { flex: 1; min-width: 0; }
+  & :is(.lcol, .ltru, .lwork, .lwon) .atk-sheet .doing { max-width: none; margin: 12px 0; font-size: .9em; }
+  & :is(.lcol, .ltru, .lwork, .lwon) .atk-sheet .what { max-width: none; font-size: .88em; }
+  @media (max-width: 760px) { & :is(.lcol, .ltru) .st-glance { grid-template-columns: repeat(2, 1fr); } }
+}

@@ -114,7 +114,7 @@ export function mountScience(host, on) {
     if (go) { const id = go.dataset.invest; if (await act.invest(id, n0(inp(id).value), { button: go })) { inp(id).value = ''; after(); } }
   });
 
-  function draw() { const s = sci(); if (!s) { host.querySelector('.lsci').innerHTML = '<p class="dim">No science data from the server.</p>'; return; } glance(s); cats(s); tools(s); list(s); }
+  function draw() { const s = sci(), root = host.querySelector('.lsci'); if (!root) return; if (!s) { root.innerHTML = '<p class="dim">No science data from the server.</p>'; return; } glance(s); cats(s); tools(s); list(s); }
   draw();
   return {
     update(c) { if (!c || c.has('house') || c.has('rules')) draw(); },

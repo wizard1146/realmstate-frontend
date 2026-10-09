@@ -29,11 +29,15 @@ import { mountScience } from './science.js';
 import { mountAcademics } from './academics.js';
 import { mountGenerals } from './generals.js';
 import { mountHeirs } from './heirs.js';
+import { mountColloquium } from './colloquium.js';
+import { mountTruths } from './truths.js';
+import { mountWork } from './work.js';
+import { mountWonders } from './wonders.js';
 import { watchCards } from './cards.js';
 import { newsLine } from '../../core/words.js';
 
 // Straightline's own page parts (not War Room panels): mount(host, on) -> { update(c), tick(), destroy() }.
-const PARTS = { throne: mountThrone, military: mountMilitary, attack: mountAttack, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState, wars: mountWars, intrigue: mountIntrigue, rites: mountRites, science: mountScience, academics: mountAcademics, generals: mountGenerals, heirs: mountHeirs };
+const PARTS = { throne: mountThrone, military: mountMilitary, attack: mountAttack, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState, wars: mountWars, intrigue: mountIntrigue, rites: mountRites, science: mountScience, academics: mountAcademics, generals: mountGenerals, heirs: mountHeirs, colloquium: mountColloquium, truths: mountTruths, work: mountWork, wonders: mountWonders };
 
 const KEY = 'realmstate.line.page';
 
@@ -63,8 +67,8 @@ const MENU = [
   ['Learning', [
     ['science', 'Science', null, null, 'books, scientists and the sciences you invest in', { part: 'science' }],
     ['academics', 'Academics', null, null, 'your scholars: who you keep, and recruiting more', { part: 'academics' }],
-    ['colloquium', 'Colloquium', 'sci', ['sci', 'colloquium'], 'your state’s shared research'],
-    ['truths', 'Truths & Quests', 'sci', ['sci', 'truths'], 'your quest, the Truths you know, transmutation'],
+    ['colloquium', 'Colloquium', null, null, 'your state’s shared research', { part: 'colloquium' }],
+    ['truths', 'Truths & Quests', null, null, 'your quest, the Truths you know, transmutation', { part: 'truths' }],
   ]],
   ['State Matters', [
     ['state', 'State', null, null, 'the houses of your state', { part: 'state' }],
@@ -74,8 +78,8 @@ const MENU = [
   ['World Matters', [
     ['world', 'World', null, null, 'the realms, and the states in each', { part: 'world' }],
     ['wars', 'Wars', null, null, 'every war in the world: who, since when, and how they ended', { part: 'wars' }],
-    ['work', 'Realm Work', 'roster', ['state', 'work'], 'your realm’s Specialised Materials Production'],
-    ['wonders', 'World Wonders', 'roster', ['state', 'wonders'], 'start, fund and use wonders'],
+    ['work', 'Realm Work', null, null, 'your realm’s Specialised Materials Production', { part: 'work' }],
+    ['wonders', 'World Wonders', null, null, 'start, fund and use wonders', { part: 'wonders' }],
   ]],
   ['Market', [
     ['market', 'Market', 'res', ['res', 'market'], 'buy and sell materials'],
