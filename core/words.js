@@ -8,8 +8,15 @@ let myHouseId = null;
 /** The store tells words which house is yours (news reads differently for each side). */
 export const setMyHouse = (id) => { myHouseId = id; };
 
+/** A dragon as a sentence's subject: "Seraphel the Pale Lantern, an Iridescent dragon," or "A Magma dragon" or "A dragon". */
+function dragonWho(n) {
+  const k = n.kind ? names.dragons?.[n.kind] || n.kind[0].toUpperCase() + n.kind.slice(1) : '';
+  const kind = k ? `${/^[AEIOU]/i.test(k) ? 'an' : 'a'} ${k} dragon` : 'a dragon';
+  return n.dragon ? `${n.dragon}, ${kind},` : kind[0].toUpperCase() + kind.slice(1);
+}
+
 /** Display names, filled from /rules and your race by the store. */
-export const names = { buildings: {}, attacks: {}, ops: {}, rites: {}, riteFx: {}, units: [], traits: {}, mats: {} };
+export const names = { buildings: {}, attacks: {}, ops: {}, rites: {}, riteFx: {}, units: [], traits: {}, mats: {}, dragons: {} };
 
 export const fmt = (n) => (typeof n === 'number' && Number.isFinite(n) ? n.toLocaleString('en-US') : String(n ?? '–'));
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -194,9 +201,14 @@ export function newsLine(n) {
     case 'truth_uncovered': return [`${where(n.by)} uncovered a Truth: ${n.truth}. Our state may use it now; the world hears in a few ticks.`, 'good'];
     case 'truth_announced': return [`A Truth is uncovered: ${n.truth}, by state ${st(n.by)}. Every house may use it now.`, ''];
     case 'realm_work': return [`Our realm's ${n.work} ${n.step === 'proposed' ? `was proposed by state ${n.by ? st(n.by) : '?'}; the realm's leaders vote` : n.step === 'passed' ? 'passed its vote: every house of the realm may fund it' : 'is done: the realm makes more of its material'}.`, n.step === 'proposed' ? '' : 'good'];
-    case 'dragon_raid': return n.driven_off ? [`A dragon raided us and was driven off. +${fmt(n.renown)} renown.`, 'good']
-      : [`A dragon raided us: ${fmt(n.buildings)} buildings, ${fmt(n.troops)} troops and ${fmt(n.peasants)} peasants lost.`, 'bad'];
-    case 'dragon_sighted': return [`A dragon struck in realm ${n.realm}.`, ''];
+    case 'dragon_raid': {
+      // Its kind takes more than the shared losses: gold and materials, food, learning, or horses and chariots.
+      const extra = [n.gold && `${fmt(n.gold)} gold`, ...Object.entries(n.materials || {}).filter(([, q]) => q).map(([m, q]) => `${fmt(q)} ${m}`), n.food && `${fmt(n.food)} food`,
+        n.books && `${fmt(n.books)} books of learning`, n.horses && `${fmt(n.horses)} horses`, n.chariots && `${fmt(n.chariots)} chariots`].filter(Boolean);
+      return n.driven_off ? [`${dragonWho(n)} raided us and was driven off. +${fmt(n.renown)} renown.`, 'good']
+        : [`${dragonWho(n)} raided us: ${fmt(n.buildings)} buildings, ${fmt(n.troops)} troops and ${fmt(n.peasants)} peasants lost${extra.length ? `, as well as ${extra.length < 2 ? extra[0] : `${extra.slice(0, -1).join(', ')} and ${extra[extra.length - 1]}`}` : ''}.`, 'bad'];
+    }
+    case 'dragon_sighted': return [`${dragonWho(n)} struck ${n.realm_name ? `${n.realm_name} (Realm ${n.realm})` : `Realm ${n.realm}`}.`, ''];
     case 'wonder_started': return [`${where(n.by)} began the ${n.wonder}; our state's houses may fund it.`, ''];
     case 'wonder_funded': return [`The ${n.wonder} of ${where(n.by)} is fully funded; it finishes at tick ${n.done_tick}.`, 'good'];
     case 'wonder_lost': return [`Another house finished the ${n.wonder} first; ${n.refund_bp / 100}% of what our build was given came back.`, 'bad'];

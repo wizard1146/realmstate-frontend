@@ -73,6 +73,7 @@ export async function loadRules() {
   names.buildings = Object.fromEntries(r.buildings.map((b) => [b.building, b.name]));
   names.attacks = Object.fromEntries(r.params.attacks.map((k) => [k.id, k.name]));
   names.ops = Object.fromEntries(r.params.operations.map((o) => [o.id, o.name]));
+  names.dragons = Object.fromEntries((r.params.dragons || []).map((d) => [d.id, d.name]));
   names.rites = Object.fromEntries((r.params.rites || []).map((o) => [o.id, o.name]));
   names.riteFx = Object.fromEntries((r.params.rites || []).map((o) => [o.id, o.effect]));
   names.traits = Object.fromEntries((r.traits || []).map((t) => [t.trait, t.name]));
