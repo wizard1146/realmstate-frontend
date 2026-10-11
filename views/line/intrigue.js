@@ -4,6 +4,7 @@
 import { store, say, setTarget, reportsOn, loadReports } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc, addr, when, fullTime, intelRows, reportKind, REPORT_LABEL, THIEF } from '../../core/words.js';
+import { buildingGroups } from '../../core/land.js';
 import { OP_GROUPS, groupOf, ops, opById, opExtra, opDoes, opNerve, parseFrame } from '../../core/intrigue.js';
 import { throneGlyph } from './throne.js';
 
@@ -11,6 +12,15 @@ const n0 = (v) => Math.max(0, Math.floor(Number(v) || 0));
 const pct = (bp) => `${(bp / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}%`;
 const KINDS = { survey: 'Survey', muster: 'Muster', ledgers: 'Ledgers', archives: 'Archives', couriers: 'Couriers', dossier: 'Dossier', scrying: 'Scrying', omens: 'Omens', roads: 'Roads' };
 const KEY = 'realmstate.line.intrigue.op';
+// The buildings a survey card shows, as a share of their land; each viewer picks theirs in Configuration, Intrigue.
+export const PINS = `${KEY}.pins`;
+export const pins = () => { try { const v = JSON.parse(localStorage.getItem(PINS)); if (Array.isArray(v)) return v; } catch { /* storage off */ } return ['forts', 'watch_towers']; };
+export const setPins = (v) => { try { localStorage.setItem(PINS, JSON.stringify(v)); } catch { /* storage off */ } };
+/** A survey on its card: their land, then each chosen building's share of it. */
+function surveyRows(r) {
+  const land = r.land || 0, bn = (id) => store.rules.buildings.find((b) => b.building === id)?.name || id;
+  return [['Land', fmt(land)], ...pins().map((id) => { const n = r.buildings?.[id] || 0; return [bn(id), land ? `${(100 * n / land).toFixed(1)}%` : '–', n ? `${fmt(n)}` : 'none']; })];
+}
 
 export function mountIntrigue(host, on) {
   const P = store.rules.params;
@@ -25,7 +35,7 @@ export function mountIntrigue(host, on) {
         <div id="li-ops"></div>
       </div>
       <aside class="atk-sheet" aria-label="The operation">
-        <h3 class="sub">Against</h3>
+        <h3 class="sub">Target</h3>
         <form id="li-tf" class="atk-find" novalidate>
           <label class="vh" for="li-addr">Target house, by address</label>
           <input id="li-addr" placeholder="r:s:seat" inputmode="numeric" autocomplete="off" spellcheck="false">
@@ -46,7 +56,11 @@ export function mountIntrigue(host, on) {
     </div>
     <section class="in-reps"><div class="wd-shead"><h3 class="sub">Reports <span class="dim">your state's intel, newest first; every house of the state shares it</span></h3>
       <label class="vh" for="li-rf">Show</label><select id="li-rf"></select></div>
-      <div class="in-replist" id="li-reps"></div></section>
+      <div class="in-replist" id="li-reps"></div>
+      <nav class="in-pager" id="li-pager" aria-label="Report pages"></nav></section>
+    <dialog class="ldlg in-rdlg" id="li-rdlg" aria-labelledby="li-rdlg-h">
+      <header><h2 id="li-rdlg-h"></h2><button type="button" class="x" data-close aria-label="Close (Esc)">×</button></header>
+      <div class="body" id="li-rdlg-b"></div></dialog>
   </div>`;
   const $ = (id) => host.querySelector(`#li-${id}`);
   let target = store.target || null;
@@ -62,15 +76,44 @@ export function mountIntrigue(host, on) {
   }
 
   // ---------- operations as cards ----------
-  function cards() {
-    const list = ops(), groups = [...OP_GROUPS.map(([g, effects]) => [g, list.filter((o) => effects.includes(o.effect))]), ['Other', list.filter((o) => groupOf(o) === 'Other')]].filter(([, l]) => l.length);
-    $('ops').innerHTML = groups.map(([g, l]) => `<section class="in-grp"><h3 class="sub">${esc(g)}</h3><div class="in-cards" role="group" aria-label="${esc(g)}">${l.map((o) => {
-      const n = opNerve(o);
-      return `<button type="button" class="in-op${o.id === pick ? ' on' : ''}" data-op="${esc(o.id)}" aria-pressed="${o.id === pick}">
-        <span class="in-name">${esc(o.name)}</span><span class="in-does">${esc(opDoes(o))}</span>
-        <span class="in-figs"><span><b>${pct(n.ok)}</b> nerve</span><span><b>${pct(o.chance_bp)}</b> odds</span><span><b>+${pct(o.vigilance_bp)}</b> vigil</span></span></button>`;
-    }).join('')}</div></section>`).join('');
+  // One group at a time: ‹ INTEL › with a dot for each group under the name (the lit one is showing), then its cards. The arrows cycle;
+  // a dot jumps. Opens on the group last looked at, else the chosen operation's.
+  const groupsOf = () => { const list = ops(); return [...OP_GROUPS.map(([g, effects]) => [g, list.filter((o) => effects.includes(o.effect))]), ['Other', list.filter((o) => groupOf(o) === 'Other')]].filter(([, l]) => l.length); };
+  let gi = Math.max(0, groupsOf().findIndex(([, l]) => l.some((o) => o.id === pick)));
+  try { const v = localStorage.getItem(`${KEY}.group`); if (v != null && Number(v) >= 0 && Number(v) < groupsOf().length) gi = Number(v); } catch { /* storage off */ }
+  function cards(focus) {
+    const groups = groupsOf(), [g, l] = groups[gi], n = groups.length;
+    $('ops').innerHTML = `<section class="in-car" aria-roledescription="carousel" aria-label="Operations">
+      <div class="in-carh"><button type="button" class="btn in-arrow" data-step="-1" aria-label="Previous group: ${esc(groups[(gi + n - 1) % n][0])}">‹</button>
+        <div class="in-gwrap"><h3 class="in-gname" aria-live="polite">${esc(g)}</h3>
+          <div class="in-dots" role="group" aria-label="Groups">${groups.map(([name], i) => `<button type="button" class="in-dot${i === gi ? ' on' : ''}" data-group="${i}" aria-label="${esc(name)}" aria-current="${i === gi}" title="${esc(name)}"></button>`).join('')}</div></div>
+        <button type="button" class="btn in-arrow" data-step="1" aria-label="Next group: ${esc(groups[(gi + 1) % n][0])}">›</button></div>
+      <div class="in-cards" role="group" aria-label="${esc(g)}, ${gi + 1} of ${n}">${l.map((o) => {
+        const nv = opNerve(o);
+        return `<button type="button" class="in-op${o.id === pick ? ' on' : ''}" data-op="${esc(o.id)}" aria-pressed="${o.id === pick}">
+          <span class="in-name">${esc(o.name)}</span><span class="in-does">${esc(opDoes(o))}</span>
+          <span class="in-figs"><span><b>${pct(nv.ok)}</b> nerve</span><span><b>${pct(o.chance_bp)}</b> odds</span><span><b>+${pct(o.vigilance_bp)}</b> vigil</span></span></button>`;
+      }).join('')}</div>
+      </section>`;
+    if (focus) host.querySelector(focus)?.focus();
   }
+  function showGroup(i, focus) {
+    const n = groupsOf().length;
+    gi = ((i % n) + n) % n;
+    try { localStorage.setItem(`${KEY}.group`, String(gi)); } catch { /* storage off */ }
+    cards(focus);
+  }
+  on($('ops'), 'click', (ev) => {
+    const st = ev.target.closest('[data-step]'), dt = ev.target.closest('[data-group]');
+    if (st) showGroup(gi + Number(st.dataset.step), `[data-step="${st.dataset.step}"]`);
+    if (dt) showGroup(Number(dt.dataset.group), `[data-group="${dt.dataset.group}"]`);
+  });
+  // Left and right arrow keys on the header or dots cycle too.
+  on($('ops'), 'keydown', (ev) => {
+    if (!ev.target.closest('.in-carh') || !['ArrowLeft', 'ArrowRight'].includes(ev.key)) return;
+    ev.preventDefault();
+    showGroup(gi + (ev.key === 'ArrowRight' ? 1 : -1), ev.target.closest('.in-dots') ? `[data-group="${(gi + (ev.key === 'ArrowRight' ? 1 : -1) + groupsOf().length) % groupsOf().length}"]` : `[data-step="${ev.key === 'ArrowRight' ? 1 : -1}"]`);
+  });
   on($('ops'), 'click', (ev) => {
     const b = ev.target.closest('[data-op]');
     if (!b) return;
@@ -149,16 +192,101 @@ export function mountIntrigue(host, on) {
       try { onTarget = await reportsOn(target.id); } catch { onTarget = []; }
       list = onTarget;
     } else if (f.value.startsWith('k:')) list = all.filter((x) => reportKind(x.report || {}) === f.value.slice(2));
-    const spy = (id) => (store.house && id === store.house.id ? 'you' : store.state?.members.find((m) => m.id === id)?.name || `house ${id}`);
-    $('reps').innerHTML = list.length ? list.slice(0, 40).map((x) => {
+    // A page at a time; a new filter starts at page one.
+    const pages = Math.max(1, Math.ceil(list.length / PER));
+    if (f.value !== lastF) { page = 0; lastF = f.value; }
+    page = Math.min(page, pages - 1);
+    shown = list.slice(page * PER, page * PER + PER);
+    pager(pages, list.length);
+    $('reps').innerHTML = list.length ? shown.map((x, i) => {
       const r = x.report || {}, k = reportKind(r);
-      return `<article class="in-rep"><header><span class="in-rk">${esc(KINDS[k] || REPORT_LABEL[k] || k)}</span>
+      return `<article class="in-rep" tabindex="0" role="button" data-rep="${i}" aria-haspopup="dialog" aria-label="${esc(KINDS[k] || k)} of ${esc(r.house?.name || 'a house')}, ${esc(when(x.at))}: open the full report"><header><span class="in-rk">${esc(KINDS[k] || REPORT_LABEL[k] || k)}</span>
           ${r.house ? `<a href="#state" data-open-state="${r.house.realm}:${r.house.state}">${esc(r.house.name)}</a> <span class="dim">${addr(r.house)}</span>` : ''}
           <time class="dim" title="${esc(fullTime(x.at))}">${esc(when(x.at))}</time><span class="dim">by ${esc(spy(x.spy))}</span></header>
-        <table class="tbl"><tbody>${intelRows(r).map(([a, b]) => `<tr><th scope="row">${esc(a)}</th><td class="${typeof b === 'number' ? 'num' : ''}">${esc(typeof b === 'number' ? fmt(b) : b)}</td></tr>`).join('')}</tbody></table></article>`;
+        <table class="tbl${k === 'survey' ? ' in-rsum' : ''}"><tbody>${k === 'survey'
+          ? surveyRows(r).map(([a, b, c]) => `<tr><th scope="row">${esc(a)}</th>${c ? `<td class="num dim">${esc(c)}</td>` : '<td></td>'}<td class="num">${esc(b)}</td></tr>`).join('')
+          : intelRows(r).map(([a, b]) => `<tr><th scope="row">${esc(a)}</th><td class="${typeof b === 'number' ? 'num' : ''}">${esc(typeof b === 'number' ? fmt(b) : b)}</td></tr>`).join('')}</tbody></table></article>`;
     }).join('') : '<p class="dim">No reports here yet. Intel operations (Survey, Muster, Ledgers, Archives, Couriers, a Full Dossier) add them.</p>';
   }
   on($('rf'), 'change', reps);
+  // ---------- pages of reports: ‹ 1 2 3 … › ----------
+  const PER = 8;
+  let page = 0, lastF = null;
+  function pager(pages, total) {
+    const el = $('pager');
+    if (pages < 2) { el.innerHTML = ''; return; }
+    // Every page when there are few; else the first, the last, and two either side of this one.
+    const want = [...Array(pages).keys()].filter((i) => pages <= 9 || i === 0 || i === pages - 1 || Math.abs(i - page) <= 2);
+    let prev = -1, nums = '';
+    for (const i of want) { if (i - prev > 1) nums += '<span class="gap" aria-hidden="true">…</span>'; nums += `<button type="button" class="btn mini${i === page ? ' on' : ''}" data-pg="${i}"${i === page ? ' aria-current="page"' : ''} aria-label="Page ${i + 1}">${i + 1}</button>`; prev = i; }
+    el.innerHTML = `<button type="button" class="btn mini" data-pg="${page - 1}"${page ? '' : ' disabled'} aria-label="Previous page">‹</button>${nums}<button type="button" class="btn mini" data-pg="${page + 1}"${page < pages - 1 ? '' : ' disabled'} aria-label="Next page">›</button>
+      <span class="dim small">${fmt(page * PER + 1)}–${fmt(Math.min(total, page * PER + PER))} of ${fmt(total)}</span>`;
+  }
+  on($('pager'), 'click', async (ev) => {
+    // data-pg, not data-page: the page itself carries data-page (its name).
+    const b = ev.target.closest('#li-pager [data-pg]'), to = Number(b?.dataset.pg);
+    if (!b || b.disabled || !Number.isInteger(to)) return;
+    page = to;
+    await reps();
+    $('pager').querySelector(`[data-pg="${page}"].on, [aria-current="page"]`)?.focus();
+    host.querySelector('.in-reps')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  });
+
+  // ---------- a report in full. A survey (or a dossier) reads like a small Build page: their land at a glance, then
+  // every building of the age in its group, with how many they have, the share of their land, how many are being
+  // built, and the change since an earlier report of the kind (chosen from a list). Other kinds: their figures. ----------
+  const spy = (id) => (store.house && id === store.house.id ? 'you' : store.state?.members.find((m) => m.id === id)?.name || `house ${id}`);
+  let shown = [], opener = null, cur = null, past = [], cmpAt = null;
+  const rows = (r) => intelRows(r).map(([a, b]) => `<tr><th scope="row">${esc(a)}</th><td class="${typeof b === 'number' ? 'num' : ''}">${esc(typeof b === 'number' ? fmt(b) : b)}</td></tr>`).join('');
+  const delta = (d) => (d == null ? '' : `<span class="${d > 0 ? 'up' : d < 0 ? 'down' : 'dim'}">${d > 0 ? '+' : d < 0 ? '−' : ''}${d ? fmt(Math.abs(d)) : '–'}</span>`);
+  function body() {
+    const x = cur, r = x.report || {}, h = r.house, cmp = past.find((y) => y.at === cmpAt) || null;
+    const was = cmp?.report || null, hasB = !!r.buildings;
+    const meta = `<p class="in-rmeta">${h ? `<a href="#state" data-open-state="${h.realm}:${h.state}">${addr(h)}</a> · ` : ''}${esc(fullTime(x.at))} · by ${esc(spy(x.spy))}</p>`;
+    const pick = past.length ? `<label class="in-rcmpl">Compare with <select id="li-rcmp"><option value="">nothing</option>${past.map((y) => `<option value="${y.at}"${y === cmp ? ' selected' : ''}>${esc(fullTime(y.at))}</option>`).join('')}</select></label>` : '';
+    let main;
+    if (hasB) {
+      const land = r.land || 0, built = Object.values(r.buildings).reduce((a, n) => a + n, 0), doing = Object.values(r.constructing || {}).reduce((a, n) => a + n, 0);
+      const card = (k, v, d, note = '') => `<div><dt>${k}</dt><dd>${v}</dd><dd class="rank"><span>${was ? delta(d) : note}</span></dd></div>`;
+      const wasBuilt = was ? Object.values(was.buildings || {}).reduce((a, n) => a + n, 0) : 0;
+      main = `<dl class="st-glance in-rglance">${card('Land', fmt(land), was && land - (was.land || 0), 'acres')}${card('Built', fmt(built), was && built - wasBuilt, land ? `${(100 * built / land).toFixed(0)}% of land` : '')}${card('Being built', fmt(doing), was && doing - Object.values(was.constructing || {}).reduce((a, n) => a + n, 0), 'buildings')}${card('Barren', fmt(r.barren || 0), was && (r.barren || 0) - (was.barren || 0), 'acres')}</dl>
+        <div class="in-rgroups">${buildingGroups().map(([g, ds]) => `<section class="lb-grp"><h3 class="sub">${esc(g)}</h3><table class="tbl in-rb"><colgroup><col class="c-name"><col class="c-n"><col class="c-pct"><col class="c-b">${was ? '<col class="c-d">' : ''}</colgroup>
+          <thead><tr><th>Building</th><th class="num">Have</th><th class="num">% land</th><th class="num">Building</th>${was ? '<th class="num">Change</th>' : ''}</tr></thead><tbody>
+          ${ds.map((d) => { const n = r.buildings[d.building] || 0, c = (r.constructing || {})[d.building] || 0;
+            return `<tr class="${n || c ? '' : 'none'}"><th scope="row">${esc(d.name)}</th><td class="num">${n ? fmt(n) : '–'}</td><td class="num">${n && land ? `${(100 * n / land).toFixed(1)}%` : ''}</td><td class="num">${c ? fmt(c) : ''}</td>${was ? `<td class="num">${delta(n - ((was.buildings || {})[d.building] || 0))}</td>` : ''}</tr>`; }).join('')}
+          </tbody></table></section>`).join('')}</div>`;
+      if (reportKind(r) === 'dossier') main += `<h3 class="sub">The rest of the dossier</h3><table class="tbl in-rfull"><tbody>${intelRows(r).filter(([k]) => !['Buildings', 'Barren'].includes(k)).map(([a, b]) => `<tr><th scope="row">${esc(a)}</th><td class="${typeof b === 'number' ? 'num' : ''}">${esc(typeof b === 'number' ? fmt(b) : b)}</td></tr>`).join('')}</tbody></table>`;
+    } else main = `<table class="tbl in-rfull"><tbody>${rows(r)}</tbody></table>`;
+    $('rdlg-b').innerHTML = `<div class="in-rtop">${meta}${pick}</div>${main}
+      ${h ? `<div class="atk-btns"><button type="button" class="btn" id="li-rtgt">Make target</button><a class="btn danger" href="#attack" id="li-ratk">Attack…</a></div>` : ''}`;
+  }
+  async function openReport(x, from) {
+    opener = from; cur = x; past = []; cmpAt = null;
+    const r = x.report || {}, k = reportKind(r), h = r.house;
+    $('rdlg-h').innerHTML = `<span class="in-rk">${esc(KINDS[k] || REPORT_LABEL[k] || k)}</span> ${esc(h?.name || 'A house')}`;
+    body();
+    if (!$('rdlg').open) $('rdlg').showModal();
+    if (!h) return;
+    // Earlier reports of the kind on this house (your state's); the latest one before this is compared by default.
+    let all = [];
+    try { all = await reportsOn(h.house ?? h.id); } catch { all = []; }
+    if (cur !== x) return;
+    past = (all || []).filter((y) => reportKind(y.report || {}) === k && y.at < x.at).sort((a, b) => b.at - a.at).slice(0, 20);
+    cmpAt = past[0]?.at ?? null;
+    body();
+  }
+  on($('rdlg'), 'change', (ev) => { if (ev.target.id === 'li-rcmp') { cmpAt = ev.target.value ? Number(ev.target.value) : null; body(); $('rdlg-b').querySelector('#li-rcmp')?.focus(); } });
+  on($('reps'), 'click', (ev) => { if (ev.target.closest('a')) return; const c = ev.target.closest('[data-rep]'); if (c) openReport(shown[Number(c.dataset.rep)], c); });
+  on($('reps'), 'keydown', (ev) => { const c = ev.target.closest('[data-rep]'); if (c && (ev.key === 'Enter' || ev.key === ' ') && ev.target === c) { ev.preventDefault(); openReport(shown[Number(c.dataset.rep)], c); } });
+  on($('rdlg'), 'click', (ev) => {
+    if (ev.target === $('rdlg') || ev.target.closest('[data-close]')) { $('rdlg').close(); return; }
+    const h = shownHouse();
+    if (ev.target.closest('#li-rtgt') && h) { lookUp(addr(h)); $('rdlg').close(); }
+    if (ev.target.closest('#li-ratk') && h) { act.resolveAddress(addr(h)).then((t) => setTarget(t)).catch(() => {}); }
+    if (ev.target.closest('[data-open-state]')) $('rdlg').close();
+  });
+  const shownHouse = () => { const t = $('rdlg-b').querySelector('[data-open-state]'); if (!t) return null; const m = /^(\d+):(\d+):(\d+)$/.exec(t.textContent); return m ? { realm: +m[1], state: +m[2], seat: +m[3] } : null; };
+  on($('rdlg'), 'close', () => { if (opener?.isConnected) opener.focus(); });
 
   function draw() { if (!store.house) return; glance(); card(); sheet(); }
   if (target) $('addr').value = addr(target);

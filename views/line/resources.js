@@ -6,8 +6,8 @@ import { fmt, esc } from '../../core/words.js';
 import { WIKI } from '../../core/wiki.js';
 import { throneGlyph } from './throne.js';
 import { jobs } from '../../core/military.js';
-import * as trend from '../room/trend.js';
-import { mountGraph } from '../room/graph.js';
+import * as trend from '../../core/trend.js';
+import { mountGraph } from './graph.js';
 
 const sum = (a) => a.reduce((x, y) => x + y, 0);
 /** The mark on a row with a graph: a small line chart, drawn in the text colour (line.css fades it). */

@@ -25,6 +25,7 @@ import { razeHTML, wireRaze } from './raze.js';
 import * as mkt from './market.js';
 import { stateDetail } from './statedetail.js';
 import { landSplit } from '../../core/land.js';
+import { newsHidden, newsOff } from '../../core/newsprefs.js';
 
 export const PANES = ['act', 'res', 'mil', 'news', 'chat', 'roster', 'rank', 'sci'];
 const META = {
@@ -167,7 +168,8 @@ const mil = {
 // ---------- NEWS ----------
 /** News items and, if shown, tick reports, newest first: [{ at, n } | { at, tick }]. */
 export function newsFeed(limit = 200) {
-  const items = store.news.map((n) => ({ at: n.at || 0, n }));
+  // Kinds the player turned off (Configuration, News) stay out of the list.
+  const off = newsOff(), items = store.news.filter((n) => !newsHidden(n, off)).map((n) => ({ at: n.at || 0, n }));
   if (store.showTicks) for (const r of store.ticks) items.push({ at: r.at || 0, tick: r });
   return items.sort((a, b) => b.at - a.at).slice(0, limit);
 }
@@ -195,7 +197,8 @@ const news = {
     const f = sel.value;
     const list = newsFeed(400).filter((x) => (x.tick ? f === 'all' || f === 'ticks'
       : f === 'all' || (f === 'bad' ? newsLine(x.n)[1] === 'bad' : f === 'good' ? newsLine(x.n)[1] === 'good' : `t:${x.n.type}` === f)));
-    b.querySelector('#d-ncount').textContent = `${fmt(list.length)} shown`;
+    const hidden = store.news.filter((n) => newsHidden(n)).length;
+    b.querySelector('#d-ncount').textContent = `${fmt(list.length)} shown${hidden ? `, ${fmt(hidden)} turned off in Configuration` : ''}`;
     b.querySelector('#d-nzone').textContent = `· times in ${zoneLabel()} (/time)`;
     b.querySelector('#d-news').innerHTML = list.length
       ? list.map((x) => {

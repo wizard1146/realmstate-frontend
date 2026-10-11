@@ -6,7 +6,7 @@ import { store } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import * as price from '../../core/prices.js';
 import { fmt, esc, when } from '../../core/words.js';
-import { matText, buildTotals, buildRowProblem, buildMaxRow, razeEach, razeable, razeMax, razeProblem, buildByTick } from '../../core/land.js';
+import { matText, buildTotals, buildRowProblem, buildMaxRow, razeEach, razeable, razeMax, razeProblem, buildByTick, buildingGroups as groupsOf } from '../../core/land.js';
 import { does } from '../../core/does.js';
 import { mountAdvisor } from './advisor.js';
 import { WIKI } from '../../core/wiki.js';
@@ -17,14 +17,6 @@ const TABS = [['build', 'Build'], ['raze', 'Raze']];
 const KEY = 'realmstate.line.build';
 const bname = (id) => store.rules.buildings.find((b) => b.building === id)?.name || id;
 /** "10 Farms, 5 Homes and 2 Towers" */
-/** The buildings by purpose, in reading order; any the age has that aren't listed go under Other. */
-const GROUPS = [
-  ['Economy', ['banks', 'farms', 'homes', 'mills', 'trading_houses']],
-  ['Learning', ['libraries', 'universities']],
-  ['Military', ['armouries', 'barracks', 'forts', 'castles', 'hospitals', 'stables', 'training_grounds']],
-  ['Shadows and magic', ['thieves_dens', 'watch_towers', 'shrines', 'watchstones']],
-  ['Great works', ['ancestral_hall', 'dragon_walls', 'lesser_dragon_walls']],
-];
 /** A building's name, linking to its entry on the wiki's Buildings page (new tab). */
 const wikiName = (d) => `<a class="bwiki" href="${WIKI}buildings.html#${encodeURIComponent(d.building)}" target="_blank" rel="noopener" title="${esc(d.name)} on the wiki (new tab)">${esc(d.name)}<span class="ext" aria-hidden="true">&#8599;</span><span class="vh"> (opens the wiki in a new tab)</span></a>`;
 const listText = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}`);
@@ -105,12 +97,6 @@ export function mountBuild(host, on) {
       + (h.barren ? '' : ' Explore for more on the <a href="#land">Land</a> page, or raze buildings you don\'t need.');
   }
   /** The rows, once (the buildings come from /rules); fillRows() keeps their figures current without touching the inputs. */
-  /** The age's buildings in their groups: [[group, [building]]], Other last for any not listed. */
-  function groupsOf() {
-    const all = store.rules.buildings, listed = GROUPS.flatMap(([, ids]) => ids);
-    return [...GROUPS.map(([g, ids]) => [g, ids.map((id) => all.find((d) => d.building === id)).filter(Boolean)]),
-      ['Other', all.filter((d) => !listed.includes(d.building))]].filter(([, ds]) => ds.length);
-  }
   function makeRows() {
     // Grouped by purpose: a small table each, flowing into two columns where there's room (line.css).
     const groups = groupsOf();

@@ -5,11 +5,6 @@ import { store, subscribe, countdown, raceName, persName, isProtected } from '..
 import * as act from '../../core/actions.js';
 import { fmt, esc, addr } from '../../core/words.js';
 import { switchHTML } from '../../core/viewswitch.js';
-import { paneRunner } from '../room/detail.js';
-import { RES_TAB } from '../room/market.js';
-import { MIL_TAB } from '../room/generals.js';
-import { STATE_TAB } from '../room/statedetail.js';
-import { SCI_TAB } from '../room/science.js';
 import { mountLook, clear as clearLook } from './looklab.js';
 import { mountThrone } from './throne.js';
 import { mountMilitary } from './military.js';
@@ -33,18 +28,25 @@ import { mountColloquium } from './colloquium.js';
 import { mountTruths } from './truths.js';
 import { mountWork } from './work.js';
 import { mountWonders } from './wonders.js';
+import { mountNews } from './news.js';
+import { mountRanks } from './ranks.js';
+import { mountHall } from './hall.js';
+import { mountMarket } from './market.js';
+import { mountLeadership } from './leadership.js';
+import { mountWar } from './war.js';
 import { watchCards } from './cards.js';
 import { newsLine } from '../../core/words.js';
+import { newsSilent } from '../../core/newsprefs.js';
 
 // Straightline's own page parts (not War Room panels): mount(host, on) -> { update(c), tick(), destroy() }.
-const PARTS = { throne: mountThrone, military: mountMilitary, attack: mountAttack, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState, wars: mountWars, intrigue: mountIntrigue, rites: mountRites, science: mountScience, academics: mountAcademics, generals: mountGenerals, heirs: mountHeirs, colloquium: mountColloquium, truths: mountTruths, work: mountWork, wonders: mountWonders };
+const PARTS = { throne: mountThrone, military: mountMilitary, attack: mountAttack, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState, wars: mountWars, intrigue: mountIntrigue, rites: mountRites, science: mountScience, academics: mountAcademics, generals: mountGenerals, heirs: mountHeirs, colloquium: mountColloquium, truths: mountTruths, work: mountWork, wonders: mountWonders, news: mountNews, ranks: mountRanks, hall: mountHall, market: mountMarket, leadership: mountLeadership, war: mountWar };
 
 const KEY = 'realmstate.line.page';
 
 /**
- * The menu: [group, [[page id, label, pane, tab, what it's for, extra]]]. Tabs pick a section inside a pane.
- * extra.part: a Straightline part instead of a pane (Throne); extra.top: a part drawn above the pane (Military's Train);
- * extra.chat: not a page, it opens the chat box.
+ * The menu: [group, [[page id, label, (unused), (unused), what it's for, extra]]]. Every page is a Straightline part
+ * (extra.part); extra.top: a part drawn above it; extra.chat: not a page, it opens the chat box. The two unused
+ * columns once named the War Room pane and tab a page borrowed; none does now.
  */
 const MENU = [
   ['Your house', [
@@ -58,7 +60,7 @@ const MENU = [
     ['military', 'Military', null, null, 'train troops; draft and release; medics, upgrades, chariots', { part: 'military' }],
     ['attack', 'Attack', null, null, 'send an army against another house', { part: 'attack' }],
     ['generals', 'Generals', null, null, 'raise and command generals; your heirs', { part: 'generals' }],
-    ['hall', 'Hall of Deeds', 'mil', ['mil', 'hall'], 'trade generals and academics'],
+    ['hall', 'Hall of Deeds', null, null, 'trade generals and academics', { part: 'hall' }],
   ]],
   ['Shadows & Magic', [
     ['intrigue', 'Intrigue', null, null, 'your thieves: operations and your state\'s spy reports', { part: 'intrigue' }],
@@ -72,8 +74,8 @@ const MENU = [
   ]],
   ['State Matters', [
     ['state', 'State', null, null, 'the houses of your state', { part: 'state' }],
-    ['leadership', 'Leadership', 'roster', ['state', 'leadership'], 'votes, treasury, tax'],
-    ['war', 'War', 'roster', ['state', 'war'], 'wars and relations'],
+    ['leadership', 'Leadership', null, null, 'votes, treasury, tax, vigils', { part: 'leadership' }],
+    ['war', 'War', null, null, 'your war and relations', { part: 'war' }],
   ]],
   ['World Matters', [
     ['world', 'World', null, null, 'the realms, and the states in each', { part: 'world' }],
@@ -82,11 +84,11 @@ const MENU = [
     ['wonders', 'World Wonders', null, null, 'start, fund and use wonders', { part: 'wonders' }],
   ]],
   ['Market', [
-    ['market', 'Market', 'res', ['res', 'market'], 'buy and sell materials'],
+    ['market', 'Market', null, null, 'buy and sell materials', { part: 'market' }],
   ]],
   ['Chronicle', [
-    ['news', 'News', 'news', null, 'what happened to your house'],
-    ['ranks', 'Rankings', 'rank', null, 'houses and states'],
+    ['news', 'News', null, null, 'what happened to your house', { part: 'news' }],
+    ['ranks', 'Rankings', null, null, 'houses and states', { part: 'ranks' }],
   ]],
 ];
 /** Pinned to the bottom of the menu. */
@@ -143,16 +145,13 @@ export function mount(root) {
   const $ = (id) => root.querySelector(`#l-${id}`);
   const ac = new AbortController();
   const on = (t, type, fn, o = {}) => t.addEventListener(type, fn, { signal: ac.signal, ...o });
-  const panes = paneRunner($('page'), $('main'), { onShow: (name) => { const pg = PAGES.find((p) => p[2] === name); if (pg && page(current)[2] !== name) select(pg[0], { draw: false }); } });
-  // A part's buttons can ask for a pane ("+3 more · detail"): go to that pane's first page.
-  on(root, 'click', (ev) => { const x = ev.target.closest('.line-main [data-expand]'); if (x && x.dataset.expand) { const pg = PAGES.find((p) => p[2] === x.dataset.expand); if (pg) select(pg[0]); } });
   let current = null;
   let part = null;   // the page's Straightline part, if any
   let top = null;    // a part drawn above the page's pane, if any
 
-  /** Opens a page: picks the pane's tab first, so the pane draws on that section. */
+  /** Opens a page: its own part (and the part above it, if any). */
   function select(id, { draw = true, focus = false } = {}) {
-    const [pid, label, pane, tab, what, extra = {}] = page(id);
+    const [pid, label, , , what, extra = {}] = page(id);
     current = pid;
     try { localStorage.setItem(KEY, pid); } catch { /* storage off */ }
     if (location.hash.slice(1) !== pid) history.replaceState(null, '', `#${pid}`);
@@ -168,24 +167,26 @@ export function mount(root) {
     heading();
     $('main').dataset.page = pid;   // line.css styles some pages' headings by name (Throne's is centred, on its own)
     if (!draw) return;
-    let opts = {};
-    if (tab) {
-      const [kind, t] = tab;
-      if (kind === 'res') RES_TAB.set(t);
-      else if (kind === 'mil') MIL_TAB.set(t);
-      else if (kind === 'state') STATE_TAB.set(t);
-      else if (kind === 'sci') SCI_TAB.set(t);
-      else if (kind === 'act') opts = { tab: t };
-    }
-    // Parts first come down; then the part above (if any), and the page's own part or pane.
+    // Parts first come down; then the part above (if any), and the page's own part.
     top?.destroy(); top = null;
     part?.destroy(); part = null;
     $('pre').hidden = !extra.top;
-    if (extra.top) top = PARTS[extra.top]($('pre'), on);
-    if (extra.part) { panes.clear(); part = PARTS[extra.part]($('page'), on); }
-    else panes.show(pane, { focus: false, ...opts });
+    if (extra.top) top = mountPart(extra.top, $('pre'));
+    if (extra.part) part = mountPart(extra.part, $('page'));
     if (focus) $('page').focus({ preventScroll: true });
     $('main').scrollTop = 0;
+  }
+
+  /** A page part, whose update and tick run only while its markup is on the page (a store change can land mid-switch,
+   *  or while founding a house, after the part was taken down), and whose listeners go when it does. */
+  function mountPart(name, host) {
+    // Each part's listeners end with it: the page container is shared, so a listener on it would outlive the part
+    // and act on the next page (twice, after a few visits).
+    const pac = new AbortController();
+    const pon = (t, type, fn, o = {}) => t.addEventListener(type, fn, { signal: AbortSignal.any([ac.signal, pac.signal]), ...o });
+    const p = PARTS[name](host, pon), first = host.firstElementChild;
+    const live = () => !first || first.isConnected;
+    return { update: (c) => { if (live()) p.update(c); }, tick: () => { if (live()) p.tick(); }, destroy: () => { pac.abort(); p.destroy(); } };
   }
 
   /** Throne's heading: "Throne", and under it your house, of your state and realm (those muted). */
@@ -330,7 +331,7 @@ export function mount(root) {
 
 
   const unsub = subscribe((c) => {
-    if (c.has('news') && current !== 'news') for (const d of c.get('news')) if (d.added) toast(d.added);
+    if (c.has('news') && current !== 'news') for (const d of c.get('news')) if (d.added && !newsSilent(d.added)) toast(d.added);
     // Messages from orders ("Built 10 Homes", errors) come as cards too: Straightline has no message line
     // (it moved the page each time it changed). Errors stay until dismissed or replaced; the rest go after 5 s.
     if (c.has('msg') && store.msg.text && store.msg.text !== lastMsg) card(store.msg.text, store.msg.tone, { ms: store.msg.tone === 'bad' ? 30000 : 5000 });
@@ -338,8 +339,8 @@ export function mount(root) {
     if (c.has('house') || c.has('me') || c.has('rules')) renderTop();
     if (c.has('house') || c.has('state')) heading();
     if (c.has('age') || c.has('clock')) renderTick();
-    if (c.has('clock')) { panes.tick(); part?.tick(); top?.tick(); }
-    if (part) part.update(c); else panes.update(c);
+    if (c.has('clock')) { part?.tick(); top?.tick(); }
+    part?.update(c);
     chat.update(c);
     top?.update(c);
   });
@@ -353,7 +354,6 @@ export function mount(root) {
     unmount() {
       ac.abort();
       unsub();
-      panes.clear();
       part?.destroy(); top?.destroy();
       chat.destroy();
       clearLook();

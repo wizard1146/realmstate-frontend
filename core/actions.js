@@ -24,14 +24,17 @@ function takeAfter(out) {
  * soon brings back the old house and undoes what the page just showed. The view published at the reply can't hold
  * the command yet; any later one does: wait for /world's seq to move past it (at most 6 s), then read /me.
  */
-async function refreshAfter() {
+async function refreshAfter() { await afterPublish(() => refreshMeSoon(0)); }
+/** Once the server has published a view newer than now (at most 6 s), run `read`: for a page whose own reads
+ *  (the Hall, the market) would otherwise still show the world from before your order. */
+export async function afterPublish(read) {
   let seq0;
-  try { seq0 = (await api('/world')).seq; } catch { refreshMeSoon(); return; }
+  try { seq0 = (await api('/world')).seq; } catch { setTimeout(read, 400); return; }
   for (let waited = 0; waited < 6000; waited += 250) {
     await new Promise((r) => setTimeout(r, 250));
     try { if ((await api('/world')).seq > seq0) break; } catch { break; }
   }
-  refreshMeSoon(0);
+  read();
 }
 
 /**

@@ -3,6 +3,7 @@
 // All fetching lives here (and in actions.js); views never call fetch.
 import { api } from './api.js';
 import { names, newsLine, setClockUtc, clock, setMyHouse } from './words.js';
+import { newsSilent } from './newsprefs.js';
 
 export const store = {
   rules: null,
@@ -229,7 +230,7 @@ export function addNews(n) {
   if (/^(war_|peace_|ceasefire_|blockade_)/.test(n.type)) setTimeout(() => { loadWars(); loadRelations(); loadState(); }, 400);
   if (/^(vigil_|leader_|tax_|granted)/.test(n.type)) loadState();
   if (n.type === 'attacked' || n.type === 'spies_caught' || n.type === 'hex_suffered' || n.type === 'rite_resisted') setTimeout(loadRelations, 400);
-  if (n.type !== 'attack_report') { const [text, tone] = newsLine(n); say(text, tone === 'bad' ? 'bad' : 'good'); }
+  if (n.type !== 'attack_report' && !newsSilent(n)) { const [text, tone] = newsLine(n); say(text, tone === 'bad' ? 'bad' : 'good'); }
   refreshMeSoon(300);
 }
 /** A news line made on this page (your own operation or rite); kept until the page reloads. */

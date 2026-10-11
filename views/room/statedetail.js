@@ -7,16 +7,14 @@ import { api } from '../../core/api.js';
 import { fmt, esc, addr, empty } from '../../core/words.js';
 import { tabState, tabButtons, panelAttrs, wireTabs } from './tabs.js';
 import { isLeader, leaderId, treasuryNote } from './market.js';
+import { pct, st, same, feel, declareWhy } from '../../core/relations.js';
 import { workDetailHTML, wondersDetailHTML, stateTruthsUpdate, stateTruthsWire } from './truthsui.js';
 
 export const STATE_TAB = tabState('realmstate.room.state', ['members', 'leadership', 'vigils', 'war', 'work', 'wonders'], { members: 'MEMBERS', leadership: 'LEADERSHIP', vigils: 'VIGILS', war: 'WAR', work: 'WORK', wonders: 'WONDERS' });
 /** The STATE pane's header holds six tabs: these fit them on one row (the detail keeps the full names). */
 export const STATE_SHORT = { members: 'HOUSES', leadership: 'LEAD', vigils: 'VIGIL', war: 'WAR', work: 'WORK', wonders: 'WONDER' };
 const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
-const pct = (bp) => `${(bp / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}%`;
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
-const st = (s) => `${s.realm}:${s.state}`;
-const same = (a, b) => a && b && a.realm === b.realm && a.state === b.state;
 const td = (v) => `<td class="num${v ? '' : ' zero'}">${typeof v === 'number' ? fmt(v) : esc(v)}</td>`;
 const table = (head, rows, cls = '') => `<div class="scrollx"><table class="tbl ${cls}"><tr>${head}</tr>${rows}</table></div>`;
 const kv = (rows) => table('<th>LINE</th><th class="num">VALUE</th>', rows.map(([k, v]) => `<tr><td>${esc(k)}</td>${typeof v === 'number' ? `<td class="num">${fmt(v)}</td>` : `<td class="txt">${esc(v)}</td>`}</tr>`).join(''));
@@ -26,8 +24,6 @@ const leaderWhy = () => (isLeader() ? '' : store.state?.leader ? `leader only ($
 
 /** The materials the treasury and houses hold, as <option>s, with gold first. */
 const matOptions = () => `<option value="">gold</option>${Object.keys(store.house?.materials || {}).map((m) => `<option value="${esc(m)}">${esc(m)}</option>`).join('')}`;
-/** "Normal 12.0", etc. */
-const feel = (f) => `${cap(f.relation)} ${(f.points / 100).toFixed(1)}`;
 
 // ---------- the WAR line in the STATE pane ----------
 /** A short line on war: your war, ceasefires, the hottest relation, recovery and dividend. */
@@ -165,21 +161,6 @@ function warHTML() {
   </div>`;
 }
 
-/** Why your state can't declare on `rel` (a /relations row), as far as the page can tell; '' if it might. */
-function declareWhy(rel) {
-  const R = store.relations, P = store.rules.params, w = store.wars;
-  if (!R || !rel) return '';
-  if (R.war) return 'your state is already at war';
-  if ((w?.wars || []).some((x) => same(x.a, rel.state) || same(x.b, rel.state))) return 'that state is already at war';
-  if ((w?.ceasefires || []).some((c) => (same(c.a, rel.state) || same(c.b, rel.state)) && (same(c.a, R.state) || same(c.b, R.state)))) return 'you have a ceasefire with them';
-  const [lo, hi] = R.war_range_bp;
-  if (rel.land_ratio_bp < lo || rel.land_ratio_bp > hi) return `their land is ${pct(rel.land_ratio_bp)} of yours; war needs ${pct(lo)}–${pct(hi)}`;
-  const T = R.thresholds, us = rel.we_feel.points, them = rel.they_feel.points;
-  if (us >= T.declare_either && them >= T.declare_either) return '';
-  if (them < T.hostile || us < T.unfriendly) return 'needs them Hostile toward you and you at least Unfriendly toward them';
-  if (us >= T.hostile && us > them) return 'you are both Hostile and yours is higher: the declaration is theirs';
-  return P.war_unique_attackers > 1 ? `also needs ${P.war_unique_attackers} different attackers across the pair (the server checks)` : '';
-}
 const meter = (f, T) => {
   const w = Math.min(100, (100 * f.points) / Math.max(1, T.auto_war));
   const mk = (p) => `<b style="left:${Math.min(100, (100 * p) / T.auto_war)}%"></b>`;

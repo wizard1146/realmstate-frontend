@@ -121,3 +121,18 @@ export function razeProblem(id, n, h = store.house) {
   return !id ? 'nothing built' : n0(n) > have ? `you have ${fmt(have)} of those` : gold > h.gold ? `needs ${fmt(gold)} gold; you have ${fmt(h.gold)}` : '';
 }
 
+
+/** The buildings by purpose, in reading order; any the age has that aren't listed go under Other. */
+export const GROUPS = [
+  ['Economy', ['banks', 'farms', 'homes', 'mills', 'trading_houses']],
+  ['Learning', ['libraries', 'universities']],
+  ['Military', ['armouries', 'barracks', 'forts', 'castles', 'hospitals', 'stables', 'training_grounds']],
+  ['Shadows and magic', ['thieves_dens', 'watch_towers', 'shrines', 'watchstones']],
+  ['Great works', ['ancestral_hall', 'dragon_walls', 'lesser_dragon_walls']],
+];
+/** The age's buildings in their groups: [[group, [building]]], Other last for any not listed. */
+export function buildingGroups() {
+  const all = store.rules.buildings, listed = GROUPS.flatMap(([, ids]) => ids);
+  return [...GROUPS.map(([g, ids]) => [g, ids.map((id) => all.find((d) => d.building === id)).filter(Boolean)]),
+    ['Other', all.filter((d) => !listed.includes(d.building))]].filter(([, ds]) => ds.length);
+}
