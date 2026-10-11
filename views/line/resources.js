@@ -1,5 +1,5 @@
 // Straightline's Resources: what you hold and how it moves, in grouped tables flowing into columns as Throne's do.
-// The figures are the War Room's (views/room/trend.js: the change over the last tick, the mean of the last 12,
+// The figures are the War Room's (core/trend.js: the change over the last tick, the mean of the last 12,
 // each row's history); a row opens the same graph as the Holdings panel.
 import { store } from '../../core/store.js';
 import { fmt, esc } from '../../core/words.js';

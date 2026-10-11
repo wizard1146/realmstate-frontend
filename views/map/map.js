@@ -13,8 +13,9 @@ import * as commands from '../../core/commands.js';
 // the three-channel chat box, and the War Room's detail view of every pane.
 import { mountChat } from '../room/chatbox.js';
 import { mountDetail, PANES } from '../room/detail.js';
+import { installTarget } from '../room/target.js';
 import * as uw from '../room/underway.js';
-import { attackSlots } from '../room/orders.js';
+import { attackSlots } from '../../core/attack.js';
 import * as price from '../../core/prices.js';
 
 const INTEL = ['survey', 'muster', 'ledgers', 'archives', 'couriers', 'dossier'];
@@ -535,6 +536,8 @@ export function mount(root) {
   const chat = mountChat($('cbox'), on, { p: 'm-c', roomy: true });
   // The War Room's detail views, opened from the "In full" dock.
   const detail = mountDetail($('roomhost'), on);
+  // The War Room's detail views share one target field (views/room/target.js): wire them here too.
+  installTarget($('roomhost'), on, { blocked: () => true });
   root.querySelectorAll('[data-detail]').forEach((b) => on(b, 'click', () => detail.open(b.dataset.detail, b.dataset.tab ? { tab: b.dataset.tab } : {})));
   // Keys, as in the War Room where they overlap: H N C S R toggle the map's sheets; / opens chat with a command.
   const SHEET_KEYS = { h: 'house', n: 'news', c: 'chat', s: 'state', r: 'ranks' };

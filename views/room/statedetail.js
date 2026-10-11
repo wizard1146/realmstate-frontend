@@ -27,7 +27,7 @@ const matOptions = () => `<option value="">gold</option>${Object.keys(store.hous
 
 // ---------- the WAR line in the STATE pane ----------
 /** A short line on war: your war, ceasefires, the hottest relation, recovery and dividend. */
-export function warLineHTML() {
+function warLineHTML() {
   const rel = store.relations, s = store.state, w = store.wars;
   if (!s || !w) return '';
   const me = { realm: s.realm, state: s.state };

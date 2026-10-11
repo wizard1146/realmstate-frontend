@@ -4,7 +4,6 @@ import { store } from '../../core/store.js';
 import { jobs, jobById, recipes } from '../../core/military.js';
 import { fmt, esc } from '../../core/words.js';
 
-export { jobs, jobById };
 const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
 const stock = (m) => store.house.materials[m] || 0;
 

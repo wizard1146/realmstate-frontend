@@ -17,14 +17,14 @@ import { fmt, esc, when, dayTime } from '../../core/words.js';
 import { tabState } from './tabs.js';
 import { num, MAX_Q, cap, book, best, feeBp, lockMin, crossBp, waitHold, buyHold, buyMax, crossWhere, fillNow, holder, hitSize, spoils, spoilNote, treasuryNote, leaderId, isLeader } from '../../core/market.js';
 
-export { crossBp, spoils, spoilNote, treasuryNote, leaderId, isLeader };
+export { spoils, spoilNote, treasuryNote, leaderId, isLeader };
 
 /** RES pane and detail tabs. */
 export const RES_TAB = tabState('realmstate.room.res', ['holdings', 'buildings', 'market'], { holdings: 'HOLDINGS', buildings: 'BUILDINGS', market: 'MARKET' });
 
 // ---------- the order form ----------
 /** p: id prefix; full: the detail's version (with the treasury switch). */
-export function formHTML(p, full = false) {
+function formHTML(p, full = false) {
   const mats = (store.market || []).map((m) => m.material);
   const opts = mats.map((m) => `<option value="${esc(m)}">${esc(cap(m))}</option>`).join('');
   if (!full) {
@@ -57,7 +57,7 @@ export function formHTML(p, full = false) {
 }
 
 /** Wires a form drawn by formHTML inside `box`. Returns { update() }. */
-export function wireForm(box, on, p, full = false) {
+function wireForm(box, on, p, full = false) {
   const $ = (id) => box.querySelector(`#${p}-${id}`);
   let priceTouched = false;
   const side = () => (full ? box.querySelector(`input[name="${p}-side"]:checked`)?.value : $('side').value) || 'buy';
@@ -144,7 +144,7 @@ export function wireForm(box, on, p, full = false) {
 }
 
 // ---------- your orders ----------
-export function ordersHTML(compact = false) {
+function ordersHTML(compact = false) {
   const list = store.orders || [];
   if (!list.length) return `<p class="dim small">No open orders${isLeader() ? ', for you or the treasury' : ''}.</p>`;
   const lead = isLeader();
@@ -161,7 +161,7 @@ export function ordersHTML(compact = false) {
         + `<td><button type="button" class="btn mini" data-cancel="${o.order}"${can ? '' : ' disabled title="Treasury orders: the leader only"'}${can ? locked : ''} aria-label="Cancel order ${o.order}">CANCEL</button></td></tr>`;
     }).join('') + '</table>';
 }
-export function wireOrders(scope, on) {
+function wireOrders(scope, on) {
   on(scope, 'click', (ev) => {
     const b = ev.target.closest('[data-cancel]');
     if (b) act.cancelOrder(b.dataset.cancel, { button: b });
@@ -170,7 +170,7 @@ export function wireOrders(scope, on) {
 
 // ---------- the books ----------
 /** One row per material: held, best bid and ask, last trade. Rows pick the material in the form. */
-export function booksHTML() {
+function booksHTML() {
   const h = store.house;
   if (!store.market) return '<p class="dim">Loading the market…</p>';
   return `<table class="tbl"><tr><th>MATERIAL</th><th class="num">HELD</th><th class="num"><abbr title="Best bid: price × quantity">BID</abbr></th><th class="num"><abbr title="Best ask: price × quantity">ASK</abbr></th><th class="num"><abbr title="Last trade price">LAST</abbr></th><th></th></tr>`
@@ -193,7 +193,7 @@ function outputNow(m) {
   const dep = o.depletion_bp < 10000 ? ` · deposit ${o.depletion_bp / 100}%` : '';
   return `<span title="Base ${fmt(m.output_per_tick)} a tick per realm; this tick's season is ${o.season_bp / 100}%${dep ? `, and the worked deposit gives ${o.depletion_bp / 100}%` : ''}">${fmt(o.per_tick)}/tick now (season ${o.season_bp / 100}%${dep})</span>`;
 }
-export function depthHTML() {
+function depthHTML() {
   if (!store.market) return '<p class="dim">Loading the market…</p>';
   const lvl = (rows, cls, side, m) => rows.length ? rows.map((r) => {
     const { q, why } = hitSize(side, m, r.price, r.quantity);

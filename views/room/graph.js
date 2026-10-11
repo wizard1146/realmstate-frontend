@@ -3,7 +3,7 @@
 // back to the row. Mouse over the chart, or focus it and use the arrow keys, to read a point.
 import { store } from '../../core/store.js';
 import { fmt, esc, fullTime } from '../../core/words.js';
-import * as trend from './trend.js';
+import * as trend from '../../core/trend.js';
 
 let W = 560; // the chart's width in SVG units: the box's own width, so labels stay at their real size
 let H = 230;   // grows with a wide box (Straightline's wider window), so the chart never turns into a strip

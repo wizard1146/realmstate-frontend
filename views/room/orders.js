@@ -1,11 +1,13 @@
 // Order forms for the war room: exact quotes, MAX values and the full ACT detail view (explore,
 // a construction grid that builds many at once, train, attack). Prices come from core/prices.js;
 // if the server sends none (an old build), quotes fall back to ≈ estimates and MAX is off.
+import { tabState } from './tabs.js';
+import { renderTarget as showTarget } from './target.js';
 import { fillPicker, generalLine } from './generals.js';
-import { store, say, setTarget, raceOf, slotUsed, unitPoints, trainableSlots } from '../../core/store.js';
+import { store, say, setTarget, raceOf, unitPoints, trainableSlots } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import * as price from '../../core/prices.js';
-import { fmt, esc, addr, names, when, UNIT_ORDER, TRAINABLE, THIEF, SOLDIER } from '../../core/words.js';
+import { fmt, esc, addr, when, TRAINABLE, SOLDIER } from '../../core/words.js';
 import { detailIntrigue, detailRites } from './intrigue.js';
 import * as ax from './atkextra.js';
 import { buildingChoice, buildingOptions } from './truthsui.js';
@@ -34,27 +36,27 @@ export function trainQuote(slot, n, direct = false) {
   const why = g > h.gold ? `You have ${fmt(h.gold)} gold`
     : num(n) > pool ? (direct ? `Each recruit takes a peasant; you have ${fmt(pool)}` : `Each trainee takes a soldier; you have ${fmt(pool)} (draft more, or recruit direct)`)
       : num(n) > price.trainLimit() ? `At most ${fmt(price.trainLimit())} per order` : '';
-  return { text: `${fmt(g)}g`, short: !!why, title: why || `Exact cost: ${fmt(g)} gold and ${fmt(num(n))} ${direct ? 'peasants' : 'soldiers'}` };
+  return { text: `${fmt(g)}g`, short: !!why, why, title: why || `Exact cost: ${fmt(g)} gold and ${fmt(num(n))} ${direct ? 'peasants' : 'soldiers'}` };
 }
 /** Train options: the four trainable units (soldiers are drafted, never trained). */
 export const trainOptions = (race, withGold = true) => trainableSlots(race, TRAINABLE).map((i) => {
   const u = race.units[i] || { name: `slot ${i}`, off: 0, def: 0, gold: 0 };
   return `<option value="${i}">${esc(u.name)} ${unitPoints(race, i).join('/')}${withGold ? ` · ${fmt(u.gold)}g` : ''}</option>`;
 }).join('');
-/** Slots that can attack (offense above 0, thieves never), in reading order. */
 
 export function buildQuote(id, n) {
   if (!price.have()) return { text: `≈${fmt(act.estimate.build(id, n))}g`, short: false, title: 'Estimate from base prices, before modifiers' };
   const c = price.buildCost(id, n);
   const why = price.buildProblem(id, n, price.buildBudget());
   const m = matText(c.materials);
-  return { text: `${fmt(c.gold)}g${m ? ` +${m}` : ''}`, short: !!why, title: why ? `Can't: ${why}` : `Exact cost: ${fmt(c.gold)} gold${m ? `, ${m}` : ''}; ${fmt(num(n))} barren acres` };
+  return { text: `${fmt(c.gold)}g${m ? ` +${m}` : ''}`, short: !!why, why, title: why ? `Can't: ${why}` : `Exact cost: ${fmt(c.gold)} gold${m ? `, ${m}` : ''}; ${fmt(num(n))} barren acres` };
 }
-/** Puts a quote into an element. */
-export function showQuote(el, q) {
+/** Puts a quote into an element, and its reason (if it can't go) into `whyEl` where you can read it. */
+export function showQuote(el, q, whyEl = null) {
   el.textContent = q.text;
   el.title = q.title;
   el.classList.toggle('short', q.short);
+  if (whyEl) { whyEl.hidden = !q.why; whyEl.textContent = q.why ? `Can't: ${q.why.replace(/^./, (c) => c.toLowerCase())}.` : ''; }
 }
 
 /** A MAX button's effect on an input: fill it, or say why nothing fits. */
@@ -66,20 +68,19 @@ export function fillMax(input, n, why) {
 }
 export const trainWhy = (slot, direct = false) => (!price.trainPool(direct) ? (direct ? 'no peasants to recruit' : 'no soldiers at home: draft more (MIL), or recruit direct') : store.house.gold < price.trainCost(slot, 1, direct) ? 'not enough gold for one' : 'nothing fits');
 
-// ---------- the ACT tabs (ORDERS, INTRIGUE, RITES), shared by the pane and its detail ----------
-const ACT_KEY = 'realmstate.room.act';
+// ---------- the ACT tabs, shared by the pane and its detail (one choice; either one moves both) ----------
+// Grouped by what you do with a tick: ECONOMY (explore, build, train), MILITARY (attack), INTEL (thieves' operations
+// and reports), MAGIC (rites). The ids stay as they were (orders, attacks, intrigue, rites): commands and links use them.
 export const ACT_TABS = ['orders', 'attacks', 'intrigue', 'rites'];
-export const ACT_LABELS = { orders: 'ORDERS', attacks: 'ATTACKS', intrigue: 'INTRIGUE', rites: 'RITES' };
-let actTabNow = null;
-export function actTab() {
-  if (!actTabNow) { try { actTabNow = localStorage.getItem(ACT_KEY); } catch { /* storage off */ } }
-  if (!ACT_TABS.includes(actTabNow)) actTabNow = 'orders';
-  return actTabNow;
-}
-export function setActTab(t) {
-  if (!ACT_TABS.includes(t)) return;
-  actTabNow = t;
-  try { localStorage.setItem(ACT_KEY, t); } catch { /* storage off */ }
+export const ACT_LABELS = { orders: 'ECONOMY', attacks: 'MILITARY', intrigue: 'INTEL', rites: 'MAGIC' };
+export const ACT_TAB = tabState('realmstate.room.act', ACT_TABS, ACT_LABELS);
+export const actTab = () => ACT_TAB.get();
+export const setActTab = (t) => ACT_TAB.set(t);
+/** The tab an arrow key, Home or End moves to from the current one, or null. */
+export function actTabKey(key) {
+  const i = ACT_TABS.indexOf(actTab()), n = ACT_TABS.length;
+  const j = key === 'ArrowRight' ? (i + 1) % n : key === 'ArrowLeft' ? (i + n - 1) % n : key === 'Home' ? 0 : key === 'End' ? n - 1 : -1;
+  return j < 0 ? null : ACT_TABS[j];
 }
 /** A target was chosen (rank, map): show the attack form, unless intrigue or rites is open (they target too). */
 export function toAttacks() { if (actTab() === 'orders') setActTab('attacks'); return actTab(); }
@@ -117,7 +118,7 @@ export function actDetail(body, on, { goto, tab, report }) {
           <span class="bg-note"></span>
         </div>`).join('')}
         <div class="bg-foot">
-          <p class="bg-tot" id="d-bg-tot" aria-live="polite"></p>
+          <p class="bg-tot" id="d-bg-tot" aria-live="polite"></p><p class="short small" id="d-bg-why" aria-live="polite"></p>
           <span class="btns"><button type="button" class="btn" id="d-bg-clear">CLEAR</button><button class="btn primary" id="d-bg-exec">EXEC</button></span>
         </div>
       </form>
@@ -148,6 +149,7 @@ export function actDetail(body, on, { goto, tab, report }) {
         <span class="field"><input id="d-t-n" type="number" min="1" value="100" inputmode="numeric"><button type="button" class="btn mini" data-max="train" aria-label="Most of this unit you can train">MAX</button></span>
         <span class="quote num" id="d-t-q"></span>
         <button class="btn primary">EXEC</button>
+        <p class="short small span" id="d-t-why" aria-live="polite" hidden></p>
         <p class="dim small span" id="d-t-info"></p>
       </form>
     </section>
@@ -160,7 +162,7 @@ export function actDetail(body, on, { goto, tab, report }) {
       <h3 class="sub">ATTACK</h3>
       <form id="d-f-attack" class="dform attack">
         <label for="d-a-target" title="Target house, as realm:state:seat">Target</label>
-        <span class="field"><input id="d-a-target" placeholder="r:s:seat" required autocomplete="off" pattern="\\s*\\d+\\s*:\\s*\\d+\\s*:\\s*\\d+\\s*"><button type="button" class="btn mini" id="d-a-pick">PICK FROM RANK</button></span>
+        <span class="field"><input id="d-a-target" data-tgt-input placeholder="r:s:seat" autocomplete="off"><button type="button" class="btn mini" id="d-a-pick">PICK FROM RANK</button><small class="dim" data-tgt-name></small></span>
         <label for="d-a-kind">Kind</label>
         <select id="d-a-kind">${P.attacks.map((k) => `<option value="${esc(k.id)}">${esc(k.name)}</option>`).join('')}</select>
         <label for="d-a-bld" id="d-a-bldl" title="The building type the land comes from first" hidden>From</label>
@@ -225,6 +227,7 @@ export function actDetail(body, on, { goto, tab, report }) {
     const bad = t.over || rows.some((r) => buildRowProblem(r.dataset.b, rowN(r)));
     $('d-bg-exec').disabled = !anyRow || (ok && bad);
     $('d-bg-exec').title = !anyRow ? 'Fill in a count first' : bad ? 'Over what you have: lower a row' : `Send ${rows.filter((r) => rowN(r) > 0).length} build orders`;
+    $('d-bg-why').textContent = anyRow && bad ? "Can't: over what you have; lower a row marked red." : '';
   }
   on($('d-bg'), 'input', (ev) => {
     const note = ev.target.closest('.bg-row')?.querySelector('.bg-note');
@@ -289,7 +292,7 @@ export function actDetail(body, on, { goto, tab, report }) {
   const direct = () => body.querySelector('input[name="d-t-src"]:checked')?.value === 'direct';
   function train() {
     const slot = $('d-t-unit').value;
-    showQuote($('d-t-q'), trainQuote(slot, $('d-t-n').value, direct()));
+    showQuote($('d-t-q'), trainQuote(slot, $('d-t-n').value, direct()), $('d-t-why'));
     const h = store.house;
     const u = race.units[Number(slot)] || {};
     $('d-t-info').textContent = (price.have()
@@ -356,16 +359,16 @@ export function actDetail(body, on, { goto, tab, report }) {
     const units = detailUnits();
     const x = ax.readExtras($('d-a-extra'));
     units[8] = x.mercs;
-    const typed = $('d-a-target').value.trim();
-    const t = store.target && typed === addr(store.target) ? store.target : typed;
+    const t = store.target;
+    if (!t) { say('Set a target first: type its address above, or PICK FROM RANK.', 'bad'); $('d-a-target').focus(); return; }
     const building = buildingChoice($('d-a-kind').value) ? $('d-a-bld').value || null : null;
     const out = await act.attack({ target: t, kind: $('d-a-kind').value, units, general: $('d-a-gen').value, medics: x.medics, horses: x.horses, chariots: x.chariots, upgradedMercenaries: x.upmercs, doubleStrike: x.double, building }, { button: ev.submitter });
     if (out) body.querySelectorAll('#d-a-troops input, #d-a-extra input').forEach((inp) => { if (inp.type === 'checkbox') inp.checked = false; else inp.value = '0'; });
     attack();
   });
-  if (store.target) $('d-a-target').value = addr(store.target);
+  showTarget(body);
 
-  // ---------- the tabs: ORDERS, INTRIGUE, RITES ----------
+  // ---------- the tabs: ECONOMY, MILITARY, INTEL, MAGIC (ids orders, attacks, intrigue, rites) ----------
   const intr = detailIntrigue(body.querySelector('#d-actsec-intrigue'), on, { goto });
   const rit = detailRites(body.querySelector('#d-actsec-rites'), on, { goto });
   function tabs(focusTab) {
@@ -376,12 +379,10 @@ export function actDetail(body, on, { goto, tab, report }) {
   }
   on(body.querySelector('.acttabs'), 'click', (ev) => { const b = ev.target.closest('[data-acttab]'); if (b) { setActTab(b.dataset.acttab); tabs(); } });
   on(body.querySelector('.acttabs'), 'keydown', (ev) => {
-    const i = ACT_TABS.indexOf(actTab());
-    const n = ACT_TABS.length;
-    const j = ev.key === 'ArrowRight' ? (i + 1) % n : ev.key === 'ArrowLeft' ? (i + n - 1) % n : ev.key === 'Home' ? 0 : ev.key === 'End' ? n - 1 : -1;
-    if (j < 0) return;
+    const t = actTabKey(ev.key);
+    if (!t) return;
     ev.preventDefault();
-    setActTab(ACT_TABS[j]);
+    setActTab(t);
     tabs(true);
   });
   tabs();
@@ -390,7 +391,7 @@ export function actDetail(body, on, { goto, tab, report }) {
     const all = !c;
     body.querySelectorAll('[data-max="explore"], [data-max="train"]').forEach((x) => { x.disabled = !price.have(); });
     if (all || c.has('house') || c.has('hall')) { grid(); explore(); train(); attack(); }
-    if (c && c.has('target') && store.target && document.activeElement !== $('d-a-target')) $('d-a-target').value = addr(store.target);
+    if (c && c.has('target')) showTarget(body);
     intr.update(c);
     rit.update(c);
   }

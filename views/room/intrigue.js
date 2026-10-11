@@ -2,6 +2,9 @@
 // hexes) for the war room: compact forms for the ACT pane's tabs and full views for its detail.
 // Operations and rites come from /rules params; results go to the message line, the news (as a
 // local line) and, for intel, your state's reports.
+import { pinnedShares } from '../../core/intelprefs.js';
+import { buildingGroups } from '../../core/land.js';
+import { targetChipHTML, renderTarget as showTarget } from './target.js';
 import { store, say, setTarget, loadReports, reportsOn } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc, addr, where, when, fullTime, names, intelRows, reportKind, REPORT_LABEL, THIEF, empty } from '../../core/words.js';
@@ -10,11 +13,9 @@ const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
 const pct = (bp) => `${(bp / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}%`;
 
 // ---------- rites (the logic is core/rites.js's) ----------
-export { riteById, riteKind, riteFor, riteDoes, riteCost, riteLine, riteOn, riteShort, inForce } from '../../core/rites.js';
 import { rites, riteById, riteKind, KIND_LABEL, riteFor, ap, lengthText, needsText, unfriendlyExtra, riteDoes, riteCost, riteLine, riteOn, riteShort, inForce, resilienceText, vengeanceList, vengeanceOn, sameSt, stName } from '../../core/rites.js';
 
 // ---------- operations (the logic is core/intrigue.js's) ----------
-export { OP_GROUPS, opById, opExtra, opDoes, opNerve, opLine } from '../../core/intrigue.js';
 import { OP_GROUPS, groupOf, ops, opById, opExtra, opDoes, opNerve, opLine, parseFrame } from '../../core/intrigue.js';
 
 const opOptions = (sel) => OP_GROUPS.map(([g, effects]) => {
@@ -22,11 +23,7 @@ const opOptions = (sel) => OP_GROUPS.map(([g, effects]) => {
   return list.length ? `<optgroup label="${g}">${list.map((o) => `<option value="${esc(o.id)}"${o.id === sel ? ' selected' : ''}>${esc(o.name)} · ${pct(o.nerve_bp)}</option>`).join('')}</optgroup>` : '';
 }).join('') + ops().filter((o) => groupOf(o) === 'Other').map((o) => `<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('');
 
-/** The target typed in a field: your chosen house if the text is its address, else the text. */
-function typedTarget(input) {
-  const typed = input.value.trim();
-  return store.target && typed === addr(store.target) ? store.target : typed;
-}
+const NO_TARGET = 'Set a target first: type its address in the TARGET bar (T), or TGT a house in RANK.';
 
 /** Your nerve and thieves, in a line. */
 export function nerveLine() {
@@ -47,8 +44,8 @@ async function sendOp(f, button) {
     extra[ex.key] = f.extra.value;
   }
   if (!num(f.thieves.value)) { say('Send at least one thief.', 'bad'); return null; }
-  const t = typedTarget(f.target);
-  if (!t) { say('Choose a target: an address like 2:1:1, or TGT from RANK.', 'bad'); return null; }
+  const t = store.target;
+  if (!t) { say(NO_TARGET, 'bad'); return null; }
   return act.operation(t, o.id, num(f.thieves.value), { button }, extra);
 }
 
@@ -66,17 +63,10 @@ function syncExtra(o, sel, wrap) {
 }
 
 // ---------- rites ----------
-/** The state of a target typed in a field (a house address, or your chosen target), or null. */
-function targetState(input) {
-  const t = typedTarget(input);
-  if (t && typeof t === 'object') return { realm: t.realm, state: t.state };
-  const m = /^(\d+)\s*:\s*(\d+)\s*:\s*\d+$/.exec(String(t || ''));
-  return m ? { realm: Number(m[1]), state: Number(m[2]) } : null;
-}
-/** A line about the typed target for a rite: relations, its cost there, your vengeance. */
-function targetNote(r, input) {
+/** A line about the target for a rite: relations, its cost there, your vengeance. */
+function targetNote(r) {
   if (riteKind(r) === 'self') return { text: '', bad: false };
-  const s = targetState(input);
+  const s = store.target ? { realm: store.target.realm, state: store.target.state } : null;
   if (!s) return { text: '', bad: false };
   const o = riteOn(r, s);
   if (o.blocked) return { text: `Not now: ${o.blocked}.`, bad: true };
@@ -142,8 +132,8 @@ async function sendCast(f, button) {
   const r = riteById(f.rite.value);
   if (!r) return null;
   if (riteKind(r) === 'self') return act.cast(r.id, null, { button });
-  const t = typedTarget(f.target);
-  if (!t) { say(`${r.name} needs a target: an address like 2:1:1, or TGT from RANK.`, 'bad'); return null; }
+  const t = store.target;
+  if (!t) { say(`${r.name} needs a target. ${NO_TARGET}`, 'bad'); return null; }
   return act.cast(r.id, t, { button });
 }
 
@@ -154,13 +144,26 @@ const spyName = (id) => {
   return m ? m.name : `house ${id}`;
 };
 /** One report as a card: header (kind, house, when, by whom) and its rows. */
+/** A survey's (or dossier's) buildings by group: count, share of land, being built, and the change since the
+ *  state's previous report of the same kind on that house. */
+function buildingsTable(item) {
+  const r = item.report || {}, k = reportKind(r), land = r.land || 0, id = r.house?.house ?? r.house?.id;
+  const prev = (store.reports || []).find((y) => y !== item && y.at < item.at && reportKind(y.report || {}) === k && (y.report?.house?.house ?? y.report?.house?.id) === id)?.report || null;
+  const d = (n) => (n > 0 ? `<span class="up">+${fmt(n)}</span>` : n < 0 ? `<span class="down">−${fmt(-n)}</span>` : '<span class="dim">·</span>');
+  return `<table class="tbl rep-b"><tr><th>BUILDING</th><th class="num">HAVE</th><th class="num">% LAND</th><th class="num">BUILDING</th>${prev ? '<th class="num" title="Since your state\'s previous report of this kind on them">Δ</th>' : ''}</tr>`
+    + buildingGroups().map(([g, ds]) => `<tr class="grp"><td colspan="${prev ? 5 : 4}">${esc(g.toUpperCase())}</td></tr>` + ds.map((b) => {
+      const n = r.buildings[b.building] || 0, c = (r.constructing || {})[b.building] || 0;
+      return `<tr class="${n || c ? '' : 'zero'}"><td>${esc(b.name)}</td><td class="num">${n ? fmt(n) : '·'}</td><td class="num">${n && land ? `${(100 * n / land).toFixed(1)}%` : ''}</td><td class="num">${c ? fmt(c) : ''}</td>${prev ? `<td class="num">${d(n - ((prev.buildings || {})[b.building] || 0))}</td>` : ''}</tr>`;
+    }).join('')).join('') + '</table>';
+}
 export function reportCard(item, i, { open = true } = {}) {
   const r = item.report || {};
   const k = reportKind(r);
-  const rows = intelRows(r);
+  // With buildings (a survey, a dossier): the other figures, then the buildings as a table of their own.
+  const rows = r.buildings ? intelRows(r).filter(([a]) => !['Buildings', 'Being built'].includes(a)) : intelRows(r);
   return `<article class="rep" id="d-rep-${i}" data-kind="${esc(k)}">
     <h4 class="rep-h"><span class="rk">${esc(REPORT_LABEL[k] || k.toUpperCase())}</span> <span class="rt">${esc(r.house ? where(r.house) : '?')}</span> <time class="dim" title="${esc(fullTime(item.at))}">${esc(when(item.at))}</time> <span class="dim">by ${esc(spyName(item.spy))}</span></h4>
-    ${open ? `<table class="tbl kv">${rows.map(([a, b]) => `<tr><td>${esc(a)}</td><td class="${typeof b === 'number' ? 'num' : 'txt'}">${esc(typeof b === 'number' ? fmt(b) : b)}</td></tr>`).join('')}</table>` : ''}
+    ${open ? `<table class="tbl kv">${rows.map(([a, b]) => `<tr><td>${esc(a)}</td><td class="${typeof b === 'number' ? 'num' : 'txt'}">${esc(typeof b === 'number' ? fmt(b) : b)}</td></tr>`).join('')}</table>${r.buildings ? buildingsTable(item) : ''}` : ''}
   </article>`;
 }
 
@@ -174,7 +177,7 @@ export function mountPane(secOps, secRites, on, ctx) {
     <form id="r-f-op" class="ticket op" novalidate>
       <span class="verb">OP</span>
       <span class="args">
-        <label for="r-o-target" title="Target house, as realm:state:seat">TGT</label> <input id="r-o-target" placeholder="r:s:seat" class="w8" autocomplete="off">
+        ${targetChipHTML('r-o-tchip')}
         <label class="vh" for="r-o-op">Operation</label><select id="r-o-op">${opOptions('survey')}</select>
         <label for="r-o-n" title="Thieves to send">×</label><input id="r-o-n" type="number" min="1" value="20" class="w5"><button type="button" class="btn mini max" data-max="thieves" aria-label="Send every thief at home">MAX</button>
         <span class="field" id="r-o-xw" hidden><select id="r-o-x"></select></span>
@@ -183,6 +186,7 @@ export function mountPane(secOps, secRites, on, ctx) {
       <span class="cost num" id="r-o-cost"></span>
       <button class="btn danger">EXEC</button>
     </form>
+    <p class="short small" id="r-o-why" aria-live="polite" hidden></p>
     <p class="small" id="r-o-nerve"></p>
     <p class="dim small" id="r-o-info"></p>
     <h3 class="sub">REPORTS <span class="dim" id="r-o-rcount"></span><button type="button" class="btn mini rep-all" data-open="intrigue">ALL · DETAIL</button></h3>
@@ -192,21 +196,22 @@ export function mountPane(secOps, secRites, on, ctx) {
       <span class="verb">RITE</span>
       <span class="args">
         <label class="vh" for="r-r-rite">Rite</label><select id="r-r-rite">${riteOptions('war_hymns')}</select>
-        <label for="r-r-target" title="Target house for divinations and hexes, as realm:state:seat">TGT</label> <input id="r-r-target" placeholder="r:s:seat" class="w8" autocomplete="off">
+        ${targetChipHTML('r-r-tchip')}
       </span>
       <span class="cost num" id="r-r-cost"></span>
       <button class="btn primary">CAST</button>
     </form>
+    <p class="short small" id="r-r-why" aria-live="polite" hidden></p>
     <p class="small" id="r-r-tgt" role="status" hidden></p>
     <p class="small" id="r-r-hold"></p>
     <p class="dim small" id="r-r-info"></p>
     <h3 class="sub">IN FORCE ON YOU</h3>
     <div id="r-r-force"></div>
     <p class="small" id="r-r-magic"></p>
-    <p class="dim small">Divinations land in REPORTS (INTRIGUE tab). Shift+Alt+1 opens the full list of rites.</p>`;
+    <p class="dim small">Divinations land in REPORTS (INTEL tab). Shift+Alt+1 opens the full list of rites.</p>`;
   const $ = (id) => document.getElementById(id);
-  const fo = { target: $('r-o-target'), op: $('r-o-op'), thieves: $('r-o-n'), extra: $('r-o-x'), frame: $('r-o-frame') };
-  const fr = { rite: $('r-r-rite'), target: $('r-r-target') };
+  const fo = { op: $('r-o-op'), thieves: $('r-o-n'), extra: $('r-o-x'), frame: $('r-o-frame') };
+  const fr = { rite: $('r-r-rite') };
 
   function opForm() {
     const o = opById(fo.op.value);
@@ -220,6 +225,9 @@ export function mountPane(secOps, secRites, on, ctx) {
     const why = n.ok > h.nerve_bp ? `You have ${pct(h.nerve_bp)} nerve` : num(fo.thieves.value) > h.units[THIEF] ? `You have ${fmt(h.units[THIEF])} thieves at home` : '';
     cost.classList.toggle('short', !!why);
     cost.title = why || `Costs ${pct(n.ok)} nerve, ${pct(n.caught)} if caught`;
+    const whys = [!store.target ? 'no target yet (set one in the TARGET bar, or press T)' : '', why && why.replace(/^You have/, 'you have')].filter(Boolean);
+    $('r-o-why').hidden = !whys.length;
+    $('r-o-why').textContent = whys.length ? `Can't: ${whys.join('; ')}.` : '';
     $('r-o-info').textContent = opLine(o, framed);
     $('r-o-nerve').textContent = nerveLine();
   }
@@ -227,31 +235,34 @@ export function mountPane(secOps, secRites, on, ctx) {
     const list = store.reports.slice(0, 5);
     $('r-o-rcount').textContent = store.reports.length ? `${fmt(store.reports.length)} from your state` : '';
     $('r-o-reps').innerHTML = list.length
-      ? list.map((x, i) => { const r = x.report || {}; const k = reportKind(r); return `<li><button type="button" class="rep-btn" data-rep="${i}" title="Open this report in detail"><time>${esc(when(x.at))}</time> <span class="rk">${esc(REPORT_LABEL[k] || k)}</span> <span class="rt">${esc(r.house ? `${r.house.name} ${addr(r.house)}` : '?')}</span></button></li>`; }).join('')
+      ? list.map((x, i) => { const r = x.report || {}; const k = reportKind(r);
+        // A survey shows the buildings chosen in Straightline's Configuration (Intrigue), as shares of their land.
+        const glance = k === 'survey' ? ` <span class="dim">${esc(pinnedShares(r).map(([n, pc]) => `${n} ${pc == null ? '–' : `${pc.toFixed(1)}%`}`).join(' · '))}</span>` : '';
+        return `<li><button type="button" class="rep-btn" data-rep="${i}" title="Open this report in detail"><time>${esc(when(x.at))}</time> <span class="rk">${esc(REPORT_LABEL[k] || k)}</span> <span class="rt">${esc(r.house ? `${r.house.name} ${addr(r.house)}` : '?')}</span>${glance}</button></li>`; }).join('')
       : `<li class="dim small">${esc(store.reportsLoaded ? empty.reports : 'loading reports…')}</li>`;
   }
   function riteForm() {
     const r = riteById(fr.rite.value);
     if (!r) return;
     const self = riteKind(r) === 'self';
-    fr.target.disabled = self;
-    fr.target.placeholder = self ? 'self' : 'r:s:seat';
+    $('r-r-tchip').dataset.self = String(self);
+    showTarget(secRites);
     const cost = $('r-r-cost');
     const why = riteShort(r);
     cost.textContent = riteCost(r).replace(' aether', 'ae');
     cost.classList.toggle('short', !!why);
     cost.title = why || `Costs ${riteCost(r)} for your house now (grows with land)`;
+    const rwhys = [!self && !store.target ? 'no target yet (set one in the TARGET bar, or press T)' : '', why].filter(Boolean);
+    $('r-r-why').hidden = !rwhys.length;
+    $('r-r-why').textContent = rwhys.length ? `Can't: ${rwhys.join('; ')}.` : '';
     refreshOptions(fr.rite);
-    showNote($('r-r-tgt'), targetNote(r, fr.target));
+    showNote($('r-r-tgt'), targetNote(r));
     $('r-r-info').textContent = riteLine(r);
     $('r-r-hold').textContent = aetherLine();
     $('r-r-force').innerHTML = inForceHTML();
     $('r-r-magic').textContent = magicLine();
   }
-  function targets() {
-    const t = store.target;
-    for (const inp of [fo.target, fr.target]) if (t && document.activeElement !== inp && !inp.disabled) inp.value = addr(t);
-  }
+  const targets = () => { showTarget(secOps); showTarget(secRites); };
 
   on(secOps, 'input', opForm);
   on(secOps, 'click', (ev) => {
@@ -271,7 +282,7 @@ export function mountPane(secOps, secRites, on, ctx) {
   opForm(); riteForm(); reps(); targets();
   return {
     update(c) {
-      if (!c || c.has('house') || c.has('tick')) { opForm(); riteForm(); } else if (c.has('relations') || c.has('target')) riteForm();
+      if (!c || c.has('house') || c.has('tick')) { opForm(); riteForm(); } else if (c.has('relations') || c.has('target')) { riteForm(); opForm(); }
       if (!c || c.has('reports') || c.has('timemode') || c.has('state')) reps();
       if (!c || c.has('target')) targets();
     },
@@ -287,7 +298,7 @@ export function detailIntrigue(sec, on, ctx) {
         <h3 class="sub">OPERATION <span class="dim">send thieves against a house</span></h3>
         <form id="d-f-op" class="dform" novalidate>
           <label for="d-o-target" title="Target house, as realm:state:seat">Target</label>
-          <span class="field"><input id="d-o-target" placeholder="r:s:seat" autocomplete="off"><button type="button" class="btn mini" data-pick>PICK FROM RANK</button></span>
+          <span class="field"><input id="d-o-target" data-tgt-input placeholder="r:s:seat" autocomplete="off"><button type="button" class="btn mini" data-pick>PICK FROM RANK</button><small class="dim" data-tgt-name></small></span>
           <label for="d-o-op">Operation</label>
           <select id="d-o-op">${opOptions('survey')}</select>
           <label for="d-o-n">Thieves</label>
@@ -381,14 +392,14 @@ export function detailIntrigue(sec, on, ctx) {
   on($('d-f-op'), 'submit', async (ev) => { ev.preventDefault(); await sendOp(f, ev.submitter); form(); });
   on($('d-rf'), 'input', reps);
   on($('d-r-reload'), 'click', async () => { await loadReports(); });
-  if (store.target) f.target.value = addr(store.target);
+  showTarget(sec);
   form(); filterOptions(); reps();
 
   return {
     update(c) {
       if (!c || c.has('house')) form();
       if (!c || c.has('reports') || c.has('timemode')) { filterOptions(); reps(); }
-      if (c && c.has('target')) { if (store.target && document.activeElement !== f.target) f.target.value = addr(store.target); filterOptions(); }
+      if (c && c.has('target')) { showTarget(sec); filterOptions(); }
     },
     focus: () => f.target.focus(),
     /** Scrolls to a report (index in store.reports) and focuses it. */
@@ -436,7 +447,7 @@ export function detailRites(sec, on, ctx) {
           <label for="d-r-rite">Rite</label>
           <select id="d-r-rite">${riteOptions('war_hymns')}</select>
           <label for="d-r-target" title="Target house for divinations and hexes">Target</label>
-          <span class="field"><input id="d-r-target" placeholder="r:s:seat" autocomplete="off"><button type="button" class="btn mini" data-pick>PICK FROM RANK</button></span>
+          <span class="field"><input id="d-r-target" data-tgt-input placeholder="r:s:seat" autocomplete="off"><button type="button" class="btn mini" data-pick>PICK FROM RANK</button><small class="dim" data-tgt-name></small></span>
           <span class="quote num span" id="d-r-q"></span>
           <p class="small span" id="d-r-tgt" role="status" hidden></p>
           <p class="small span" id="d-r-hold"></p>
@@ -479,7 +490,7 @@ export function detailRites(sec, on, ctx) {
     $('d-r-q').textContent = `Costs ${riteCost(r)}${why ? ` · ${why}` : ''}`;
     $('d-r-q').classList.toggle('short', !!why);
     refreshOptions(f.rite);
-    showNote($('d-r-tgt'), targetNote(r, f.target));
+    showNote($('d-r-tgt'), targetNote(r));
     $('d-r-hold').textContent = aetherLine();
     $('d-r-info').textContent = riteLine(r);
     $('d-r-force').innerHTML = inForceHTML();
@@ -499,7 +510,7 @@ export function detailRites(sec, on, ctx) {
     (f.target.disabled ? f.rite : f.target).focus();
   });
   on($('d-f-rite'), 'submit', async (ev) => { ev.preventDefault(); await sendCast(f, ev.submitter); form(); });
-  if (store.target) f.target.value = addr(store.target);
+  showTarget(sec);
   form();
   // Adepts: the limit where shrines stop gathering (adepts an acre, one decimal place), and release.
   function adepts() {
@@ -508,6 +519,7 @@ export function detailRites(sec, on, ctx) {
     if (document.activeElement !== $('d-r-cap')) $('d-r-cap').value = cap == null ? '' : (cap / 10).toFixed(1);
     $('d-r-rel').max = h.adepts;
     $('d-r-rel').disabled = sec.querySelector('[data-rel]').disabled = !h.adepts;
+    sec.querySelector('[data-rel]').title = h.adepts ? '' : 'You have no adepts to release';
     $('d-r-capl').textContent = `You have ${fmt(h.adepts)} adepts, ${(h.adepts / Math.max(1, h.land)).toFixed(2)} an acre. `
       + (cap == null ? 'No limit: your shrines gather up to what they can hold.' : `Your shrines stop gathering at ${(cap / 10).toFixed(1)} an acre (${fmt(Math.floor(cap * h.land / 10))} adepts at your land now).`)
       + ' Released adepts go back to the fields as peasants; the limit comes down so they aren\'t gathered back. Leave the box empty for no limit.';
@@ -521,7 +533,7 @@ export function detailRites(sec, on, ctx) {
   return {
     update(c) {
       if (!c || c.has('house')) adepts();
-      if (c && c.has('target') && store.target && document.activeElement !== f.target && !f.target.disabled) f.target.value = addr(store.target);
+      if (c && c.has('target')) showTarget(sec);
       if (!c || c.has('house') || c.has('tick') || c.has('relations') || c.has('target')) form();
     },
     focus: () => f.rite.focus(),
@@ -529,7 +541,3 @@ export function detailRites(sec, on, ctx) {
 }
 
 /** Sets the target from a house and says so. */
-export function pick(h) {
-  setTarget(h);
-  say(`Target set to ${h.name} (${addr(h)}).`);
-}

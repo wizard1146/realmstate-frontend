@@ -6,7 +6,7 @@ import { fmt, esc } from '../../core/words.js';
 import { fillMax } from './orders.js';
 import * as S from './science.js';
 import { pctBp } from './does.js';
-import { lastDelta } from './trend.js';
+import { lastDelta } from '../../core/trend.js';
 import { academicsBuild, colloqBuild, colloqUpdate, colloqWire } from './colloq.js';
 import { tabButtons, panelAttrs, wireTabs } from './tabs.js';
 import { waverHTML } from './waver.js';

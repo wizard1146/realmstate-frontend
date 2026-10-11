@@ -5,13 +5,13 @@
 // efficiency is read back from your current bonuses, so a preview is exact once any science has books.
 import { store } from '../../core/store.js';
 import { fmt, esc } from '../../core/words.js';
-import { lastDelta } from './trend.js';
+import { lastDelta } from '../../core/trend.js';
 import { tabState } from './tabs.js';
 import { waverHTML } from './waver.js';
 import { truthsPaneHTML } from './truthsui.js';
 
 
-export { CATS, CAT_SHORT, sci, defs, statLabel, statLong, isqrt, rawBp, efficiency, bonusAt, rowOf, catOf, effText, ranks, rankName } from '../../core/science.js';
+export { CATS, CAT_SHORT, sci, defs, rawBp, efficiency, bonusAt, rowOf, catOf, effText, ranks, rankName } from '../../core/science.js';
 import { CATS, CAT_SHORT, sci, defs, effText, rankName } from '../../core/science.js';
 
 // ---------- the compact pane: SCIENCE, ACADEMICS, COLLOQUIUM tabs ----------

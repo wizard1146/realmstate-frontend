@@ -1,31 +1,24 @@
 // Heirs: the generals and academics a house keeps into the next age, in order of preference.
 // One ordered list for both kinds; every change (mark, unmark, move) sends mark_heirs at once.
 // The server takes the list but doesn't send it back, so this browser remembers what it sent.
-import { store, loadHeirs, notify } from '../../core/store.js';
+import { store, loadHeirs } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc } from '../../core/words.js';
 import * as G from './generals.js';
 
-const same = (a, b) => a.kind === b.kind && a.id === b.id;
-export const isMarked = (kind, id) => G.liveMarks().some((m) => same(m, { kind, id }));
+import { same, sendMarks as send, toggleHeir, moveHeir } from '../../core/heirs.js';
 
-/** Sends a new list; remembers it if the server took it. */
-export async function sendMarks(list, button) {
-  const out = await act.markHeirs(list.map((m) => act.charRef(m.kind, m.id)), { button });
-  // Taken: the page's copy follows at once, so a quick second click doesn't work from the old list (/me lags).
-  if (out) { G.saveMarks(list); if (Array.isArray(store.house.heirs)) store.house.heirs = list.map((m) => ({ ...m })); notify('heirs'); }
-  // The button was disabled while the command ran (so it lost focus); find it again after the redraw.
+const isMarked = (kind, id) => G.liveMarks().some((m) => same(m, { kind, id }));
+
+/** Sends a new list (core/heirs.js); the button was disabled while it ran, so focus finds it again after the redraw. */
+async function after(pr, button) {
+  const out = await pr;
   const id = button?.id;
   if (id && !pendingFocus) setTimeout(() => document.getElementById(id)?.focus());
   return out;
 }
-/** Marks (at the end) or unmarks one character. */
-export function toggle(kind, id, button) {
-  const list = G.liveMarks();
-  const k = list.findIndex((m) => same(m, { kind, id }));
-  if (k >= 0) list.splice(k, 1); else list.push({ kind, id: Number(id) });
-  return sendMarks(list, button);
-}
+const sendMarks = (list, button) => after(send(list, button), button);
+const toggle = (kind, id, button) => after(toggleHeir(kind, id, button), button);
 /** A HEIR / UNHEIR button for a table row. */
 export const heirButton = (kind, id, name, p = '') => {
   const on = isMarked(kind, id);
@@ -55,13 +48,11 @@ export function heirsWire(b, on) {
   on(b, 'click', async (ev) => {
     const mv = ev.target.closest('[data-hmove]');
     if (mv) {
-      const list = G.liveMarks();
       const i = Number(mv.dataset.i), j = i + Number(mv.dataset.hmove);
-      if (j < 0 || j >= list.length) return;
-      [list[i], list[j]] = [list[j], list[i]];
+      if (j < 0 || j >= G.liveMarks().length) return;
       // Focus follows the moved character (its same arrow, or the other one at the end of the list).
       pendingFocus = [`d-hr-mv${mv.dataset.hmove}-${j}`, `d-hr-mv${-Number(mv.dataset.hmove)}-${j}`];
-      await sendMarks(list, mv);
+      await after(moveHeir(i, j, mv), mv);
       return;
     }
     const rc = ev.target.closest('[data-recall]');

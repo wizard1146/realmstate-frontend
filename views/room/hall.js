@@ -8,8 +8,6 @@ import { fmt, esc, when, addr } from '../../core/words.js';
 import * as G from './generals.js';
 import { deposit, roomFor } from '../../core/hall.js';
 
-export { deposit } from '../../core/hall.js';
-
 const has = (c, ...k) => !c || k.some((x) => c.has(x));
 const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
 const where = (x) => (x ? `${x.name} (${addr(x)})` : '?');

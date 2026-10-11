@@ -776,3 +776,27 @@
   & .devlab input.w4 { width: 5em; } & .devlab input.w5 { width: 9em; }
 }
 
+
+:is(:root[data-view="room"], .room-scope) {
+  /* The one target: a bar under the strip, a chip in each pane form, the same field in the detail views. */
+  & .tbar { order: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0; padding: 4px 10px; border-bottom: 1px solid var(--room-line); background: var(--pane); font-size: calc(13px * var(--room-scale)); }
+  & .tbar .tgt-field { display: inline-flex; align-items: center; gap: 6px; }
+  & .tbar .tgt-field label { color: var(--room-muted); letter-spacing: .08em; font-size: calc(11px * var(--room-scale)); }
+  & .tbar .tgt-name { display: none; }
+  & .tbar .tg-info { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; }
+  & .tbar .tg-intel { margin-left: auto; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; color: var(--room-muted); }
+  & .tbar .tg-war { color: var(--bad, #c0392b); font-weight: 600; letter-spacing: .06em; }
+  & .tbar .tg-prot { color: var(--room-muted); letter-spacing: .06em; }
+  & .tchip { font: inherit; font-size: .92em; padding: 1px 6px; border: 1px solid var(--room-line); border-radius: 3px; background: transparent; color: inherit; cursor: pointer; white-space: nowrap; max-width: 22em; overflow: hidden; text-overflow: ellipsis; }
+  & .tchip.none { color: var(--room-muted); border-style: dashed; }
+  & .tchip:disabled { cursor: default; color: var(--room-muted); }
+  & [data-tgt-name] { margin-left: 6px; }
+  /* A report's buildings: by group, with share of land and the change since the last one. */
+  & table.rep-b { margin-top: 6px; width: 100%; }
+  & dialog.keys-dlg { width: min(620px, calc(100vw - 32px)); }
+  & dialog.keys-dlg table.keys { margin: 10px 12px 14px; width: calc(100% - 24px); }
+  & dialog.keys-dlg kbd { font: inherit; font-weight: 700; white-space: nowrap; padding: 0 4px; border: 1px solid var(--room-line); border-radius: 3px; }
+  & table.rep-b tr.grp td { padding-top: 6px; color: var(--room-muted); letter-spacing: .08em; font-size: .85em; border-bottom: 1px solid var(--rule); }
+  & table.rep-b tr.zero td { color: var(--room-muted); }
+  & table.rep-b .up { color: var(--good, #2e7d32); } & table.rep-b .down { color: var(--bad, #c0392b); }
+}

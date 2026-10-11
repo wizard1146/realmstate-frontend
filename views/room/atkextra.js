@@ -4,7 +4,7 @@ import { store } from '../../core/store.js';
 import { fmt, esc, MERC } from '../../core/words.js';
 import { mercRatio as ratio } from '../../core/attack.js';
 
-export { EXTRAS, readExtras, attackQuote, extraMax, quoteText } from '../../core/attack.js';
+export { readExtras, attackQuote, extraMax, quoteText } from '../../core/attack.js';
 
 /** The extras' fields. p: id prefix ('r-a' for the pane, 'd-a' for the detail). */
 export function extrasHTML(p, race, compact = false) {

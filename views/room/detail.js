@@ -11,9 +11,9 @@ import { draftHTML, wireDraft, armed } from './draft.js';
 import * as uw from './underway.js';
 import { actDetail, pickTarget } from './orders.js';
 import { doesCell } from './does.js';
-import * as trend from './trend.js';
+import * as trend from '../../core/trend.js';
 import { mountGraph } from './graph.js';
-import { battleCard, isBattle } from './battle.js';
+import { battleCard, isBattle } from '../../core/battle.js';
 import { sciDetail } from './scidetail.js';
 import { tabButtons, panelAttrs, wireTabs } from './tabs.js';
 import { MIL_TAB } from './generals.js';
@@ -266,11 +266,10 @@ const rank = {
 };
 
 /**
- * Runs one pane at a time in `body`, with no dialog around it: the War Room's dialog uses it, and so can a page
- * (Straightline). `frame` holds the graph overlay. `onShow(name)` runs after a pane is drawn (to retitle).
+ * Runs one pane at a time in `body`, with no dialog around it: the War Room's dialog (and the Map's) uses it. `frame` holds the graph overlay. `onShow(name)` runs after a pane is drawn (to retitle).
  * Returns { show(name, { focus, tab }), update(changes), tick(), current(), clear() }.
  */
-export function paneRunner(body, frame, { onShow = () => {} } = {}) {
+function paneRunner(body, frame, { onShow = () => {} } = {}) {
   let cur = null;
   let paneAc = null;
   let actInst = null;

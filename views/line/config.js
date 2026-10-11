@@ -7,7 +7,7 @@ import { THEMES, HEADS, BODIES, look, setLook, FONT_DEFAULTS } from './looklab.j
 import { UPGRADES_KEY, upgradeRows, GLYPH_KEY, throneGlyph } from './throne.js';
 import { ADVISOR_KEY, ADVISOR_MODES, advisorMode } from './advisor.js';
 import { LAND_ICONS, LAND_ICON_KEY, landIcon, iconUrl } from './land.js';
-import { pins, setPins } from './intrigue.js';
+import { pins, setPins } from '../../core/intelprefs.js';
 import { buildingGroups } from '../../core/land.js';
 import { NEWS_GROUPS, newsOff, setNewsOff, newsQuiet, setNewsQuiet } from '../../core/newsprefs.js';
 

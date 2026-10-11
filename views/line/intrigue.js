@@ -1,6 +1,7 @@
 // Straightline's Intrigue: your thieves at a glance; every operation as a card, grouped (Intel, Theft, Sabotage,
 // Subversion), chosen by a click; the sheet on the right sends it (target, thieves, any choice it needs, a false
 // flag); your state's spy reports below, filtered by kind or by your target. Logic: core/intrigue.js, actions.
+import { pinnedShares } from '../../core/intelprefs.js';
 import { store, say, setTarget, reportsOn, loadReports } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc, addr, when, fullTime, intelRows, reportKind, REPORT_LABEL, THIEF } from '../../core/words.js';
@@ -12,15 +13,8 @@ const n0 = (v) => Math.max(0, Math.floor(Number(v) || 0));
 const pct = (bp) => `${(bp / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}%`;
 const KINDS = { survey: 'Survey', muster: 'Muster', ledgers: 'Ledgers', archives: 'Archives', couriers: 'Couriers', dossier: 'Dossier', scrying: 'Scrying', omens: 'Omens', roads: 'Roads' };
 const KEY = 'realmstate.line.intrigue.op';
-// The buildings a survey card shows, as a share of their land; each viewer picks theirs in Configuration, Intrigue.
-export const PINS = `${KEY}.pins`;
-export const pins = () => { try { const v = JSON.parse(localStorage.getItem(PINS)); if (Array.isArray(v)) return v; } catch { /* storage off */ } return ['forts', 'watch_towers']; };
-export const setPins = (v) => { try { localStorage.setItem(PINS, JSON.stringify(v)); } catch { /* storage off */ } };
-/** A survey on its card: their land, then each chosen building's share of it. */
-function surveyRows(r) {
-  const land = r.land || 0, bn = (id) => store.rules.buildings.find((b) => b.building === id)?.name || id;
-  return [['Land', fmt(land)], ...pins().map((id) => { const n = r.buildings?.[id] || 0; return [bn(id), land ? `${(100 * n / land).toFixed(1)}%` : '–', n ? `${fmt(n)}` : 'none']; })];
-}
+/** A survey on its card: their land, then each chosen building's share of it (Configuration, Intrigue). */
+const surveyRows = (r) => [['Land', fmt(r.land || 0)], ...pinnedShares(r).map(([name, pc, n]) => [name, pc == null ? '–' : `${pc.toFixed(1)}%`, n ? fmt(n) : 'none'])];
 
 export function mountIntrigue(host, on) {
   const P = store.rules.params;
