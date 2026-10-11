@@ -1,5 +1,5 @@
-// Straightline's Rites: your aether, adepts and resin at a glance; three tabs. Cast: every rite as a card, grouped
-// (self rites, divinations, hexes), chosen by a click; the sheet casts it (a target for divinations and hexes, what
+// Straightline's Rites: your aether, adepts and resin at a glance; three tabs. Cast: every rite as a card, one group
+// at a time (self rites, divinations, hexes) as on Intrigue, chosen by a click; the sheet casts it (a target for divinations and hexes, what
 // your state's relations allow there, what it costs). On you: rites in force on your house, your Spell Resilience and
 // your vengeance. Adepts: where your shrines stop gathering, and releasing some. Logic: core/rites.js, actions.
 import { store, setTarget } from '../../core/store.js';
@@ -96,17 +96,49 @@ export function mountRites(host, on) {
   }
 
   // ---------- rites as cards ----------
-  function cards() {
-    $('rites').innerHTML = GROUPS.map(([k, label, note]) => {
-      const list = rites().filter((r) => riteKind(r) === k);
-      return list.length ? `<section class="in-grp"><h3 class="sub">${label} <span class="dim">${note}</span></h3><div class="in-cards" role="group" aria-label="${label}">${list.map((r) => {
-        const c = riteFor(r), short = riteShort(r);
+  // One group at a time, as on Intrigue: ‹ NAME › with a dot for each group under it, then its cards. The arrows cycle;
+  // a dot jumps. Opens on the group last looked at, else the chosen rite's.
+  const groupsOf = () => GROUPS.map(([k, label, note]) => [label, note, rites().filter((r) => riteKind(r) === k)]).filter(([, , l]) => l.length);
+  let gi = Math.max(0, groupsOf().findIndex(([, , l]) => l.some((r) => r.id === pick)));
+  try { const v = localStorage.getItem(`${KEY}.group`); if (v != null && Number(v) >= 0 && Number(v) < groupsOf().length) gi = Number(v); } catch { /* storage off */ }
+  function cards(focus) {
+    const groups = groupsOf(), n = groups.length;
+    if (!n) { $('rites').innerHTML = '<p class="dim">This server sends no rites.</p>'; return; }
+    gi = Math.min(gi, n - 1);
+    const [label, note, list] = groups[gi];
+    $('rites').innerHTML = `<section class="in-car" aria-roledescription="carousel" aria-label="Rites">
+      <div class="in-carh"><button type="button" class="btn in-arrow" data-step="-1" aria-label="Previous group: ${esc(groups[(gi + n - 1) % n][0])}">‹</button>
+        <div class="in-gwrap"><h3 class="in-gname" aria-live="polite">${esc(label)}</h3>
+          <div class="in-dots" role="group" aria-label="Groups">${groups.map(([name], i) => `<button type="button" class="in-dot${i === gi ? ' on' : ''}" data-group="${i}" aria-label="${esc(name)}" aria-current="${i === gi}" title="${esc(name)}"></button>`).join('')}</div></div>
+        <button type="button" class="btn in-arrow" data-step="1" aria-label="Next group: ${esc(groups[(gi + 1) % n][0])}">›</button></div>
+      <p class="in-gnote dim small">${esc(note)}</p>
+      <div class="in-cards" role="group" aria-label="${esc(label)}, ${gi + 1} of ${n}">${list.map((r) => {
+        const c = riteFor(r), short = riteShort(r), k = riteKind(r);
         return `<button type="button" class="in-op${r.id === pick ? ' on' : ''}${short ? ' cant' : ''}" data-rite="${esc(r.id)}" aria-pressed="${r.id === pick}">
           <span class="in-name">${esc(r.name)}</span><span class="in-does">${esc(riteDoes(r))}</span>
           <span class="in-figs"><span><b>${ap(c)}${fmt(c.aether)}</b> aether</span>${c.incense ? `<span><b>${fmt(c.incense)}</b> ${esc(mat)}</span>` : ''}${k === 'self' ? '' : `<span><b>${pct(r.chance_bp)}</b> odds</span>`}${r.needs ? `<span class="need">${r.needs === 'war' ? 'war only' : `${esc(r.needs)} or war`}</span>` : ''}</span></button>`;
-      }).join('')}</div></section>` : '';
-    }).join('');
+      }).join('')}</div>
+      </section>`;
+    if (focus) host.querySelector(focus)?.focus();
   }
+  function showGroup(i, focus) {
+    const n = groupsOf().length;
+    gi = ((i % n) + n) % n;
+    try { localStorage.setItem(`${KEY}.group`, String(gi)); } catch { /* storage off */ }
+    cards(focus);
+  }
+  on($('rites'), 'click', (ev) => {
+    const st = ev.target.closest('[data-step]'), dt = ev.target.closest('[data-group]');
+    if (st) showGroup(gi + Number(st.dataset.step), `[data-step="${st.dataset.step}"]`);
+    if (dt) showGroup(Number(dt.dataset.group), `[data-group="${dt.dataset.group}"]`);
+  });
+  // Left and right arrow keys on the header or dots cycle too.
+  on($('rites'), 'keydown', (ev) => {
+    if (!ev.target.closest('.in-carh') || !['ArrowLeft', 'ArrowRight'].includes(ev.key)) return;
+    ev.preventDefault();
+    const d = ev.key === 'ArrowRight' ? 1 : -1, n = groupsOf().length;
+    showGroup(gi + d, ev.target.closest('.in-dots') ? `[data-group="${(gi + d + n) % n}"]` : `[data-step="${d}"]`);
+  });
   on($('rites'), 'click', (ev) => {
     const b = ev.target.closest('[data-rite]');
     if (!b) return;

@@ -1511,3 +1511,8 @@
   & .lwar .wr-btns { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
   @media (max-width: 760px) { & :is(.llead, .lwar) .st-glance { grid-template-columns: repeat(2, 1fr); } }
 }
+
+:root[data-view="line"] {
+  /* Rites' groups ride Intrigue's carousel; a quiet line under the header says what the group is. */
+  & .lrite .in-gnote { margin: 6px 0 0; text-align: center; }
+}
