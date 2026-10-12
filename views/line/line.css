@@ -801,7 +801,9 @@
   & .lmil .mil-shop input[type=number] { width: 84px; }
   & .lmil .mil-shop tr.grp th { padding-top: 14px; font: 600 .82rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); background: none; }
   & .lmil .mil-shop td.cost.short { color: var(--l-bad); }
-  @media (max-width: 760px) { & .lmil .st-glance { grid-template-columns: repeat(2, 1fr); } & .lmil table.mil-tbl { min-width: 760px; } }
+  @media (max-width: 760px) { & .lmil .st-glance { grid-template-columns: repeat(2, 1fr); } }
+  /* As cards (cards.js), its cells keep their own height: the table's fixed row height would overlap them. */
+  & .lmil .mil-tbl.cards tbody :is(td, th) { height: auto; }
 }
 
 :root[data-view="line"] {

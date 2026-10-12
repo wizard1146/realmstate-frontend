@@ -28,13 +28,20 @@ function label(t) {
 }
 
 /** Lays out every table under `host`: cards where a table is too wide for a phone, a table otherwise. A table marked
- * nocards (a timeline, where the columns are the point) scrolls sideways instead. */
+ * nocards (a timeline, where the columns are the point) scrolls sideways instead. "Too wide" is measured as the
+ * browser would lay the table out by itself (text wrapping, but names, numbers and inputs whole): a table with fixed
+ * column widths never overflows, it squeezes its rows instead, so its own width says nothing. */
 export function cardify(host) {
   for (const t of host.querySelectorAll('table.tbl:not(.nocards)')) {
     t.classList.remove('cards');
     if (!phone() || !label(t)) continue;
     const box = t.parentElement.closest('.scrollx') || t.parentElement;
-    if (t.scrollWidth > box.clientWidth + 1) t.classList.add('cards');
+    const was = [t.style.tableLayout, t.style.minWidth];
+    t.style.tableLayout = 'auto';
+    t.style.minWidth = '0';
+    const wide = t.scrollWidth > box.clientWidth + 1;
+    [t.style.tableLayout, t.style.minWidth] = was;
+    if (wide) t.classList.add('cards');
   }
 }
 
