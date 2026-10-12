@@ -40,7 +40,7 @@ are then on different addresses. The choice lasts for that tab; `?game=` with no
 
 To host it, put these files on any static host (GitHub Pages serves this repo as it is, at
 https://play.realmstate.net). From play.realmstate.net it plays the live game at
-https://realmstate.net; from any other address, a game server on the player's own computer
+https://server.realmstate.net; from any other address, a game server on the player's own computer
 (`http://localhost:3300`). `?game=https://...` points it anywhere else, such as a Cloudflare tunnel.
 
 **Build your own.** Fork this repository, change it as you like, and host it anywhere: it plays the
