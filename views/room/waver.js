@@ -6,7 +6,7 @@ import * as act from '../../core/actions.js';
 import { fmt, esc } from '../../core/words.js';
 
 /** Your wavering characters, optionally of one kind ('general' | 'academic'). */
-export const wavering = (kind) => (store.house?.wavering || []).filter((w) => !kind || w.character?.kind === kind);
+const wavering = (kind) => (store.house?.wavering || []).filter((w) => !kind || w.character?.kind === kind);
 const key = (w) => `${w.character.kind}:${w.character.id}`;
 const left = (w) => Math.max(0, w.until_tick - store.tick);
 

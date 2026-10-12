@@ -36,6 +36,22 @@ body { background: var(--bg); color: var(--ink); font: var(--font); -webkit-text
 
 /* ---------- the view switch ---------- */
 
+/* ---------- can't reach the game: a card, a quiet pulse, the next try counting down ---------- */
+.gate.offline { text-align: center; }
+.gate.offline .gate-head { justify-content: center; }
+.gate.offline h1 .pre { display: block; font-size: 0.62em; font-weight: 400; letter-spacing: 0.04em; text-transform: none; color: var(--muted); }
+.gate.offline h2 { margin: 0.4rem 0 0.5rem; font-size: 1.15rem; }
+.gate.offline .lede { margin-bottom: 0.7rem; }
+.gate.offline .row.end { justify-content: center; }
+.off-mark { display: flex; justify-content: center; gap: 7px; margin: 0.9rem 0 0.3rem; }
+.off-mark i { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); opacity: 0.25; animation: off-pulse 1.4s infinite ease-in-out; }
+.off-mark i:nth-child(2) { animation-delay: 0.2s; }
+.off-mark i:nth-child(3) { animation-delay: 0.4s; }
+@keyframes off-pulse { 0%, 80%, 100% { opacity: 0.25; transform: scale(0.85); } 40% { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .off-mark i { animation: none; opacity: 0.6; } }
+.off-next { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.off-detail { margin: 0.9rem 0 0; font-size: 0.8rem; color: var(--muted); overflow-wrap: anywhere; }
+
 /* ---------- the gate: sign in, found a house ---------- */
 .gate {
   width: min(27rem, calc(100% - 32px)); margin: 10vh auto 24px; padding: 1.2rem 1.3rem 1.1rem;
@@ -66,3 +82,13 @@ body { background: var(--bg); color: var(--ink); font: var(--font); -webkit-text
 .gate .where input { width: 5.5rem; text-align: right; }
 .gate .where .hint { flex-basis: 100%; }
 @media (max-width: 400px) { .gate .grid2 { grid-template-columns: minmax(0, 1fr); } }
+
+/* The view switch (War room / Map), shown by both views. */
+.vswitch { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+.vswitch-l { font-size: .8em; opacity: .8; }
+.vswitch select { font: inherit; color: inherit; background: var(--field); border: 1px solid var(--line); border-radius: var(--radius); padding: 2px 6px; min-height: 1.9rem; }
+.vswitch kbd {
+  font: 0.72rem/1 ui-monospace, Menlo, Consolas, monospace; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 4px; padding: 2px 4px;
+}
+@media (hover: none) { .vswitch kbd { display: none; } }

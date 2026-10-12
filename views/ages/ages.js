@@ -29,7 +29,11 @@ export function mountAges() {
     </header>
     <p class="dlg-msg status" id="ag-msg" role="status" aria-live="polite"></p>
     <div class="dlg-b" id="ag-b" tabindex="-1"></div>`;
-  document.body.append(dlg);
+  // Inside a .room-scope, so the War Room's dialog styles (and each view's look for them) reach it from any view.
+  const scope = document.createElement('div');
+  scope.className = 'room-scope ages-scope';
+  scope.append(dlg);
+  document.body.append(scope);
   const body = dlg.querySelector('#ag-b');
   const pick = dlg.querySelector('#ag-age');
   let ac = null, st = null, recap = null, staff = null, access, returnTo = null;

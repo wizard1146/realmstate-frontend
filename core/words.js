@@ -8,8 +8,15 @@ let myHouseId = null;
 /** The store tells words which house is yours (news reads differently for each side). */
 export const setMyHouse = (id) => { myHouseId = id; };
 
+/** A dragon as a sentence's subject: "Seraphel the Pale Lantern, an Iridescent dragon," or "A Magma dragon" or "A dragon". */
+function dragonWho(n) {
+  const k = n.kind ? names.dragons?.[n.kind] || n.kind[0].toUpperCase() + n.kind.slice(1) : '';
+  const kind = k ? `${/^[AEIOU]/i.test(k) ? 'an' : 'a'} ${k} dragon` : 'a dragon';
+  return n.dragon ? `${n.dragon}, ${kind},` : kind[0].toUpperCase() + kind.slice(1);
+}
+
 /** Display names, filled from /rules and your race by the store. */
-export const names = { buildings: {}, attacks: {}, ops: {}, rites: {}, riteFx: {}, units: [], traits: {}, mats: {} };
+export const names = { buildings: {}, attacks: {}, ops: {}, rites: {}, riteFx: {}, units: [], traits: {}, mats: {}, dragons: {} };
 
 export const fmt = (n) => (typeof n === 'number' && Number.isFinite(n) ? n.toLocaleString('en-US') : String(n ?? '–'));
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -214,6 +221,9 @@ export function describe(o, cmd) {
     case 'protection_left': return 'You left protection. Others can now attack you, and you them.';
     case 'explored': return `Exploring ${fmt(o.acres)} acres for ${fmt(o.gold)} gold${o.soldiers ? ` and ${fmt(o.soldiers)} soldiers, who go to settle it` : ''}. They arrive ${when(o.arrives_at)}.${o.books ? ` The explorers found lost texts: ${fmt(o.books)} books.` : ''}`;
     case 'training': return `Training ${fmt(o.count)} ${uname(o.unit)} for ${fmt(o.gold)} gold, ${readySpread(o)} (${zoneLabel()}).`;
+    case 'adept_cap_set': return o.per_acre_tenths == null ? 'No adept limit: your shrines gather adepts up to what they can hold.'
+      : `Adept limit set to ${(o.per_acre_tenths / 10).toFixed(1)} an acre: your shrines stop gathering there.`;
+    case 'adepts_released': return `${fmt(o.count)} adepts went back to the fields as peasants.${o.per_acre_tenths == null ? '' : ` Adept limit now ${(o.per_acre_tenths / 10).toFixed(1)} an acre, so they aren't gathered back.`}`;
     case 'draft_set': return `Draft rate set to ${o.rate_bp / 100}%. Each tick, up to 1% of your peasants are drafted as soldiers until you reach it.`;
     case 'building': return `Building ${fmt(o.count)} ${bname(o.building)} for ${fmt(o.gold)} gold. Ready ${when(o.ready_at)}.`;
     case 'upgrading': return `Upgrading ${fmt(o.count)} troops into ${uname(o.unit)} for ${fmt(o.material)} ${names.mats.upgrade || 'material'}. Ready ${when(o.ready_at)}.`;
@@ -325,12 +335,6 @@ function castLine(o) {
 /** Was this outcome a setback (for colouring the message)? */
 export const outcomeTone = (o) => ((o.type === 'attack' || o.type === 'operation' || o.type === 'cast' || o.type === 'spy') && (!o.success || o.reflected) ? 'bad' : 'good');
 
-// "Vharzul the Unquenched, a Magma dragon" (older news has no name: "A dragon").
-const dragonWho = (n) => {
-  if (!n.dragon || n.dragon === 'a dragon') return 'A dragon';
-  const kind = n.kind ? `${n.kind[0].toUpperCase()}${n.kind.slice(1)} dragon` : 'dragon';
-  return n.dragon.startsWith('the ') ? cap(n.dragon) : `${cap(n.dragon)}, a${/^[AEIOU]/.test(kind) ? 'n' : ''} ${kind},`;
-};
 // What a dragon took, in the words of its kind.
 const dragonToll = (n) => {
   const and = (xs) => xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}` : xs[0] || '';
@@ -345,7 +349,8 @@ const dragonToll = (n) => {
   if (n.horses || n.chariots) extra.push(`It swallowed ${and([n.horses && `${fmt(n.horses)} horses`, n.chariots && `${fmt(n.chariots)} chariots`].filter(Boolean))}.`);
   return [burned ? `It burned ${burned}.` : 'It burned nothing of note.', ...extra].join(' ');
 };
-const listing = (m) => Object.entries(m || {}).filter(([, n]) => n).map(([k, n]) => `${fmt(n)} ${k}`).join(', ') || 'none';
+/** "302 Banks, 120 Farms": counts by key, buildings by their names (materials keep theirs). */
+const listing = (m) => Object.entries(m || {}).filter(([, n]) => n).map(([k, n]) => `${fmt(n)} ${names.buildings[k] || k}`).join(', ') || 'none';
 /** Troops as a spy sees them: {soldiers, offense, defense, elites} (base and upgraded together, no thieves). */
 export function forcesText(f) {
   if (!f) return 'none';

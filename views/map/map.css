@@ -1,0 +1,408 @@
+/* Map view: map-first, slate and brass, sans with small caps, a tick pulse.
+   Every rule is nested under :root[data-view="map"], so nothing here can touch the war room. */
+
+:root[data-view="map"] {
+  --sea: #dfe4ea;
+  --land-0: #c6d0da;
+  --land-1: #bcc7d2;
+  --land-2: #cdd6df;
+  --land-mine: #e6dcc2;
+  --edge: #f1f4f7;
+  --border: #6c7b8b;
+  --seat: #8c99a7;
+  --house: #3f4c5a;
+  --house-edge: #f3f5f7;
+  --mate: #5d7894;
+  --brass: #9a7426;
+  --brass-hi: #c39a45;
+  --brass-soft: #f1e6cb;
+  --war: #a2442f;
+  --ok: #3d6b4f;
+  --map-ink: #1d2733;
+  --map-muted: #586676;
+  --glass: rgba(246, 248, 250, 0.94);
+  --panel-solid: #f6f8fa;
+  --panel-line: #cdd5dd;
+  --shadow: 0 8px 28px rgba(28, 40, 54, 0.18), 0 1px 3px rgba(28, 40, 54, 0.12);
+  --on-brass: #fffaf0;
+  --r: 10px;
+
+  /* Shell tokens (gate, message line, view switch). */
+  --bg: var(--sea); --panel: var(--glass); --field: #ffffff; --ink: var(--map-ink); --muted: var(--map-muted);
+  --line: var(--panel-line); --accent: var(--brass); --on-accent: var(--on-brass); --bad: var(--war); --good: var(--ok);
+  --focus: #b8862b; --radius: 8px;
+  --font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-view="map"] {
+    --sea: #10161d;
+    --land-0: #253140;
+    --land-1: #1f2a37;
+    --land-2: #2a3747;
+    --land-mine: #3a3424;
+    --edge: #121920;
+    --border: #6f8193;
+    --seat: #4a5a6b;
+    --house: #b9c6d3;
+    --house-edge: #10161d;
+    --mate: #86a6c5;
+    --brass: #d2a752;
+    --brass-hi: #e9c57a;
+    --brass-soft: #3a3020;
+    --war: #e07a5f;
+    --ok: #8fc5a1;
+    --map-ink: #e2e8ee;
+    --map-muted: #94a3b3;
+    --glass: rgba(22, 30, 39, 0.94);
+    --panel-solid: #161e27;
+    --panel-line: #2f3c4b;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.4);
+    --on-brass: #1a1408;
+    --field: #0f151c; --focus: #e9c57a;
+    color-scheme: dark;
+  }
+}
+
+:root[data-view="map"] {
+  & body { overflow: hidden; height: 100dvh; }
+  & body:has(#gate:not([hidden])) { overflow: auto; height: auto; }
+  & .sc, & h2, & h3, & dt, & th, & legend, & label.sc {
+    font-variant-caps: all-small-caps; letter-spacing: 0.07em; font-weight: 600;
+  }
+  & .num, & td.r, & th.r, & dd { font-variant-numeric: tabular-nums; }
+
+  /* The message line: a floating pill under the HUD; a plain line above the gate. */
+  & .status {
+    position: fixed; left: 50%; transform: translateX(-50%); top: var(--status-top, 84px);
+    z-index: 30; max-width: min(36rem, calc(100% - 32px)); width: max-content;
+    background: var(--glass); border: 1px solid var(--panel-line); box-shadow: var(--shadow);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    border-radius: 999px; padding: 0.4rem 1rem; font-size: 0.92rem;
+  }
+  & .status:empty { display: none; }
+  & .status.bad { border-color: var(--war); }
+  & .status.good { border-color: var(--brass); }
+  & body:has(#gate:not([hidden])) .status { top: 16px; border-radius: 10px; }
+
+  & .gate { box-shadow: var(--shadow); border-radius: 14px; font-variant-caps: normal; }
+  & .gate h1 { font-variant-caps: all-small-caps; text-transform: none; letter-spacing: 0.16em; font-size: 1.6rem; }
+  & .gate label, & .gate legend { font-variant-caps: all-small-caps; letter-spacing: 0.07em; font-size: 0.95rem; }
+
+  & .vswitch { font-variant-caps: all-small-caps; letter-spacing: 0.07em; font-weight: 600; color: var(--map-muted); }
+  & .vswitch select { border-radius: 999px; padding: 0.1rem 0.7rem; background: var(--panel-solid); color: var(--brass); font-weight: 600; letter-spacing: 0.04em; }
+
+  & button, & input, & select { font: inherit; color: inherit; }
+  & .mapview button {
+    border: 1px solid var(--panel-line); background: var(--field); border-radius: 8px;
+    padding: 0.4rem 0.8rem; cursor: pointer; min-height: 2.25rem;
+  }
+  & .mapview button:hover { border-color: var(--brass); }
+  & .mapview button.primary { background: var(--brass); border-color: var(--brass); color: var(--on-brass); font-weight: 600; }
+  & .mapview button.primary:hover { background: var(--brass-hi); }
+  & .mapview button.danger { background: var(--war); border-color: var(--war); color: #fff; }
+  & .mapview button.ghost { background: transparent; }
+  & .mapview button.small { padding: 0.2rem 0.6rem; min-height: 1.9rem; font-size: 0.88rem; }
+  & .mapview button:disabled { opacity: 0.5; cursor: progress; }
+  & .mapview input, & .mapview select {
+    background: var(--field); border: 1px solid var(--panel-line); border-radius: 8px;
+    padding: 0.38rem 0.55rem; min-height: 2.25rem; min-width: 0;
+  }
+  & .mapview input.num { text-align: right; width: 5.5rem; }
+  & .mapview input.addr { text-align: left; width: 8.5rem; }
+  & :focus-visible { outline: 2.5px solid var(--focus); outline-offset: 2px; }
+  & .house:focus-visible { outline: none; }
+  & .house:focus-visible .mark { stroke: var(--focus); stroke-width: 3; }
+
+  /* ---------- the map ---------- */
+  & .map { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; background: var(--sea); }
+  & .map.panning { cursor: grabbing; }
+  & .state { stroke: var(--edge); stroke-width: 1.5; vector-effect: non-scaling-stroke; cursor: zoom-in; transition: fill 0.6s; }
+  & .state.realm-tone-0 { fill: var(--land-0); }
+  & .state.realm-tone-1 { fill: var(--land-1); }
+  & .state.realm-tone-2 { fill: var(--land-2); }
+  & .state:hover { fill: var(--land-2); filter: brightness(1.04); }
+  & .state.mine { fill: var(--land-mine); }
+  & .realm-border { fill: none; stroke: var(--border); stroke-width: 2; stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none; }
+  & .realm-border.mine { stroke: var(--brass); stroke-width: 3; }
+  & .seat { fill: var(--seat); opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  & .z-mid .seat { opacity: 0.55; }
+  & .state-label { font-size: min(calc(11px * var(--k, 1)), 14px); fill: var(--map-muted); text-anchor: middle; pointer-events: none; opacity: 0; font-variant-numeric: tabular-nums; }
+  & .z-mid .state-label { opacity: 1; }
+  & .realm-label {
+    font-size: min(calc(13px * var(--k, 1)), 20px); fill: var(--map-muted); text-anchor: middle; pointer-events: none;
+    font-variant-caps: all-small-caps; letter-spacing: 0.12em; font-weight: 600;
+    paint-order: stroke; stroke: var(--sea); stroke-width: min(calc(4px * var(--k, 1)), 5px); stroke-linejoin: round;
+  }
+  & .z-near .realm-label { opacity: 0.5; }
+
+  & .house { cursor: pointer; }
+  & .house .mark { fill: var(--house); stroke: var(--house-edge); stroke-width: 1.2; transition: r 0.4s; }
+  & .house.mate .mark { fill: var(--mate); }
+  & .house.mine .mark { fill: var(--brass); stroke: var(--on-brass); }
+  & .house .hit { fill: transparent; }
+  & .house .shield { fill: none; stroke: var(--map-muted); stroke-width: 0.9; stroke-dasharray: 2 1.6; }
+  & .house .halo { fill: none; stroke: var(--brass); stroke-width: 1.4; }
+  & .pulse-ring { fill: none; stroke: var(--brass); stroke-width: 1.8; opacity: 0; transform-box: fill-box; transform-origin: center; pointer-events: none; }
+  & .house.selected .mark { stroke: var(--brass); stroke-width: 2.4; }
+  & .house.selected:not(.mine) .mark { fill: var(--map-ink); }
+  /* Names are placed by worldmap.js so they don't collide; the halo stroke keeps them legible. */
+  & .house-label {
+    font-size: calc(11.5px * var(--k, 1)); font-weight: 500; fill: var(--map-ink); pointer-events: none;
+    paint-order: stroke; stroke: var(--sea); stroke-width: calc(3.5px * var(--k, 1)); stroke-linejoin: round;
+  }
+  & .house-label.mine { font-weight: 700; fill: var(--brass); }
+  & .house-label.selected { font-weight: 700; }
+  & .house-label.hover { font-weight: 600; }
+
+  & .war-line { fill: none; stroke: var(--war); stroke-width: 2.6; stroke-dasharray: 7 5; vector-effect: non-scaling-stroke; pointer-events: none; }
+  & .ceasefire-line { fill: none; stroke: var(--map-muted); stroke-width: 1.6; stroke-dasharray: 1 5; stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none; }
+  & .war-hatch { fill: url(#hatch); pointer-events: none; }
+  & .hatch-line { stroke: var(--war); stroke-width: 2; opacity: 0.35; }
+
+  /* ---------- floating chrome ---------- */
+  & .hud, & .mapctl, & .dock, & .sheet, & .goto, & .legend {
+    position: fixed; background: var(--glass); border: 1px solid var(--panel-line); box-shadow: var(--shadow);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  }
+
+  & .hud {
+    top: 12px; left: 12px; right: 12px; border-radius: var(--r);
+    display: flex; align-items: center; flex-wrap: wrap; gap: 0.35rem 1.25rem;
+    padding: 0.5rem 0.85rem; z-index: 20;
+  }
+  & .crest { display: flex; align-items: baseline; gap: 0.6rem; min-width: 0; }
+  & .brand { font-variant-caps: all-small-caps; letter-spacing: 0.16em; font-weight: 700; color: var(--brass); }
+  & .brand .banner { color: var(--map-muted); font-weight: 600; }   /* the suite's name, quieter than the game's */
+  @media (max-width: 1499px) { & .brand .banner { display: none; } }   /* keeps the HUD on one line */
+  & .who { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  & .who .addr { color: var(--map-muted); font-weight: 400; font-variant-numeric: tabular-nums; margin-left: 0.35rem; }
+  & .tick { white-space: nowrap; font-size: 0.92rem; }
+  & .tick .sc { color: var(--map-muted); }
+  & .tick .sep { color: var(--map-muted); margin: 0 0.2rem; }
+  & .stats { display: flex; gap: 0.15rem 1rem; margin: 0; flex-wrap: wrap; }
+  & .stats > div { display: flex; flex-direction: column; align-items: flex-end; }
+  & .stats dt { font-size: 0.72rem; color: var(--map-muted); line-height: 1.1; }
+  & .stats dd { margin: 0; font-weight: 600; line-height: 1.2; padding: 0 0.15rem; border-radius: 4px; }
+  & .hud-end { margin-left: auto; display: flex; align-items: center; gap: 0.6rem; min-width: 0; }
+  @media (max-width: 1499px) { & .email { display: none; } }
+  & .email { color: var(--map-muted); font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 14rem; }
+
+  & .mapctl { right: 12px; bottom: 14px; display: flex; gap: 2px; padding: 4px; border-radius: var(--r); z-index: 10; }
+  & .mapctl button { min-width: 2.4rem; min-height: 2.4rem; padding: 0.2rem; background: transparent; border-color: transparent; font-size: 1.1rem; }
+  & .mapctl button.word { font-size: 0.72rem; font-variant-caps: all-small-caps; letter-spacing: 0.08em; font-weight: 700; }
+
+  & .goto { left: 12px; bottom: 84px; z-index: 10; border-radius: var(--r); display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.4rem 0.3rem 0.7rem; }
+  & .goto label { color: var(--map-muted); font-size: 0.85rem; }
+  & .goto input { width: 8.5rem; min-height: 1.9rem; padding: 0.15rem 0.45rem; font-variant-numeric: tabular-nums; }
+
+  & .legend {
+    left: 12px; bottom: 136px; z-index: 5; border-radius: var(--r); max-width: 15rem;
+    display: flex; flex-direction: column; gap: 0.15rem; padding: 0.45rem 0.7rem; font-size: 0.8rem; color: var(--map-muted);
+  }
+  & .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 0.45rem; vertical-align: -1px; }
+  & .legend .cover { margin: 0.3rem 0 0; padding-top: 0.3rem; border-top: 1px solid var(--panel-line); line-height: 1.3; }
+  & .lg-mine { background: var(--brass); box-shadow: 0 0 0 2px var(--panel-solid), 0 0 0 3.5px var(--brass); }
+  & .lg-mate { background: var(--mate); }
+  & .lg-prot { border: 1.5px dashed var(--map-muted); }
+  & .lg-war { border-radius: 0 !important; height: 3px !important; width: 14px !important; vertical-align: 3px !important; background: repeating-linear-gradient(90deg, var(--war) 0 5px, transparent 5px 8px); }
+
+  & .dock { left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 2px; padding: 4px; border-radius: 999px; z-index: 25; }
+  & .dock button {
+    border: 0; background: transparent; border-radius: 999px; padding: 0.35rem 0.9rem;
+    display: flex; align-items: center; gap: 0.4rem; font-weight: 600; position: relative;
+    font-variant-caps: all-small-caps; letter-spacing: 0.07em;
+  }
+  & .dock button .glyph { color: var(--map-muted); font-size: 0.95rem; }
+  /* "In full": the War Room's panes as detail views, a second row above the dock. */
+  & .dock-full { bottom: 64px; align-items: center; }
+  & .dock-full .dock-label { padding: 0 0.5rem 0 0.7rem; color: var(--map-muted); font-size: 0.78rem; white-space: nowrap; }
+  & .dock-full button { padding: 0.25rem 0.7rem; font-size: 0.92rem; }
+  & .dock button[aria-expanded="true"] { background: var(--brass); color: var(--on-brass); }
+  & .dock button[aria-expanded="true"] .glyph { color: inherit; }
+  & .badge { background: var(--war); color: #fff; border-radius: 999px; font-size: 0.68rem; min-width: 1.15rem; padding: 0 0.3rem; line-height: 1.15rem; text-align: center; font-variant-caps: normal; font-variant-numeric: tabular-nums; }
+
+  /* ---------- sheets: drawers on wide screens, bottom sheets on phones ---------- */
+  & .sheet {
+    top: var(--sheet-top, 84px); bottom: 118px; width: min(370px, calc(50vw - 40px));   /* clear of both dock rows */
+    border-radius: var(--r); z-index: 15; display: flex; flex-direction: column; opacity: 0;
+  }
+  & .sheet.left { left: 12px; transform: translateX(-24px); }
+  & .sheet.right { right: 12px; transform: translateX(24px); }
+  & .sheet.open { transform: none; opacity: 1; }
+  & .sheet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; padding: 0.7rem 0.9rem 0.5rem; border-bottom: 1px solid var(--panel-line); }
+  & .sheet-head h2 { margin: 0; font-size: 1.12rem; color: var(--brass); }
+  /* Links from a sheet to the War Room panel with the same thing in full. */
+  & .fulls { margin: 0.3rem 0 0; display: flex; flex-wrap: wrap; gap: 4px; }
+  & .fulls .full { border: 1px solid var(--panel-line); background: transparent; border-radius: 999px; padding: 0.05rem 0.6rem; font-size: 0.8rem; color: var(--brass); cursor: pointer; }
+  & .fulls .full:hover { background: var(--brass-soft); }
+  & button.link { border: 0; background: none; padding: 0; color: var(--brass); text-decoration: underline; cursor: pointer; font: inherit; }
+  & .uw-host { margin: 0.2rem 0 0.6rem; }
+  & .sub { margin: 0.1rem 0 0; color: var(--map-muted); font-size: 0.88rem; }
+  & .mapview button.close { border: 0; background: transparent; font-size: 1.35rem; line-height: 1; min-height: 2.2rem; min-width: 2.2rem; padding: 0; }
+  & .sheet-body { overflow-y: auto; overflow-x: hidden; padding: 0.6rem 0.9rem 0.9rem; flex: 1; overscroll-behavior: contain; }
+  & .sheet h3 { margin: 1rem 0 0.35rem; font-size: 0.95rem; color: var(--map-muted); }
+
+  & table { border-collapse: collapse; width: 100%; }
+  & .facts td { padding: 0.24rem 0; border-bottom: 1px solid var(--panel-line); vertical-align: top; }
+  & .facts td:first-child { color: var(--map-muted); padding-right: 0.75rem; font-variant-caps: all-small-caps; letter-spacing: 0.06em; font-weight: 600; white-space: nowrap; }
+  & .facts td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  & .facts.report td:last-child { text-align: left; }
+  & .list th { text-align: left; color: var(--map-muted); font-size: 0.8rem; padding: 0.2rem 0.3rem; border-bottom: 1px solid var(--panel-line); }
+  & .list td { padding: 0.3rem; border-bottom: 1px solid var(--panel-line); }
+  & .list .r { text-align: right; font-variant-numeric: tabular-nums; }
+  & .list td.empty, & li.empty { color: var(--map-muted); font-size: 0.9rem; }
+  & .list tr.mine td { background: var(--brass-soft); }
+  & .list tr.mine td:nth-child(2) { font-weight: 700; }
+  & .mapview button.linkish { border: 0; background: none; padding: 0; min-height: 0; text-align: left; text-decoration: underline; text-decoration-color: var(--panel-line); text-underline-offset: 3px; border-radius: 0; }
+  & .mapview button.linkish:hover { text-decoration-color: var(--brass); }
+  & .addr-s { color: var(--map-muted); font-variant-numeric: tabular-nums; font-size: 0.85rem; margin-left: 0.3rem; }
+
+  & .protect { border: 1px solid var(--panel-line); border-radius: 8px; padding: 0.5rem 0.7rem; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; justify-content: space-between; }
+  & .protect.on { border-color: var(--brass); background: var(--brass-soft); }
+  & .protect b { font-variant-caps: all-small-caps; letter-spacing: 0.06em; }
+
+  & .order { display: grid; grid-template-columns: 4.2rem auto minmax(0, 1fr) auto; gap: 0.4rem; align-items: center; margin: 0.45rem 0; }
+  & .order > label { font-variant-caps: all-small-caps; letter-spacing: 0.07em; font-weight: 600; }
+  & .order .unit { color: var(--map-muted); }
+  & .order .hint { grid-column: 1 / -1; margin: 0; }
+  & .order select { width: 100%; }
+  & .hint { color: var(--map-muted); font-size: 0.85rem; margin: 0.3rem 0; }
+  & .stack { display: flex; flex-direction: column; gap: 0.4rem; }
+  & .stack > label { margin-top: 0.2rem; }
+  & .row { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; }
+  & .row.end { justify-content: flex-end; }
+  & .send { border: 1px solid var(--panel-line); border-radius: 8px; padding: 0.3rem 0.6rem 0.5rem; margin: 0.2rem 0; min-width: 0; }
+  & .send legend { color: var(--map-muted); padding: 0 0.3rem; }
+  & .unit-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 0.4rem; align-items: center; padding: 0.15rem 0; }
+  & .unit-row .have { color: var(--map-muted); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+
+  & .feed { list-style: none; margin: 0; padding: 0; }
+  & .feed li { padding: 0.45rem 0 0.45rem 0.7rem; border-left: 2px solid var(--panel-line); margin-bottom: 0.3rem; overflow-wrap: anywhere; }
+  & .feed li.bad { border-left-color: var(--war); }
+  & .feed li.good { border-left-color: var(--ok); }
+  & .feed li.fresh { border-left-color: var(--brass); }
+  & .feed time { display: block; color: var(--map-muted); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+
+  & .chat-body { display: flex; flex-direction: column; }
+  & .chat { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.45rem; }
+  & .chat li { max-width: 88%; align-self: flex-start; background: var(--field); border: 1px solid var(--panel-line); border-radius: 10px 10px 10px 3px; padding: 0.35rem 0.6rem; overflow-wrap: anywhere; }
+  & .chat li.empty { max-width: none; background: transparent; border: 0; padding: 0; }
+  & .chat li.me { align-self: flex-end; background: var(--brass-soft); border-color: var(--brass); border-radius: 10px 10px 3px 10px; }
+  & .chat .meta { display: block; font-size: 0.76rem; color: var(--map-muted); }
+  & .chat .meta b { color: var(--map-ink); font-weight: 600; }
+  & .chat-send { display: flex; gap: 0.4rem; padding: 0.6rem 0.9rem; border-top: 1px solid var(--panel-line); }
+  & .chat-send input { flex: 1; }
+
+  /* ---------- motion: the tick pulse ---------- */
+  @media (prefers-reduced-motion: no-preference) {
+    & .pulse-ring { animation: map-breathe 2.4s cubic-bezier(.2,.7,.3,1) 1; }
+    & .map.tick .state.mine { animation: map-glow 2.4s ease-out 1; }
+    & .house.mine .halo { animation: map-idle 4.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    & .sheet { transition: transform 0.28s cubic-bezier(.2,.8,.3,1), opacity 0.2s; }
+    & dd.flash { animation: map-flash 1.6s ease-out 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    & dd.flash { text-decoration: underline 2px var(--brass); }
+  }
+
+  /* ---------- phones ---------- */
+  @media (max-width: 760px) {
+    & .hud { top: 8px; left: 8px; right: 8px; padding: 0.4rem 0.6rem; gap: 0.3rem 0.8rem; }
+    & .brand { display: none; }
+    & .crest { flex: 1 1 8rem; }
+    & .hud-end { margin-left: 0; }
+    & .tick { order: 2; }
+    & .stats { order: 3; width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.1rem 0.4rem; }
+    & .stats dd { font-size: 0.9rem; }
+    & .email, & .hud-out { display: none; }
+    & #m-zrealm { display: none; }
+    & .mapctl button { min-width: 2.2rem; min-height: 2.2rem; }
+    & .legend { display: none; }
+    & .mapctl { right: 8px; bottom: 180px; flex-direction: column; }
+    & .goto { left: 8px; bottom: 128px; }
+    & .goto label { display: none; }
+    & .goto input { width: 7.5rem; }
+    & .dock { left: 8px; right: 8px; transform: none; justify-content: space-between; bottom: 10px; border-radius: 14px; }
+    & .dock button { flex-direction: column; gap: 0; padding: 0.25rem 0.3rem; flex: 1; font-size: 0.8rem; line-height: 1.1; border-radius: 10px; min-width: 0; }
+    & .badge { position: absolute; top: 0; right: 10%; }
+    & .sheet, & .sheet.left, & .sheet.right {
+      left: 0; right: 0; width: auto; top: auto; bottom: 0;
+      max-height: 74dvh; min-height: 40dvh;
+      border-radius: 16px 16px 0 0; transform: translateY(40px); z-index: 28;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    & .sheet.open { transform: none; }
+    & .sheet-head { position: relative; padding-top: 1rem; }
+    & .sheet-head::before { content: ""; position: absolute; left: 50%; top: 6px; width: 36px; height: 4px; margin-left: -18px; border-radius: 4px; background: var(--panel-line); }
+    & .order { grid-template-columns: 3.6rem 4.6rem minmax(0, 1fr) auto; }
+    & .order input.num { width: 100%; }
+    & .sheet-open .dock { display: none; }
+    & .dock-full { bottom: 70px; overflow-x: auto; justify-content: flex-start; scrollbar-width: none; }
+    & .dock-full .dock-label { display: none; }
+    & .dock-full button { flex: none; }
+  }
+  @media (max-width: 380px) {
+    & .tick .sep, & .tick .sc:first-child { display: none; }
+    & .order { grid-template-columns: 4.2rem minmax(0, 1fr) auto; }
+    & .order > label { grid-column: 1 / -1; }
+  }
+  @media (min-width: 761px) and (max-width: 1100px) {
+    & .dock { left: 12px; transform: none; }
+    & .mapctl button.word { padding: 0 0.35rem; }
+  }
+}
+
+/* ---------- War Room parts in map style ----------
+   The Map shows War Room parts as they are (the chat box, every pane's detail view) inside .room-scope, where
+   room.css styles them through its colour and font variables. Here those variables take the map's values, so
+   the same parts come out slate and brass, in the map's sans; then a few shapes the variables don't cover.
+   The map's own variables switch for dark mode, so these follow. */
+:root[data-view="map"] .room-scope {
+  --bone-bg: var(--sea);
+  --pane: var(--panel-solid);
+  --pane-2: color-mix(in srgb, var(--panel-line) 35%, var(--panel-solid));
+  --room-ink: var(--map-ink);
+  --room-muted: var(--map-muted);
+  --room-line: var(--panel-line);
+  --rule: color-mix(in srgb, var(--panel-line) 70%, transparent);
+  --head: var(--panel-solid);          /* header bars: light, as the map's sheets are */
+  --head-ink: var(--brass);
+  --key: var(--brass);                 /* highlights, active tabs, pane keys */
+  --moss: var(--brass);                /* primary buttons (EXEC, SEND) */
+  --moss-ink: var(--on-brass);
+  --rust: var(--war);
+  --up: var(--ok);
+  --down: var(--war);
+  --self: var(--brass-soft);
+  --tgt: color-mix(in srgb, var(--war) 16%, var(--panel-solid));
+  --focus: var(--brass);
+  --ch-world: var(--mate);             /* chat channels: the map's own colours */
+  --ch-realm: var(--brass);
+  --ch-state: var(--ok);
+  --room-mono: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;   /* tabular figures still line up */
+  --room-label: var(--room-mono);
+  --room-scale: calc(14 / 13);
+  color-scheme: inherit;
+}
+@media (max-width: 719px) { :root[data-view="map"] .room-scope { --room-scale: 1; } }   /* phones: the War Room's own size */
+:root[data-view="map"] .room-scope {
+  & .dlg { border: 0; border-radius: var(--r); box-shadow: var(--shadow); }
+  @media (max-width: 719px) { & .dlg { border-radius: 0; box-shadow: none; } }   /* full screen on phones, as in the War Room */
+  & .dlg::backdrop { background: color-mix(in srgb, var(--sea) 55%, transparent); backdrop-filter: blur(2px); }
+  & .dlg-h { border-bottom: 1px solid var(--panel-line); padding: 8px 10px 8px 14px; }
+  & .dlg-h h2 { font-variant-caps: all-small-caps; letter-spacing: .1em; font-size: 1.12rem; }
+  & .dlg-h h2 .key, & .pane-h .key { border-radius: 4px; }
+  & .btn, & input, & select, & .seg button, & .room input, & .room select { border-radius: 6px; }
+  & .btn { border-color: var(--panel-line); }
+  & .btn.primary { box-shadow: 0 1px 2px rgba(28, 40, 54, .18); }
+  & .seg { gap: 2px; }
+  & .seg button { border-color: var(--panel-line); }
+  & .sub, & th { font-variant-caps: all-small-caps; letter-spacing: .08em; }
+  & .tbl td { border-bottom-style: solid; }
+}
+
+@keyframes map-breathe { 0% { opacity: 0.95; transform: scale(0.7); } 100% { opacity: 0; transform: scale(3.2); } }
+@keyframes map-glow { 0% { fill: var(--brass-hi); } 100% { fill: var(--land-mine); } }
+@keyframes map-idle { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@keyframes map-flash { 0% { background: var(--brass); color: var(--on-brass); } 100% { background: transparent; } }

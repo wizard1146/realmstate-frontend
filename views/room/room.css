@@ -1,7 +1,8 @@
 /* War room view: moss, bone and iron. Monospace, no motion.
-   Every rule is nested under :root[data-view="room"], so nothing here can touch the map. */
+   Every rule is nested under :is(:root[data-view="room"], .room-scope): the War Room's own page, or a .room-scope
+   element where another view shows War Room parts (the Map's chat and detail views). Nothing else is touched. */
 
-:root[data-view="room"] {
+:is(:root[data-view="room"], .room-scope) {
   --bone-bg: #e4ddca;
   --pane: #f3eee1;
   --pane-2: #ebe5d4;
@@ -33,7 +34,7 @@
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
-  :root[data-view="room"] {
+  :is(:root[data-view="room"], .room-scope) {
     --bone-bg: #0d0f0e;
     --pane: #151816;
     --pane-2: #1b1f1c;
@@ -56,7 +57,7 @@
   }
 }
 
-:root[data-view="room"] {
+:is(:root[data-view="room"], .room-scope) {
   & body { display: flex; flex-direction: column; min-height: 100dvh; font-variant-numeric: tabular-nums; }
   & #view, & .room { display: contents; }
   & .bar { order: 0; }
@@ -111,6 +112,10 @@
   & .bar { display: flex; flex-wrap: wrap; align-items: center; background: var(--head); color: var(--head-ink); border-bottom: 1px solid var(--room-line); }
   & .bar > * { padding: 5px 10px; border-right: 1px solid color-mix(in srgb, var(--head-ink) 18%, transparent); white-space: nowrap; }
   & .bar .cell.sw { padding: 3px 8px; }
+  & .vswitch select { border-radius: 0; min-height: 22px; padding: 0 4px; letter-spacing: .04em; text-transform: uppercase; font-size: calc(12px * var(--room-scale)); font-family: var(--room-label); }
+  & .bar .vswitch { color: var(--head-ink); }
+  & .bar .vswitch select { background: var(--head); border-color: color-mix(in srgb, var(--head-ink) 40%, transparent); color: var(--key); font-weight: 700; }
+  & .bar .vswitch kbd { border-color: color-mix(in srgb, var(--head-ink) 40%, transparent); color: color-mix(in srgb, var(--head-ink) 70%, transparent); border-radius: 0; }
   & .bar .dim { color: color-mix(in srgb, var(--head-ink) 60%, transparent); }
   & .bar .brand { font-weight: 700; letter-spacing: .08em; color: var(--key); }
   & .bar .spacer { flex: 1; border: 0; padding: 0; }
@@ -289,8 +294,8 @@
 }
 
 /* Label face: headers, pane titles, field labels, buttons. Numbers always stay in the data face. */
-:root[data-view="room"] {
-  & .bar, & .pane-h, & .tabs button, & .seg button, & .btn, & .strip dt, & .sub,
+:is(:root[data-view="room"], .room-scope) {
+  & .bar, & .pane-h, & .tabs button, & .seg button, & .vswitch, & .btn, & .strip dt, & .sub,
   & th, & label, & legend, & .gate h1, & .fontlab .lab { font-family: var(--room-label); }
   & .num, & input, & select, & .bar b { font-family: var(--room-mono); }
   & abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cursor: help; }
@@ -335,7 +340,7 @@
 }
 
 /* ---------- Under way, MAX, detail views (moss, bone and iron; still no motion) ---------- */
-:root[data-view="room"] {
+:is(:root[data-view="room"], .room-scope) {
   & .short { color: var(--down) !important; }
   & .good { color: var(--up); }
   & .sub.first { margin-top: 0; }
@@ -411,10 +416,11 @@
   & .dgrid .sub { margin: 0 0 4px; font-size: calc(12px * var(--room-scale)); color: var(--room-ink); border-bottom: 1px solid var(--room-ink); padding-bottom: 2px; }
   & .dgrid .sub .dim { font-weight: 400; letter-spacing: 0; color: var(--room-muted); }
   & .scrollx { overflow-x: auto; max-width: 100%; }
-  & .dlg .tbl td, & .dlg .tbl th { padding: 3px 8px 3px 4px; }
-  & .dlg .tbl td.name { max-width: none; width: auto; white-space: nowrap; }
-  & .dlg .tbl td.wrap { white-space: normal; min-width: 24ch; }
-  & .dlg .tbl td.txt { text-align: right; white-space: normal; overflow-wrap: anywhere; }
+  & .detail-host .tbl td, & .detail-host .tbl th { padding: 3px 8px 3px 4px; }
+  & .detail-host .tbl td.name { max-width: none; width: auto; white-space: nowrap; }
+  & .sci-list tr.sci-cat { display: none; }   /* category headings: the War Room keeps its CAT column instead */
+  & .detail-host .tbl td.wrap { white-space: normal; min-width: 24ch; }
+  & .detail-host .tbl td.txt { text-align: right; white-space: normal; overflow-wrap: anywhere; }
   & .dgrid.act { grid-template-columns: minmax(0, 1.9fr) minmax(300px, 1fr); }
   & .dgrid.act > .bsec { grid-column: 1; grid-row: 1 / span 3; }
   & .dgrid.act > section:not(.bsec) { grid-column: 2; }
@@ -422,7 +428,7 @@
     & .dgrid.act { grid-template-columns: minmax(0, 1fr); }
     & .dgrid.act > .bsec, & .dgrid.act > section:not(.bsec) { grid-column: 1; grid-row: auto; }
   }
-  & .dlg .tbl tr.sum td { border-top: 1px solid var(--room-line); font-weight: 600; }
+  & .detail-host .tbl tr.sum td { border-top: 1px solid var(--room-line); font-weight: 600; }
   & .tbl .flag.l { color: var(--rust); }
   & .land.big { height: 14px; margin: 4px 0 8px; }
   & .dtools { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; margin-bottom: 8px; }
@@ -487,10 +493,10 @@
     & .tape.roomy li { grid-template-columns: 1fr; gap: 0; }
   }
 }
-:root[data-view="room"] .dlg-msg { flex: none; margin: 0; order: 2; border-top: 1px solid var(--room-line); border-bottom: 0; }
+:is(:root[data-view="room"], .room-scope) .dlg-msg { flex: none; margin: 0; order: 2; border-top: 1px solid var(--room-line); border-bottom: 0; }
 
 /* Upgraded units: a subline under their base unit. */
-:root[data-view="room"] {
+:is(:root[data-view="room"], .room-scope) {
   & .tbl tr.upg td { font-size: calc(11.5px * var(--room-scale)); }
   & .tbl tr.upg td.name { padding-left: 1.2em; color: var(--room-muted); }
   & .tbl tr.upg .sub-mark { color: var(--room-line); }
@@ -500,24 +506,24 @@
 
 /* Row hover: a very light wash on the row under the pointer, in panes and detail views.
    Off with the font lab's "Row hover" switch or /hover off (html[data-row-hover="off"]). */
-:root[data-view="room"]:not([data-row-hover="off"]) {
+:is(:root[data-view="room"], .room-scope):not([data-row-hover="off"]) {
   --row-hover: color-mix(in srgb, var(--room-ink) 4%, transparent);
   & :is(.pane-b, .dlg-b) :is(.tbl tr:has(> td):hover > td, li:hover, .uw-row:hover, .bg-row:not(.bg-head):hover) {
     background-image: linear-gradient(var(--row-hover), var(--row-hover));
   }
 }
 @media (prefers-color-scheme: dark) {
-  :root[data-view="room"]:not([data-row-hover="off"]) { --row-hover: color-mix(in srgb, var(--room-ink) 5%, transparent); }
+  :is(:root[data-view="room"], .room-scope):not([data-row-hover="off"]) { --row-hover: color-mix(in srgb, var(--room-ink) 5%, transparent); }
 }
 
 /* ---------- Soldiers, draft, ACT tabs, intrigue, rites, channels, tick lines ---------- */
-:root[data-view="room"] {
+:is(:root[data-view="room"], .room-scope) {
   --ch-world: #2f5f86; --ch-realm: #8a5a00; --ch-state: #476b34;
 }
 @media (prefers-color-scheme: dark) {
-  :root[data-view="room"] { --ch-world: #7fb0d8; --ch-realm: #e0b050; --ch-state: #8db36a; }
+  :is(:root[data-view="room"], .room-scope) { --ch-world: #7fb0d8; --ch-realm: #e0b050; --ch-state: #8db36a; }
 }
-:root[data-view="room"] {
+:is(:root[data-view="room"], .room-scope) {
   /* Soldiers in the strip: the drafted pool, marked with a moss rule. */
   & .strip > .sold { box-shadow: inset 0 3px 0 var(--moss); }
   & .tbl tr.sold td { font-weight: 700; border-bottom: 1px solid var(--room-line); }
@@ -559,7 +565,7 @@
   & .tbl.magic .force { margin-bottom: 2px; }
   & .optbl .needs { color: var(--rust); }
   & .optbl tr.grp td { font-family: var(--room-label); font-size: calc(11px * var(--room-scale)); letter-spacing: .06em; color: var(--room-muted); padding-top: 8px; border-bottom: 1px solid var(--room-line); }
-  & .dlg .optbl td.wrap { min-width: 22ch; }
+  & .detail-host .optbl td.wrap { min-width: 22ch; }
   & .sub.gap { margin-top: 14px; }
 
   /* ACT detail tabs */
@@ -624,8 +630,8 @@
 }
 
 /* ---------- RES detail: DOES, per-hour, graph rows ---------- */
-:root[data-view="room"] {
-  & .dlg .tbl td.does { white-space: normal; min-width: 30ch; max-width: 46ch; line-height: 1.35; }
+:is(:root[data-view="room"], .room-scope) {
+  & .detail-host .tbl td.does { white-space: normal; min-width: 30ch; max-width: 46ch; line-height: 1.35; }
   & td.does .does-now, & td.does .does-more { display: block; }
   & td.does .does-more { color: var(--room-muted); }
   & .tbl .up { color: var(--up); }
@@ -636,7 +642,7 @@
 }
 
 /* ---------- the resource graph (a smaller dialog above RES) ---------- */
-:root[data-view="room"] {
+:is(:root[data-view="room"], .room-scope) {
   & .dlg.gdlg { width: min(680px, calc(100vw - 24px)); height: fit-content; max-height: calc(100dvh - 24px); border: 1px solid var(--room-ink); box-shadow: 6px 6px 0 rgba(0, 0, 0, .28); }
   & .gdlg .dlg-h [data-gclose] { margin-left: auto; min-height: 24px; }
   & .g-body { padding: 10px 14px 12px; overflow: auto; font-size: calc(13px * var(--room-scale)); }
@@ -656,7 +662,7 @@
 }
 
 /* ---------- attack report cards (NEWS) ---------- */
-:root[data-view="room"] {
+:is(:root[data-view="room"], .room-scope) {
   & .tape li.battle { padding: 4px 0; }
   & .tape li.battle.fresh { color: inherit; }
   & .bcard { border-left: 3px solid var(--room-line); padding: 2px 0 2px 7px; min-width: 0; }
@@ -677,7 +683,7 @@
 }
 
 /* ---------- SCI: pane and detail ---------- */
-:root[data-view="room"] {
+:is(:root[data-view="room"], .room-scope) {
   & .sci-line { margin: 4px 0 0; overflow-wrap: anywhere; }
   & .sci-line .up { color: var(--up); }
   & .ac-attrs { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; min-width: 0; }
@@ -685,30 +691,30 @@
   & .sc-curve { display: block; width: 100%; max-width: 440px; height: auto; font-family: var(--room-mono); font-size: 10px; margin-top: 4px; }
   & .sc-now { fill: var(--moss); }
   & .sc-after { fill: var(--pane); stroke: var(--rust); stroke-width: 2; }
-  & .dlg .tbl td.up { color: var(--up); }
-  & .dlg .tbl td.down { color: var(--down); }
-  & .dlg .tbl tr.zero td { color: var(--room-muted); }
+  & .detail-host .tbl td.up { color: var(--up); }
+  & .detail-host .tbl td.down { color: var(--down); }
+  & .detail-host .tbl tr.zero td { color: var(--room-muted); }
 }
 
-:root[data-view="room"] { & .dform .w-name { max-width: 32ch; } }
+:is(:root[data-view="room"], .room-scope) { & .dform .w-name { max-width: 32ch; } }
 
-:root[data-view="room"] { & .ac-attrs label.check { display: inline-flex; gap: 5px; align-items: baseline; } }
+:is(:root[data-view="room"], .room-scope) { & .ac-attrs label.check { display: inline-flex; gap: 5px; align-items: baseline; } }
 
 /* Generals, heirs and the Hall of Deeds (MIL tabs) */
-:root[data-view="room"] {
+:is(:root[data-view="room"], .room-scope) {
   & .tbl td.nowrap { white-space: nowrap; }
   & .tbl td.nowrap .btn + .btn { margin-left: 3px; }
   & form.inl { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 4px; margin: 0; }
   & form.inl input { width: 9ch; }
   & form.inl [data-held] { flex-basis: 100%; }
-  & .dlg h4.small { font-family: var(--room-label); font-weight: 400; letter-spacing: .06em; color: var(--room-muted); margin: 8px 0 2px; }
+  & .detail-host h4.small { font-family: var(--room-label); font-weight: 400; letter-spacing: .06em; color: var(--room-muted); margin: 8px 0 2px; }
   & .ticket.attack #r-a-gen { max-width: 22ch; }
   & #d-a-gen { max-width: 100%; }
 }
-:root[data-view="room"] { & .dgrid.atk { grid-template-columns: minmax(0, 760px); } }
+:is(:root[data-view="room"], .room-scope) { & .dgrid.atk { grid-template-columns: minmax(0, 760px); } }
 
 /* ---------- added: attack extras, workshop, wavering, market, state ---------- */
-:root[data-view="room"] {
+:is(:root[data-view="room"], .room-scope) {
   & .ticket .troops.extra { border-top: 1px dotted var(--rule); padding-top: 4px; }
   & .troop.x label small { color: var(--room-muted); }
   & .ticket.make .verb { color: var(--moss); }
@@ -736,17 +742,17 @@
   & .tbl td .btn.mini + .btn.mini { margin-left: 4px; }
   & .tabsec-h { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; }
 }
-:root[data-view="room"] {
+:is(:root[data-view="room"], .room-scope) {
   & .trpick { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
   & .trpick input[type=checkbox] { width: auto; min-height: 0; }
 }
-:root[data-view="room"] {
+:is(:root[data-view="room"], .room-scope) {
   & .ticket.make { grid-template-columns: 6ch minmax(0, 1fr) auto; }
   & .ticket.make .args select { flex: 1 1 14ch; min-width: 12ch; }
   & .ticket.make .cost { grid-column: 2; grid-row: 2; text-align: left; white-space: normal; }
   & .ticket.make .btn.primary { grid-column: 3; grid-row: 1 / span 2; align-self: center; }
 }
-:root[data-view="room"] {
+:is(:root[data-view="room"], .room-scope) {
   & .ticket.mkt { grid-template-columns: 6ch minmax(0, 1fr) auto; }
   & .ticket.mkt .args select { flex: 0 1 auto; min-width: 7ch; }
   & .ticket.mkt .cost { grid-column: 2; grid-row: 2; text-align: left; white-space: normal; }
@@ -755,7 +761,7 @@
 }
 
 /* Your race's own mechanics (racebox.js): one line each, in the MIL pane and detail. */
-:root[data-view="room"] {
+:is(:root[data-view="room"], .room-scope) {
   & .race-box:empty { display: none; }
   & .race-box { margin-top: 6px; }
   & .race-row { margin: 3px 0; font-size: calc(12px * var(--room-scale)); line-height: 1.5; }
@@ -770,3 +776,27 @@
   & .devlab input.w4 { width: 5em; } & .devlab input.w5 { width: 9em; }
 }
 
+
+:is(:root[data-view="room"], .room-scope) {
+  /* The one target: a bar under the strip, a chip in each pane form, the same field in the detail views. */
+  & .tbar { order: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0; padding: 4px 10px; border-bottom: 1px solid var(--room-line); background: var(--pane); font-size: calc(13px * var(--room-scale)); }
+  & .tbar .tgt-field { display: inline-flex; align-items: center; gap: 6px; }
+  & .tbar .tgt-field label { color: var(--room-muted); letter-spacing: .08em; font-size: calc(11px * var(--room-scale)); }
+  & .tbar .tgt-name { display: none; }
+  & .tbar .tg-info { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; }
+  & .tbar .tg-intel { margin-left: auto; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; color: var(--room-muted); }
+  & .tbar .tg-war { color: var(--bad, #c0392b); font-weight: 600; letter-spacing: .06em; }
+  & .tbar .tg-prot { color: var(--room-muted); letter-spacing: .06em; }
+  & .tchip { font: inherit; font-size: .92em; padding: 1px 6px; border: 1px solid var(--room-line); border-radius: 3px; background: transparent; color: inherit; cursor: pointer; white-space: nowrap; max-width: 22em; overflow: hidden; text-overflow: ellipsis; }
+  & .tchip.none { color: var(--room-muted); border-style: dashed; }
+  & .tchip:disabled { cursor: default; color: var(--room-muted); }
+  & [data-tgt-name] { margin-left: 6px; }
+  /* A report's buildings: by group, with share of land and the change since the last one. */
+  & table.rep-b { margin-top: 6px; width: 100%; }
+  & dialog.keys-dlg { width: min(620px, calc(100vw - 32px)); }
+  & dialog.keys-dlg table.keys { margin: 10px 12px 14px; width: calc(100% - 24px); }
+  & dialog.keys-dlg kbd { font: inherit; font-weight: 700; white-space: nowrap; padding: 0 4px; border: 1px solid var(--room-line); border-radius: 3px; }
+  & table.rep-b tr.grp td { padding-top: 6px; color: var(--room-muted); letter-spacing: .08em; font-size: .85em; border-bottom: 1px solid var(--rule); }
+  & table.rep-b tr.zero td { color: var(--room-muted); }
+  & table.rep-b .up { color: var(--good, #2e7d32); } & table.rep-b .down { color: var(--bad, #c0392b); }
+}

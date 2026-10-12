@@ -1,6 +1,6 @@
 // Attack report cards for the news: your own attacks (`attack_report`, won or lost) and attacks
 // on you (`attacked`). Compact in the NEWS pane, in full in its detail view.
-import { fmt, esc, addr, names, when, dayTime, spoilParts, UNIT_ORDER } from '../../core/words.js';
+import { fmt, esc, addr, names, when, dayTime, spoilParts, UNIT_ORDER } from './words.js';
 
 /** The enemy's losses by slot meaning (their race is hidden). */
 const ROLES = ['soldiers', 'offense', 'defense', 'elites', 'thieves', 'offense+', 'defense+', 'elites+', 'mercenaries', 'elites++'];

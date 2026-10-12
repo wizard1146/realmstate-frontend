@@ -1,8 +1,8 @@
 // Per-tick change and history for each resource, from the tick reports (/ticks and each live tick,
 // newest first, at most 48). A report holds the deltas (gold, food, ..., materials {id: delta}) and
 // `levels` {key: level after the tick}.
-import { store } from '../../core/store.js';
-import { fmt } from '../../core/words.js';
+import { store } from './store.js';
+import { fmt } from './words.js';
 
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
 const sum = (a) => a.reduce((x, y) => x + y, 0);

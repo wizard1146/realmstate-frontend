@@ -6,6 +6,7 @@ import { store, say } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc, askText } from '../../core/words.js';
 import { isLeader } from './market.js';
+import { canPay, wonderDoes } from '../../core/truths.js';
 
 const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
 const pct = (bp) => `${(bp / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}%`;
@@ -16,20 +17,6 @@ const kv = (rows) => `<table class="tbl kv">${rows.map(([k, v]) => line(k, v)).j
 const ticksTo = (t) => (t > store.tick ? ` <span class="dim">(in ${t - store.tick} ticks)</span>` : '');
 const leaderWhy = () => (isLeader() ? '' : store.state?.leader ? `leader only (${store.state.leader.name} leads)` : 'leader only: your state has no leader yet');
 const CATS = ['economy', 'military', 'arcane'];
-
-/** What the house holds against a quest's ask: [enough?, the first shortfall]. */
-function canPay(a) {
-  const h = store.house;
-  if (!a || !h) return [false, ''];
-  const books = h.science?.books?.[CATS.indexOf(a.books_category || 'arcane')] ?? 0;
-  const short = [
-    a.gold > h.gold && `${fmt(a.gold - h.gold)} more gold`,
-    a.material && a.amount > (h.materials?.[a.material] || 0) && `${fmt(a.amount - (h.materials?.[a.material] || 0))} more ${a.material}`,
-    a.books > books && `${fmt(a.books - books)} more ${a.books_category || 'arcane'} books`,
-    a.aether > h.aether && `${fmt(a.aether - h.aether)} more aether`,
-  ].filter(Boolean);
-  return [!short.length, short.join(', ')];
-}
 
 // ---------- SCI: TRUTHS ----------
 /** Your quest (the Truth unnamed), or a line saying there is none. */
@@ -176,15 +163,6 @@ export function wondersDetailHTML() {
     <section><h3 class="sub">HALLS OF THE DEAD</h3><p class="small" id="d-wo-rv"></p><p class="btns"><button type="button" class="btn danger" id="d-wo-revive">REVIVE</button></p></section></div>`;
 }
 
-/** What a wonder does, in words, from its rules row. */
-function wonderDoes(w) {
-  const out = (w.mods || []).map((m) => `${m.bp > 0 ? '+' : '−'}${pct(Math.abs(m.bp))} ${m.stat.replace(/_/g, ' ')} for your state`);
-  if (w.academic_books_bp) out.push(`academics' books +${pct(w.academic_books_bp)} for your state`);
-  if (w.resilience_gain_bp) out.push(`Spell Resilience ${(10000 + w.resilience_gain_bp) / 10000}× as fast, up to ${pct(w.resilience_max_bp)}, for your state`);
-  if (w.revive_ticks) out.push(`once a season, the owner revives its army as it was ${w.revive_ticks} ticks earlier (${fmt(w.revive_renown)} renown)`);
-  return out.join('; ');
-}
-
 export function stateTruthsUpdate(b) {
   const h = store.house, p = P();
   if (!h) return;
@@ -270,9 +248,4 @@ export function stateTruthsWire(b, on) {
   on($('wo-revive'), 'click', (ev) => { if (confirm('Use the Halls of the Dead now? Once a season.')) act.revive({ button: ev.currentTarget }); });
 }
 
-/** For the ACT attack forms: the building select for kinds that choose one (Flanked Ambush). */
-export function buildingChoice(kindId) {
-  const k = (P().attacks || []).find((x) => x.id === kindId);
-  return !!k?.choose_building;
-}
-export const buildingOptions = () => `<option value="">any (spread over every building)</option>${(store.rules?.buildings || []).map((b) => `<option value="${esc(b.building)}">${esc(b.name)}</option>`).join('')}`;
+export { buildingChoice, buildingOptions } from '../../core/attack.js';

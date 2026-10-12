@@ -3,6 +3,7 @@
 // All fetching lives here (and in actions.js); views never call fetch.
 import { api } from './api.js';
 import { names, newsLine, setClockUtc, clock, setMyHouse } from './words.js';
+import { newsSilent } from './newsprefs.js';
 
 export const store = {
   rules: null,
@@ -73,6 +74,7 @@ export async function loadRules() {
   names.buildings = Object.fromEntries(r.buildings.map((b) => [b.building, b.name]));
   names.attacks = Object.fromEntries(r.params.attacks.map((k) => [k.id, k.name]));
   names.ops = Object.fromEntries(r.params.operations.map((o) => [o.id, o.name]));
+  names.dragons = Object.fromEntries((r.params.dragons || []).map((d) => [d.id, d.name]));
   names.rites = Object.fromEntries((r.params.rites || []).map((o) => [o.id, o.name]));
   names.riteFx = Object.fromEntries((r.params.rites || []).map((o) => [o.id, o.effect]));
   names.traits = Object.fromEntries((r.traits || []).map((t) => [t.trait, t.name]));
@@ -228,7 +230,7 @@ export function addNews(n) {
   if (/^(war_|peace_|ceasefire_|blockade_)/.test(n.type)) setTimeout(() => { loadWars(); loadRelations(); loadState(); }, 400);
   if (/^(vigil_|leader_|tax_|granted)/.test(n.type)) loadState();
   if (n.type === 'attacked' || n.type === 'spies_caught' || n.type === 'hex_suffered' || n.type === 'rite_resisted') setTimeout(loadRelations, 400);
-  if (n.type !== 'attack_report') { const [text, tone] = newsLine(n); say(text, tone === 'bad' ? 'bad' : 'good'); }
+  if (n.type !== 'attack_report' && !newsSilent(n)) { const [text, tone] = newsLine(n); say(text, tone === 'bad' ? 'bad' : 'good'); }
   refreshMeSoon(300);
 }
 /** A news line made on this page (your own operation or rite); kept until the page reloads. */

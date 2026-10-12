@@ -10,15 +10,17 @@ import { mountFontLab, clear as clearFonts, rowHover } from './fontlab.js';
 import { mountPaletteLab, clear as clearPalette, clearGlyphs } from './palettelab.js';
 import * as wiki from '../../core/wiki.js';
 import * as commands from '../../core/commands.js';
+import { switchHTML } from '../../core/viewswitch.js';
 import * as price from '../../core/prices.js';
 import * as uw from './underway.js';
 import { mountDetail, PANES as DETAIL_PANES, newsFeed } from './detail.js';
-import { battleCard, isBattle } from './battle.js';
+import { battleCard, isBattle } from '../../core/battle.js';
 import { paneHTML as sciPane, SCI_TAB } from './science.js';
 import { tabButtons, panelAttrs, wireTabs } from './tabs.js';
 import { MIL_TAB, fillPicker, generalLine } from './generals.js';
 import { generalsPaneHTML, hallPaneHTML } from './genpane.js';
-import { exploreQuote, buildQuote, trainQuote, trainNote, trainOptions, showQuote, attackHint, fillMax, exploreWhy, trainWhy, actTab, setActTab, ACT_TABS, ACT_LABELS, toAttacks, newTarget, attackSlots } from './orders.js';
+import { targetFieldHTML, targetChipHTML, renderTarget as showTarget, installTarget, attackBlock } from './target.js';
+import { exploreQuote, buildQuote, trainQuote, trainNote, trainOptions, showQuote, attackHint, fillMax, exploreWhy, trainWhy, actTab, setActTab, actTabKey, ACT_TAB, ACT_TABS, ACT_LABELS, toAttacks, newTarget, attackSlots } from './orders.js';
 import { mountChat, setChannel, CH_LABEL } from './chatbox.js';
 import { mountPane as mountIntrigue } from './intrigue.js';
 import { draftHTML, wireDraft } from './draft.js';
@@ -43,6 +45,7 @@ const TEMPLATE = (view) => `
   <span class="cell">NEXT <b class="num" id="r-next">--:--</b></span>
   <span class="cell"><span id="r-live-dot" class="dot" aria-hidden="true"></span><span id="r-live">OFF</span></span>
   <span class="spacer"></span>
+  <span class="cell sw">${switchHTML(view)}</span>
   <a class="cell wikilink" href="${wiki.WIKI}" target="_blank" rel="noopener" title="Open the wiki in a new tab (or type /wiki topic)">WIKI&nbsp;&#8599;</a>
   <span class="cell sw"><button class="btn ghost mini" id="r-fonts" aria-expanded="false" aria-controls="r-fontlab" title="Font lab (F)">Aa</button><button class="btn ghost mini" id="r-palette" aria-expanded="false" aria-controls="r-palettelab" title="Palette lab (P)"><span class="pal-ico" aria-hidden="true"></span><span class="vh">Palette</span></button></span>
   <span class="cell dim" id="r-email"></span>
@@ -59,6 +62,7 @@ const TEMPLATE = (view) => `
   <div><dt>MIGHT</dt><dd class="num" id="r-s-might">-</dd></div>
   <div><dt>RENOWN</dt><dd class="num" id="r-s-renown">-</dd></div>
 </dl>
+<form class="tbar" id="r-tbar" novalidate aria-label="Target">${targetFieldHTML('r-tg', 'TARGET')}<button type="button" class="btn mini" id="r-tg-clear" aria-label="Clear the target" title="Clear the target">CLEAR</button><span class="tg-info" id="r-tg-info" aria-live="polite"></span></form>
 <p class="waver-line" id="r-waver" hidden></p>
 
 <nav class="tabs" id="r-tabs" aria-label="Panes">
@@ -90,6 +94,7 @@ const TEMPLATE = (view) => `
         <span class="args"><label class="vh" for="r-b-bld">Building</label><select id="r-b-bld" name="building"></select> <span class="dim">×</span> <label class="vh" for="r-b-n">Count</label><input id="r-b-n" name="count" type="number" min="1" value="10" class="w5"><button type="button" class="btn mini max" data-max="build" aria-label="Most of this building you can build">MAX</button></span>
         <span class="cost num" id="r-b-cost"></span>
         <button class="btn primary">EXEC</button>
+        <span class="tnote short small" id="r-b-why" aria-live="polite" hidden></span>
       </form>
       <form id="r-f-train" class="ticket">
         <span class="verb">TRAIN</span>
@@ -97,6 +102,7 @@ const TEMPLATE = (view) => `
           <label class="vh" for="r-t-src">Train from</label><select id="r-t-src" name="source" title="Soldiers (cheaper, faster) or straight from peasants (direct)"><option value="soldiers">from SOLDIERS</option><option value="direct">DIRECT (peasants)</option></select></span>
         <span class="cost num" id="r-t-cost"></span>
         <button class="btn primary">EXEC</button>
+        <span class="tnote short small" id="r-t-why" aria-live="polite" hidden></span>
         <p class="dim small tnote" id="r-t-note"></p>
       </form>
       <p class="dim small" id="r-price-note"></p>
@@ -107,7 +113,7 @@ const TEMPLATE = (view) => `
       <form id="r-f-attack" class="ticket attack">
         <span class="verb">ATTACK</span>
         <span class="args">
-          <label for="r-a-target" title="Target house, as realm:state:seat">TGT</label> <input id="r-a-target" name="target" placeholder="r:s:seat" pattern="\\s*\\d+\\s*:\\s*\\d+\\s*:\\s*\\d+\\s*" required class="w8" autocomplete="off">
+          ${targetChipHTML('r-a-tchip')}
           <label for="r-a-kind">KIND</label> <select id="r-a-kind" name="kind"></select>
           <span id="r-a-bldw" hidden><label for="r-a-bld" title="The building type the land comes from first">FROM</label> <select id="r-a-bld" name="building"></select></span>
           <label for="r-a-gen" title="A general at home to lead the army (optional)">GEN</label> <select id="r-a-gen" name="general" aria-describedby="r-a-gen-line"></select>
@@ -117,6 +123,7 @@ const TEMPLATE = (view) => `
         <span class="cost num" id="r-a-cost"></span>
         <button class="btn danger">EXEC</button>
       </form>
+      <p class="short small" id="r-a-why" aria-live="polite" hidden></p>
       <p class="dim small" id="r-a-gen-line"></p>
       <p class="dim small" id="r-a-hint"></p>
      </div>
@@ -345,20 +352,25 @@ export function mount(root) {
     showQuote($('x-cost'), xq);
     $('x-why').hidden = !xq.why;
     $('x-why').textContent = xq.why ? `Can't: ${xq.why}.` : '';
-    showQuote($('b-cost'), buildQuote($('b-bld').value, $('b-n').value));
+    showQuote($('b-cost'), buildQuote($('b-bld').value, $('b-n').value), $('b-why'));
     const direct = $('t-src').value === 'direct';
-    showQuote($('t-cost'), trainQuote($('t-unit').value, $('t-n').value, direct));
+    showQuote($('t-cost'), trainQuote($('t-unit').value, $('t-n').value, direct), $('t-why'));
     $('t-note').textContent = trainNote(direct, $('t-unit').value);
     $('price-note').textContent = price.have()
-      ? 'Costs are exact, after your modifiers; red means you lack something (hover for why). Shift+Alt+1 opens the full order forms, with a grid to build many at once.'
+      ? 'Costs are exact, after your modifiers; red means you lack something, and the line under it says what. Shift+Alt+1 opens the full order forms, with a grid to build many at once.'
       : '≈ = estimate from base prices, before modifiers. The real cost is in the result line after EXEC.';
     const aq = ax.attackQuote(race, paneUnits(), ax.readExtras($('a-extra')));
     const at = ax.quoteText(aq, ax.readExtras($('a-extra')));
     $('a-cost').textContent = at.text;
     $('a-cost').title = at.title;
     $('a-cost').classList.toggle('short', aq.problems.length > 0);
+    // Why it can't go, readable: no target, the target itself, or what the army lacks.
+    const block = attackBlock();
+    const whys = [!store.target ? 'no target yet (set one in the TARGET bar, or press T)' : block ? `the target is ${block}` : '', ...aq.problems].filter(Boolean);
+    $('a-why').hidden = !whys.length;
+    $('a-why').textContent = whys.length ? `Can't: ${whys.join('; ')}.` : '';
     const hint = attackHint($('a-kind').value);
-    if (hint) $('a-hint').textContent = `${hint} Fill TGT from the RANK pane.`;
+    if (hint) $('a-hint').textContent = hint;
   }
 
   /** The pane's attack troops by slot (10 slots; mercenaries come from the extras). */
@@ -485,11 +497,10 @@ export function mount(root) {
 
   // ---------- the shared target ----------
   function renderTarget() {
-    const t = store.target;
     if (newTarget()) { toAttacks(); actTabs(); }
-    const input = $('a-target');
-    if (document.activeElement !== input) input.value = t ? addr(t) : input.value;
+    showTarget(root);
     renderRank();
+    costs();
   }
 
   // ---------- panes: phone tabs + Alt+1..7 ----------
@@ -545,8 +556,8 @@ export function mount(root) {
     const units = paneUnits();
     const x = ax.readExtras($('a-extra'));
     units[8] = x.mercs;
-    const typed = $('a-target').value.trim();
-    const t = store.target && typed === addr(store.target) ? store.target : typed;
+    const t = store.target;
+    if (!t) { say('Set a target first: type its address in the TARGET bar (T), or TGT a house in RANK.', 'bad'); $('tg').focus(); return; }
     const building = buildingChoice($('a-kind').value) ? $('a-bld').value || null : null;
     const out = await act.attack({ target: t, kind: $('a-kind').value, units, general: $('a-gen').value, medics: x.medics, horses: x.horses, chariots: x.chariots, upgradedMercenaries: x.upmercs, doubleStrike: x.double, building }, { button: ev.submitter });
     if (out) root.querySelectorAll('#r-a-troops input, #r-a-extra input').forEach((inp) => { if (inp.type === 'checkbox') inp.checked = false; else inp.value = 0; });
@@ -565,6 +576,8 @@ export function mount(root) {
   let unmountDev = () => {};
   mountDevLab(root, on).then((fn) => { unmountDev = fn; });
   const detail = mountDetail(root, on);
+  // One target for ATTACKS, INTRIGUE and RITES: the bar, the chips, and the fields in the detail views.
+  installTarget(root, on, { openReport: (i) => { showPane('act'); detail.open('act', { tab: 'intrigue', report: i }); }, blocked: () => detail.isOpen() });
   const unregDetail = commands.register('detail', {
     args: '[pane]',
     help: 'open a pane in detail: act, res, mil, news, chat, state, rank, sci (also Shift+Alt+1–8, or Enter on a pane)',
@@ -608,7 +621,7 @@ export function mount(root) {
     },
   }));
 
-  // ---------- ACT tabs: ORDERS, INTRIGUE, RITES ----------
+  // ---------- ACT tabs: ECONOMY, MILITARY, INTEL, MAGIC (ids orders, attacks, intrigue, rites) ----------
   const intrigue = mountIntrigue($('actsec-intrigue'), $('actsec-rites'), on, {
     openDetail: (tab, report) => detail.open('act', { tab, report }),
   });
@@ -620,14 +633,14 @@ export function mount(root) {
   }
   on($('act-tabs'), 'click', (ev) => { const b = ev.target.closest('[data-acttab]'); if (b) { setActTab(b.dataset.acttab); actTabs(); } });
   on($('act-tabs'), 'keydown', (ev) => {
-    const i = ACT_TABS.indexOf(actTab());
-    const n = ACT_TABS.length;
-    const j = ev.key === 'ArrowRight' ? (i + 1) % n : ev.key === 'ArrowLeft' ? (i + n - 1) % n : ev.key === 'Home' ? 0 : ev.key === 'End' ? n - 1 : -1;
-    if (j < 0) return;
+    const t = actTabKey(ev.key);
+    if (!t) return;
     ev.preventDefault();
-    setActTab(ACT_TABS[j]);
+    setActTab(t);
     actTabs(true);
   });
+  // The detail's tabs move the pane's too (one choice).
+  const unwatchAct = ACT_TAB.watch(() => actTabs());
   const unregActs = [['intrigue', 'thieves\' operations and your state\'s reports'], ['rites', 'cast rites, divinations and hexes']].map(([t, what]) => commands.register(t, {
     help: `open ACT in detail on ${t.toUpperCase()}: ${what}`,
     run: () => { setActTab(t); actTabs(); detail.open('act', { tab: t }); },
@@ -656,15 +669,34 @@ export function mount(root) {
     const h = store.rankings.find((x) => x.id === Number(b.dataset.tgt));
     if (!h) return;
     setTarget(h);
-    $('a-target').value = addr(h);
     showPane('act');
     const t = toAttacks();
     actTabs();
-    const f = t === 'intrigue' ? $('o-target') : t === 'rites' && !$('r-target').disabled ? $('r-target') : $('a-target');
-    f.value = addr(h);
-    f.focus();
+    (t === 'intrigue' ? $('o-op') : t === 'rites' ? $('r-rite') : $('a-kind'))?.focus();
     say(`Target set to ${h.name} (${addr(h)}). ${t === 'intrigue' ? 'Choose an operation and thieves' : t === 'rites' ? 'Choose a rite' : 'Choose a kind and troops'}, then EXEC.`);
   });
+  // ?: the keyboard, in a small window (Esc closes it; focus goes back where it was).
+  const keys = document.createElement('dialog');
+  keys.className = 'dlg keys-dlg';
+  keys.setAttribute('aria-labelledby', 'r-keys-h');
+  keys.innerHTML = `<header class="dlg-h"><h2 id="r-keys-h">KEYBOARD</h2><button type="button" class="btn ghost mini" data-close aria-label="Close (Esc)">ESC&nbsp;×</button></header>
+    <table class="tbl kv keys">${[['Alt+1–8', 'go to a pane: 1 ACT, 2 RES, 3 MIL, 4 NEWS, 5 CHAT, 6 STATE, 7 RANK, 8 SCI'], ['Shift+Alt+1–8', 'open that pane in detail (Alt+1–8 switches while one is open)'],
+      ['Enter', 'on a pane: open it in detail'], ['← → Home End', 'move between a pane\'s tabs'], ['T', 'the TARGET bar: type realm:state:seat (a space types the colon), then Enter'],
+      ['/', 'chat, with a command started (/help lists them)'], ['F', 'the font lab'], ['P', 'the palette lab'], ['Esc', 'close a window'], ['?', 'this list']]
+      .map(([k, v]) => `<tr><td><kbd>${k}</kbd></td><td class="txt">${v}</td></tr>`).join('')}</table>`;
+  root.querySelector('.room').append(keys);
+  let keysBack = null;
+  on(keys, 'click', (ev) => { if (ev.target === keys || ev.target.closest('[data-close]')) keys.close(); });
+  on(keys, 'close', () => { if (keysBack?.isConnected) keysBack.focus(); });
+  on(document, 'keydown', (ev) => {
+    if (ev.key !== '?' || ev.ctrlKey || ev.metaKey || ev.altKey || detail.isOpen() || keys.open) return;
+    const t = ev.target;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    ev.preventDefault();
+    keysBack = document.activeElement;
+    keys.showModal();
+  });
+
   on($('rk-houses'), 'click', () => setRank('houses'));
   on($('rk-states'), 'click', () => setRank('states'));
   on($('tabs'), 'click', (ev) => { const b = ev.target.closest('button'); if (b) showPane(b.dataset.pane); });
@@ -705,6 +737,7 @@ export function mount(root) {
     if (c.has('state') || c.has('wars') || c.has('relations') || c.has('house')) renderStateTabs();
     if (c.has('rankings') || (c.has('age') && rankMode === 'states')) renderRank();
     if (c.has('target')) renderTarget();
+    else if (c.has('reports') || c.has('rankings') || c.has('wars') || c.has('state')) showTarget(root);
     if (c.has('house') || c.has('colloquium') || c.has('ticks')) renderSci();
     if (c.has('house') || c.has('hall') || c.has('colloquium') || c.has('age')) renderGen();
   });
@@ -716,7 +749,7 @@ export function mount(root) {
   if (newTarget()) toAttacks();
   actTabs();
   renderHouse(); renderTick(); renderLive(); renderNews([]); renderRoster(); renderRank(); renderSci(); renderGen();
-  if (store.target) $('a-target').value = addr(store.target);
+  showTarget(root);
   costs();
 
   return {
@@ -732,6 +765,7 @@ export function mount(root) {
       unregPalette();
       unregisterHover();
       unregDetail();
+      unwatchAct();
       unregChannels.forEach((f) => f());
       unregActs.forEach((f) => f());
       unregGen.forEach((f) => f());

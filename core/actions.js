@@ -24,14 +24,17 @@ function takeAfter(out) {
  * soon brings back the old house and undoes what the page just showed. The view published at the reply can't hold
  * the command yet; any later one does: wait for /world's seq to move past it (at most 6 s), then read /me.
  */
-async function refreshAfter() {
+async function refreshAfter() { await afterPublish(() => refreshMeSoon(0)); }
+/** Once the server has published a view newer than now (at most 6 s), run `read`: for a page whose own reads
+ *  (the Hall, the market) would otherwise still show the world from before your order. */
+export async function afterPublish(read) {
   let seq0;
-  try { seq0 = (await api('/world')).seq; } catch { refreshMeSoon(); return; }
+  try { seq0 = (await api('/world')).seq; } catch { setTimeout(read, 400); return; }
   for (let waited = 0; waited < 6000; waited += 250) {
     await new Promise((r) => setTimeout(r, 250));
     try { if ((await api('/world')).seq > seq0) break; } catch { break; }
   }
-  refreshMeSoon(0);
+  read();
 }
 
 /**
@@ -90,6 +93,11 @@ export const train = (unit, count, opts = {}) => {
 export const release = (unit, count, opts = {}) => run({ type: 'release', house: me(), unit: Number(unit), count: Number(count) }, opts);
 /** The share of your population to keep under arms, in basis points (soldiers are drafted toward it each tick). */
 export const setDraft = (rateBp, opts = {}) => run({ type: 'set_draft', house: me(), rate_bp: Math.round(Number(rateBp)) }, opts);
+/** Adepts an acre the shrines gather up to (one decimal place: 3.1), or null for no limit. */
+export const setAdeptCap = (perAcre, opts = {}) =>
+  run({ type: 'set_adept_cap', house: me(), per_acre_tenths: perAcre == null || perAcre === '' ? null : Math.round(Number(perAcre) * 10) }, opts);
+/** Send adepts back to the fields as peasants. */
+export const releaseAdepts = (count, opts = {}) => run({ type: 'release_adepts', house: me(), count: Number(count) }, opts);
 /**
  * Several build orders at once (a construction grid): one `build` command per row, in order, so
  * each sees the gold and land the last one left. rows: [{ building, count }]. Returns one result
@@ -365,6 +373,14 @@ export async function createHouse({ name, race, personality, realm, state }, opt
   if (realm && state) Object.assign(cmd, { realm: Number(realm), state: Number(state) });
   else if (realm || state) { say('Give both realm and state, or leave both blank.', 'bad'); return null; }
   const out = await run(cmd, opts);
-  if (out) { await new Promise((r) => setTimeout(r, 450)); await refreshMe(); } // reads lag writes by ~¼ s
+  // Reads lag writes: the server republishes its view every ¼ s or so, but a busy world (robots after a tick) can take
+  // seconds. Read /me again until the house shows (up to 15 s), so the page moves on from this form by itself.
+  if (out) {
+    for (let waited = 0; waited < 15000 && !store.house; waited += 500) {
+      await new Promise((r) => setTimeout(r, 500));
+      await refreshMe();
+    }
+    if (!store.house) say('Your house is founded; the game is busy. Reload the page in a moment if it doesn\'t appear.', 'bad');
+  }
   return out;
 }

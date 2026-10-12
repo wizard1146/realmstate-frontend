@@ -6,12 +6,8 @@ import { fmt, esc, SOLDIER } from '../../core/words.js';
 
 const MERCENARY = 8;
 
-const sum = (a) => (a || []).reduce((x, y) => x + y, 0);
-/** Everyone under arms (every unit home and away, and in training) and its share of the population. */
-export function armed(h) {
-  const n = sum(h.units) + sum(h.away) + (h.training || 0);
-  return { armed: n, pct: h.population > 0 ? (100 * n) / h.population : 0 };
-}
+import { armed } from '../../core/military.js';
+export { armed };
 
 /** The control's markup. p: id prefix; full: the detail view's longer version. */
 export function draftHTML(p, full = false) {

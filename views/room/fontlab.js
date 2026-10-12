@@ -125,11 +125,6 @@ export function clear() {
   delete document.documentElement.dataset.rowHover;
 }
 
-/** Applies the saved choice, if any. */
-export function restore() {
-  const v = read();
-  if (v) apply(v);
-}
 
 const opt = (f, sel) => `<option value="${f.name}"${f.name === sel ? ' selected' : ''}>${f.name}${f.src === WEB ? ' · web' : ''}</option>`;
 

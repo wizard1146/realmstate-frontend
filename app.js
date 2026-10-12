@@ -1,5 +1,6 @@
 // Realmstate's War Room: the shell. Starts the shared core, shows sign-in / found-a-house, and
-// mounts the War Room (views/room) once you hold a house.
+// mounts a view once you hold a house: the War Room (views/room), or the Map (views/map). Switching
+// swaps only the view: the store and the live socket stay.
 import { store, subscribe, start, say, playable } from './core/store.js';
 import * as live from './core/live.js';
 import * as actions from './core/actions.js';
@@ -7,18 +8,33 @@ import { connected, configProblem, startConnect, finishConnect, API } from './co
 import { esc } from './core/words.js';
 import { WIKI } from './core/wiki.js';
 import { nameRoll } from './core/names.js';
+import { VIEWS, savedView, saveView, nextView } from './core/viewswitch.js';
+import { installAddressSpace } from './core/addr.js';
 import { mountAgeBar } from './views/ages/agebar.js';
 import { mountAges } from './views/ages/ages.js';
 
 const $ = (id) => document.getElementById(id);
 const root = $('view');
 
-let mounted = null;   // the War Room instance on screen
+const loaders = {
+  line: () => import('./views/line/line.js'),
+  room: () => import('./views/room/room.js'),
+  ring: () => import('./views/world/world.js').then((m) => ({ mount: (root) => m.mount(root, 'ring') })),
+  atlas: () => import('./views/world/world.js').then((m) => ({ mount: (root) => m.mount(root, 'atlas') })),
+  map: () => import('./views/map/map.js'),
+};
+let viewName = savedView();
+let mounted = null;   // { name, inst } of the view on screen
 let mountSeq = 0;
+
+function applyViewName() {
+  document.documentElement.dataset.view = viewName;
+  document.title = `Realmstate · ${VIEWS.find((v) => v.id === viewName).label}`;
+}
 
 function unmountView() {
   if (!mounted) return;
-  try { mounted.unmount(); } catch (e) { console.error(e); }
+  try { mounted.inst.unmount(); } catch (e) { console.error(e); }
   mounted = null;
   root.replaceChildren();
 }
@@ -26,11 +42,34 @@ function unmountView() {
 async function mountView() {
   const seq = ++mountSeq;
   if (!store.house) { unmountView(); return; }
-  if (mounted) return;
-  const mod = await import('./views/room/room.js');
-  if (seq !== mountSeq || !store.house) return; // signed out meanwhile
-  mounted = mod.mount(root);
+  if (mounted && mounted.name === viewName) return;
+  const mod = await loaders[viewName]();
+  if (seq !== mountSeq || !store.house) return; // signed out, or switched again, meanwhile
+  unmountView();
+  mounted = { name: viewName, inst: mod.mount(root) };
 }
+
+/** Switch views without a reload; focus lands on the new view's switch. */
+async function setView(name, { focus = false } = {}) {
+  if (!loaders[name] || name === viewName) return;
+  viewName = name;
+  saveView(name);
+  applyViewName();
+  await mountView();
+  if (focus) root.querySelector('[data-switch-select]')?.focus();
+}
+document.addEventListener('change', (ev) => {
+  if (ev.target.matches?.('[data-switch-select]')) setView(ev.target.value, { focus: true });
+});
+// V: the next view (Shift+V: the previous one), unless typing or a dialog is open.
+document.addEventListener('keydown', (ev) => {
+  if (ev.key !== 'v' && ev.key !== 'V') return;
+  if (ev.ctrlKey || ev.metaKey || ev.altKey || document.querySelector('dialog[open]')) return;
+  const t = ev.target;
+  if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+  ev.preventDefault();
+  setView(nextView(viewName, ev.shiftKey), { focus: true });
+});
 
 // ---------- the message line ----------
 function renderStatus() {
@@ -88,6 +127,8 @@ const agesWindow = mountAges();
 mountAgeBar($('agebar'), (tab) => agesWindow.open(tab));
 
 // ---------- wiring ----------
+installAddressSpace();   // in any address box, a space types ":"
+
 subscribe((c) => {
   // A new age: new rules, so the founding form's races and personalities are read again.
   if (c.has('age:changed')) { $('c-race').replaceChildren(); $('c-pers').replaceChildren(); renderGate(); }
@@ -100,7 +141,8 @@ subscribe((c) => {
 });
 
 // For checking in a browser console (and the headless test): the store and socket.
-window.realmstate = { store, live };
+window.realmstate = { store, live, setView: (v) => setView(v) };
+applyViewName();
 
 // Back from the game's site with its answer to connecting?
 const answer = finishConnect();
@@ -108,9 +150,23 @@ if (answer?.error) say(answer.error, 'bad');
 else if (answer?.ok) say('Connected. This page now plays for you.', 'good');
 if (configProblem) say(configProblem, 'bad');
 
-(function boot() {
-  start().catch((e) => {
-    say(`Can't reach the game: ${e.message.replace(/\.?$/, '.')} Trying again in 5 seconds.`, 'bad');
-    setTimeout(boot, 5000);
-  });
-})();
+// ---------- can't reach the game: a card that counts down to the next try (sooner with Try now) ----------
+let tries = 0, retryAt = 0, retryTimer = 0, countTimer = 0;
+function offline(e) {
+  tries += 1;
+  const wait = Math.min(30, 5 * 2 ** Math.min(tries - 1, 3)) * 1000;   // 5, 10, 20, then every 30 seconds
+  retryAt = Date.now() + wait;
+  $('offline').hidden = false;
+  $('off-detail').textContent = `${API ? `${API} · ` : ''}${e.message}${tries > 1 ? ` · ${tries} tries so far` : ''}`;
+  const count = () => { const s = Math.max(0, Math.ceil((retryAt - Date.now()) / 1000)); $('off-next').textContent = s ? `Trying again in ${s} second${s === 1 ? '' : 's'}…` : 'Trying again…'; };
+  count();
+  clearInterval(countTimer); countTimer = setInterval(count, 1000);
+  clearTimeout(retryTimer); retryTimer = setTimeout(boot, wait);
+}
+function boot() {
+  clearTimeout(retryTimer); clearInterval(countTimer);
+  $('off-next').textContent = 'Trying again…';
+  start().then(() => { $('offline').hidden = true; }).catch(offline);
+}
+$('off-try').addEventListener('click', boot);
+boot();

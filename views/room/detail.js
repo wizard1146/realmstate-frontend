@@ -11,9 +11,9 @@ import { draftHTML, wireDraft, armed } from './draft.js';
 import * as uw from './underway.js';
 import { actDetail, pickTarget } from './orders.js';
 import { doesCell } from './does.js';
-import * as trend from './trend.js';
+import * as trend from '../../core/trend.js';
 import { mountGraph } from './graph.js';
-import { battleCard, isBattle } from './battle.js';
+import { battleCard, isBattle } from '../../core/battle.js';
 import { sciDetail } from './scidetail.js';
 import { tabButtons, panelAttrs, wireTabs } from './tabs.js';
 import { MIL_TAB } from './generals.js';
@@ -24,6 +24,8 @@ import * as mk from './milacts.js';
 import { razeHTML, wireRaze } from './raze.js';
 import * as mkt from './market.js';
 import { stateDetail } from './statedetail.js';
+import { landSplit } from '../../core/land.js';
+import { newsHidden, newsOff } from '../../core/newsprefs.js';
 
 export const PANES = ['act', 'res', 'mil', 'news', 'chat', 'roster', 'rank', 'sci'];
 const META = {
@@ -86,14 +88,12 @@ const res = {
     if (!has(c, 'house')) return;
     const h = store.house;
     b.querySelector('#d-uw').innerHTML = uw.html(['explore', 'build'], { full: true });
-    const built = Object.values(h.buildings).reduce((a, x) => a + x, 0);
-    const cons = Object.values(h.constructing).reduce((a, x) => a + x, 0);
-    const byArmy = pend.list(['army']).reduce((a, x) => a + (x.land || 0), 0);
+    const { built, building: cons, explored, withArmies: byArmy } = landSplit(h);
     b.querySelector('#d-landbar').innerHTML = `<span class="built" style="width:${pctOf(built, h.land)}"></span><span class="cons" style="width:${pctOf(cons, h.land)}"></span>`;
     b.querySelector('#d-land').innerHTML = table('<th>LAND</th><th class="num">ACRES</th><th class="num">% LAND</th>',
       [['Built', built], ['Under construction', cons], ['Barren', h.barren]].map(([k, v]) => `<tr><td>${k}</td>${td(v)}<td class="num dim">${pctOf(v, h.land)}</td></tr>`).join('')
       + `<tr class="sum"><td>Held</td>${td(h.land)}<td class="num dim">100%</td></tr>`
-      + `<tr><td>Incoming, explored</td>${td(Math.max(0, h.incoming_land - byArmy))}<td></td></tr>`
+      + `<tr><td>Incoming, explored</td>${td(explored)}<td></td></tr>`
       + `<tr><td>Incoming, with armies</td>${td(byArmy)}<td></td></tr>`
       + `<tr class="sum"><td>Held + incoming</td>${td(h.land + h.incoming_land)}<td></td></tr>`);
     res.resources(b, h);
@@ -168,7 +168,8 @@ const mil = {
 // ---------- NEWS ----------
 /** News items and, if shown, tick reports, newest first: [{ at, n } | { at, tick }]. */
 export function newsFeed(limit = 200) {
-  const items = store.news.map((n) => ({ at: n.at || 0, n }));
+  // Kinds the player turned off (Configuration, News) stay out of the list.
+  const off = newsOff(), items = store.news.filter((n) => !newsHidden(n, off)).map((n) => ({ at: n.at || 0, n }));
   if (store.showTicks) for (const r of store.ticks) items.push({ at: r.at || 0, tick: r });
   return items.sort((a, b) => b.at - a.at).slice(0, limit);
 }
@@ -196,7 +197,8 @@ const news = {
     const f = sel.value;
     const list = newsFeed(400).filter((x) => (x.tick ? f === 'all' || f === 'ticks'
       : f === 'all' || (f === 'bad' ? newsLine(x.n)[1] === 'bad' : f === 'good' ? newsLine(x.n)[1] === 'good' : `t:${x.n.type}` === f)));
-    b.querySelector('#d-ncount').textContent = `${fmt(list.length)} shown`;
+    const hidden = store.news.filter((n) => newsHidden(n)).length;
+    b.querySelector('#d-ncount').textContent = `${fmt(list.length)} shown${hidden ? `, ${fmt(hidden)} turned off in Configuration` : ''}`;
     b.querySelector('#d-nzone').textContent = `· times in ${zoneLabel()} (/time)`;
     b.querySelector('#d-news').innerHTML = list.length
       ? list.map((x) => {
@@ -264,32 +266,17 @@ const rank = {
 };
 
 /**
- * Mounts the detail dialog into the war room. `on` registers listeners for unmount; `syncDraft`
- * copies the chat draft into the compact pane. Returns { open(pane), close(), isOpen(), update(changes), tick() }.
+ * Runs one pane at a time in `body`, with no dialog around it: the War Room's dialog (and the Map's) uses it. `frame` holds the graph overlay. `onShow(name)` runs after a pane is drawn (to retitle).
+ * Returns { show(name, { focus, tab }), update(changes), tick(), current(), clear() }.
  */
-export function mountDetail(root, on) {
-  const dlg = document.createElement('dialog');
-  dlg.className = 'dlg';
-  dlg.id = 'r-dlg';
-  dlg.setAttribute('aria-labelledby', 'r-dlg-title');
-  dlg.innerHTML = `
-    <header class="dlg-h">
-      <h2 id="r-dlg-title"><span class="key"></span><span class="t"></span> <span class="dim"></span></h2>
-      <nav class="dlg-tabs" aria-label="Detail views (Alt+1–8)">${PANES.map((p, i) => `<button type="button" data-goto="${p}" aria-pressed="false" title="Alt+${i + 1}">${i + 1} ${META[p][0]}</button>`).join('')}</nav>
-      <button type="button" class="btn ghost mini" data-close aria-label="Close detail view (Esc)">ESC&nbsp;×</button>
-    </header>
-    <p class="dlg-msg status" id="r-dlg-msg" role="status" aria-live="polite"></p>
-    <div class="dlg-b" id="r-dlg-b" tabindex="-1"></div>`;
-  root.querySelector('.room').append(dlg);
-  const body = dlg.querySelector('#r-dlg-b');
+function paneRunner(body, frame, { onShow = () => {} } = {}) {
   let cur = null;
   let paneAc = null;
-  let returnTo = null;
   let actInst = null;
   let sciInst = null;
   let actOpts = {};
-  const graph = mountGraph(dlg);
-  const ctx = { goto: (p) => show(p, true), dialog: dlg, graph };
+  const graph = mountGraph(frame);
+  const ctx = { goto: (p) => show(p, { focus: true }), dialog: frame, graph };
   const impl = {
     res, mil, news, chat, roster, rank,
     sci: {
@@ -302,47 +289,82 @@ export function mountDetail(root, on) {
       focus() { actInst?.focus(); },
     },
   };
-
-  function show(name, focus) {
+  /** Draws a pane. opts.tab (ACT only): 'orders'|'attacks'|'intrigue'|'rites'; opts.report: an intel report index. */
+  function show(name, { focus = false, ...opts } = {}) {
     graph.close();
     cur = name;
     paneAc?.abort();
     paneAc = new AbortController();
     const pon = (t, type, fn, o = {}) => t.addEventListener(type, fn, { signal: paneAc.signal, ...o });
-    const [t, sub] = META[name];
-    dlg.querySelector('.key').textContent = String(PANES.indexOf(name) + 1);
-    dlg.querySelector('h2 .t').textContent = t;
-    dlg.querySelector('h2 .dim').textContent = sub;
-    dlg.querySelectorAll('[data-goto]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.goto === name)));
-    dlg.dataset.pane = name;
+    actOpts = name === 'act' ? opts : {};
     body.replaceChildren();
     body.scrollTop = 0;
     actInst = null;
     impl[name].build(body, pon, ctx);
     impl[name].update(body, null);
-    const m = dlg.querySelector('#r-dlg-msg');
-    m.textContent = store.msg.text;
-    m.className = `dlg-msg status ${store.msg.tone || ''}`;
+    onShow(name);
     if (focus) (impl[name].focus ? impl[name].focus(body) : body.focus());
   }
+  return {
+    show,
+    current: () => cur,
+    update(c) {
+      if (!cur || !store.house) return;
+      impl[cur].update(body, c);
+      if (!c || c.has('ticks')) graph.update();
+    },
+    tick() { if (cur) uw.tick(body); },
+    clear() { paneAc?.abort(); cur = null; actInst = null; body.replaceChildren(); },
+  };
+}
+
+/**
+ * Mounts the detail dialog into the war room. `on` registers listeners for unmount.
+ * Returns { open(pane), close(), isOpen(), current(), update(changes), tick() }.
+ */
+export function mountDetail(root, on) {
+  const dlg = document.createElement('dialog');
+  dlg.className = 'dlg detail-host';   // detail-host: room.css lays the panels' tables out for a detail view
+  dlg.id = 'r-dlg';
+  dlg.setAttribute('aria-labelledby', 'r-dlg-title');
+  dlg.innerHTML = `
+    <header class="dlg-h">
+      <h2 id="r-dlg-title"><span class="key"></span><span class="t"></span> <span class="dim"></span></h2>
+      <nav class="dlg-tabs" aria-label="Detail views (Alt+1–8)">${PANES.map((p, i) => `<button type="button" data-goto="${p}" aria-pressed="false" title="Alt+${i + 1}">${i + 1} ${META[p][0]}</button>`).join('')}</nav>
+      <button type="button" class="btn ghost mini" data-close aria-label="Close detail view (Esc)">ESC&nbsp;×</button>
+    </header>
+    <p class="dlg-msg status" id="r-dlg-msg" role="status" aria-live="polite"></p>
+    <div class="dlg-b" id="r-dlg-b" tabindex="-1"></div>`;
+  root.querySelector('.room').append(dlg);
+  const body = dlg.querySelector('#r-dlg-b');
+  let returnTo = null;
+  const msg = () => { const m = dlg.querySelector('#r-dlg-msg'); m.textContent = store.msg.text; m.className = `dlg-msg status ${store.msg.tone || ''}`; };
+  const panes = paneRunner(body, dlg, {
+    onShow(name) {
+      const [t, sub] = META[name];
+      dlg.querySelector('.key').textContent = String(PANES.indexOf(name) + 1);
+      dlg.querySelector('h2 .t').textContent = t;
+      dlg.querySelector('h2 .dim').textContent = sub;
+      dlg.querySelectorAll('[data-goto]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.goto === name)));
+      dlg.dataset.pane = name;
+      msg();
+    },
+  });
+
   /** Opens a pane's detail. opts (ACT only): { tab: 'orders'|'intrigue'|'rites', report: index }. */
   function open(name, opts = {}) {
-    actOpts = name === 'act' ? opts : {};
     if (!dlg.open) {
       // Back to where you were; if nothing had focus, to the pane itself.
       const a = document.activeElement;
       returnTo = a && a !== document.body ? a : root.querySelector(`#r-p-${name}`);
       dlg.showModal();
     }
-    show(name, true);
+    panes.show(name, { focus: true, ...opts });
   }
   function close() { if (dlg.open) dlg.close(); }
 
   on(dlg, 'close', () => {
-    paneAc?.abort();
-    cur = null;
-    actInst = null;
-    body.replaceChildren();
+    panes.clear();
     const back = returnTo && returnTo.isConnected ? returnTo : null;
     returnTo = null;
     back?.focus();
@@ -351,23 +373,22 @@ export function mountDetail(root, on) {
     if (ev.target === dlg) return close(); // the backdrop
     if (ev.target.closest('[data-close]')) return close();
     const g = ev.target.closest('[data-goto]');
-    if (g) show(g.dataset.goto, true);
+    if (g) panes.show(g.dataset.goto, { focus: true });
     const x = ev.target.closest('[data-expand]');
-    if (x && x.dataset.expand) show(x.dataset.expand, true);
+    if (x && x.dataset.expand) panes.show(x.dataset.expand, { focus: true });
   });
 
   return {
     open,
     close,
     isOpen: () => dlg.open,
-    current: () => cur,
+    current: () => panes.current(),
     update(c) {
-      if (!cur || !store.house) return;
+      if (!panes.current() || !store.house) return;
       // The page's message line is behind the modal (and inert), so the dialog keeps its own.
-      if (!c || c.has('msg')) { const m = dlg.querySelector('#r-dlg-msg'); m.textContent = store.msg.text; m.className = `dlg-msg status ${store.msg.tone || ''}`; }
-      impl[cur].update(body, c);
-      if (!c || c.has('ticks')) graph.update();
+      if (!c || c.has('msg')) msg();
+      panes.update(c);
     },
-    tick() { if (cur) uw.tick(body); },
+    tick() { panes.tick(); },
   };
 }

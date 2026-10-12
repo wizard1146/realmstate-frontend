@@ -15,87 +15,16 @@ import { store, say, loadMarket } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc, when, dayTime } from '../../core/words.js';
 import { tabState } from './tabs.js';
+import { num, MAX_Q, cap, book, best, feeBp, lockMin, crossBp, waitHold, buyHold, buyMax, crossWhere, fillNow, holder, hitSize, spoils, spoilNote, treasuryNote, leaderId, isLeader } from '../../core/market.js';
+
+export { spoils, spoilNote, treasuryNote, leaderId, isLeader };
 
 /** RES pane and detail tabs. */
 export const RES_TAB = tabState('realmstate.room.res', ['holdings', 'buildings', 'market'], { holdings: 'HOLDINGS', buildings: 'BUILDINGS', market: 'MARKET' });
 
-const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
-const MAX_Q = 1000000000;
-const cap = (s) => s[0].toUpperCase() + s.slice(1);
-/** /state's leader is a house reference: { house, name, realm, state, seat }. */
-export const leaderId = () => store.state?.leader ? (store.state.leader.house ?? store.state.leader.id) : null;
-export const isLeader = () => !!(store.house && leaderId() != null && leaderId() === store.house.id);
-const book = (m) => (store.market || []).find((x) => x.material === m);
-const best = (b, side) => (side === 'buy' ? b?.bids?.[0] : b?.asks?.[0]);
-
-/** The market fee on what an order fills at once, basis points: yours from /me, or the age's for the treasury. */
-const feeBp = (treasury) => (treasury ? store.rules?.params?.market_fee_bp : store.house?.market_fee_bp) ?? 0;
-/** Minutes an order stands before it can be cancelled. */
-const lockMin = () => Math.round((store.rules?.params?.order_min_life_ms ?? 0) / 60000);
-/** The cross-realm fee a buyer pays when the seller is in another realm, basis points (the age's). */
-export const crossBp = () => store.rules?.params?.cross_realm_fee_bp ?? 0;
-/** Gold a waiting buy holds: its price and room for the cross-realm fee (the server's buy_hold). */
-const waitHold = (q, pr) => q * pr + Math.floor(q * pr * crossBp() / 10000);
-/** Gold a buy holds when placed: its value at its own price plus the most fees it could pay. */
-const buyHold = (q, pr, treasury) => waitHold(q, pr) + Math.floor(q * pr * feeBp(treasury) / 10000);
-/** The most units `gold` can buy at `pr`, with room for the fees. */
-const buyMax = (gold, pr, treasury) => {
-  if (!pr) return 0;
-  let n = Math.floor(gold * 10000 / (pr * (10000 + feeBp(treasury) + crossBp())));
-  while (n > 0 && buyHold(n + 1, pr, treasury) <= gold) n++; // rounding down each fee can leave room for one more
-  return n;
-};
-/** Where the cross-realm fee may apply to a buy of `m`: { you, makers, home } (home: your realm makes it). */
-function crossWhere(m) {
-  const you = store.house?.realm, makers = book(m)?.realms || [];
-  return { you, makers, home: makers.includes(you) };
-}
-/** What an order would fill at once against the book shown (best price first, each at the waiting
- * order's price), the fee on it, and the most cross-realm fee a buy could pay on it (if every
- * seller is in another realm): { k, value, fee, cross }. An estimate: the book can change first. */
-function fillNow(m, s, q, pr, treasury) {
-  const rate = feeBp(treasury), xr = s === 'buy' ? crossBp() : 0;
-  let k = 0, value = 0, fee = 0, cross = 0;
-  for (const l of (s === 'buy' ? book(m)?.asks : book(m)?.bids) || []) {
-    if (k >= q || (s === 'buy' ? l.price > pr : l.price < pr)) break;
-    const n = Math.min(q - k, l.quantity);
-    k += n; value += n * l.price; fee += Math.floor(n * l.price * rate / 10000); cross += Math.floor(n * l.price * xr / 10000);
-  }
-  return { k, value, fee, cross };
-}
-
-/** What a party holds: { gold, mat(m) } for you, or for the treasury. */
-function holder(treasury) {
-  if (treasury) { const t = store.state?.treasury || { gold: 0, materials: {} }; return { gold: t.gold, mat: (m) => t.materials[m] || 0, who: 'the treasury' }; }
-  const h = store.house;
-  return { gold: h.gold, mat: (m) => h.materials[m] || 0, who: 'you' };
-}
-
-// ---------- spoilage ----------
-/** What each material would lose to spoilage at the next tick ({} when nothing, or no spoilage). */
-export const spoils = (h = store.house) => h?.spoilage?.next || {};
-/** One line on spoilage for a holdings view: the free allowance and what spoils next tick. */
-export function spoilNote(h = store.house) {
-  const s = h?.spoilage;
-  if (!s) return '';
-  const next = Object.entries(s.next);
-  return `<p class="small ${next.length ? 'short' : 'dim'}">Spoilage: ${fmt(s.free)} of each material keep free (goods in sell orders count). `
-    + (next.length ? `Next tick loses ${next.map(([m, n]) => `${fmt(n)} ${esc(m)}`).join(', ')}: sell or use the excess.` : 'Nothing spoils next tick.')
-    + (store.rules?.params?.treasury_overflow ? " Your state's treasury overflow is shared among its houses before this." : '') + '</p>';
-}
-/** One line on what happens to a treasury's materials beyond its allowance (treasury overflow, or spoilage). */
-export function treasuryNote() {
-  const p = store.rules?.params;
-  if (!p || !(p.spoil_max_bp > 0)) return '';
-  const free = fmt(p.spoil_treasury_free || 0);
-  return `<p class="small dim">${p.treasury_overflow
-    ? `Treasury overflow: each tick, materials beyond ${free} of each are shared equally among the state's houses instead of spoiling (goods in its sell orders count toward the ${free}).`
-    : `Spoilage: the treasury keeps ${free} of each material free (goods in its sell orders count); beyond that, some spoils each tick.`}</p>`;
-}
-
 // ---------- the order form ----------
 /** p: id prefix; full: the detail's version (with the treasury switch). */
-export function formHTML(p, full = false) {
+function formHTML(p, full = false) {
   const mats = (store.market || []).map((m) => m.material);
   const opts = mats.map((m) => `<option value="${esc(m)}">${esc(cap(m))}</option>`).join('');
   if (!full) {
@@ -128,7 +57,7 @@ export function formHTML(p, full = false) {
 }
 
 /** Wires a form drawn by formHTML inside `box`. Returns { update() }. */
-export function wireForm(box, on, p, full = false) {
+function wireForm(box, on, p, full = false) {
   const $ = (id) => box.querySelector(`#${p}-${id}`);
   let priceTouched = false;
   const side = () => (full ? box.querySelector(`input[name="${p}-side"]:checked`)?.value : $('side').value) || 'buy';
@@ -215,7 +144,7 @@ export function wireForm(box, on, p, full = false) {
 }
 
 // ---------- your orders ----------
-export function ordersHTML(compact = false) {
+function ordersHTML(compact = false) {
   const list = store.orders || [];
   if (!list.length) return `<p class="dim small">No open orders${isLeader() ? ', for you or the treasury' : ''}.</p>`;
   const lead = isLeader();
@@ -232,7 +161,7 @@ export function ordersHTML(compact = false) {
         + `<td><button type="button" class="btn mini" data-cancel="${o.order}"${can ? '' : ' disabled title="Treasury orders: the leader only"'}${can ? locked : ''} aria-label="Cancel order ${o.order}">CANCEL</button></td></tr>`;
     }).join('') + '</table>';
 }
-export function wireOrders(scope, on) {
+function wireOrders(scope, on) {
   on(scope, 'click', (ev) => {
     const b = ev.target.closest('[data-cancel]');
     if (b) act.cancelOrder(b.dataset.cancel, { button: b });
@@ -241,7 +170,7 @@ export function wireOrders(scope, on) {
 
 // ---------- the books ----------
 /** One row per material: held, best bid and ask, last trade. Rows pick the material in the form. */
-export function booksHTML() {
+function booksHTML() {
   const h = store.house;
   if (!store.market) return '<p class="dim">Loading the market…</p>';
   return `<table class="tbl"><tr><th>MATERIAL</th><th class="num">HELD</th><th class="num"><abbr title="Best bid: price × quantity">BID</abbr></th><th class="num"><abbr title="Best ask: price × quantity">ASK</abbr></th><th class="num"><abbr title="Last trade price">LAST</abbr></th><th></th></tr>`
@@ -257,13 +186,6 @@ export function booksHTML() {
  * trades against it at once: SELL into a bid, BUY from an ask, at that price, as much as the level
  * shows and you hold (or can pay for, with the fee). It's an ordinary order, so it fills at once,
  * at that price or better, paying the market fee; anything left waits in the book. */
-/** How much one click can trade against a level: { q, why } (why: the reason it's 0). */
-function hitSize(side, m, price, quantity) {
-  const h = store.house;
-  const can = side === 'sell' ? (h.materials[m] || 0) : buyMax(h.gold, price, false);
-  const q = Math.min(quantity, can, MAX_Q);
-  return { q, why: q ? '' : side === 'sell' ? `you have no ${m}` : 'not enough gold' };
-}
 /** A made material's output this tick per realm, with its season (and depletion, if any). */
 function outputNow(m) {
   const o = m.output_now?.[0];
@@ -271,7 +193,7 @@ function outputNow(m) {
   const dep = o.depletion_bp < 10000 ? ` · deposit ${o.depletion_bp / 100}%` : '';
   return `<span title="Base ${fmt(m.output_per_tick)} a tick per realm; this tick's season is ${o.season_bp / 100}%${dep ? `, and the worked deposit gives ${o.depletion_bp / 100}%` : ''}">${fmt(o.per_tick)}/tick now (season ${o.season_bp / 100}%${dep})</span>`;
 }
-export function depthHTML() {
+function depthHTML() {
   if (!store.market) return '<p class="dim">Loading the market…</p>';
   const lvl = (rows, cls, side, m) => rows.length ? rows.map((r) => {
     const { q, why } = hitSize(side, m, r.price, r.quantity);

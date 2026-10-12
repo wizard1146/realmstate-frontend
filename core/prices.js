@@ -1,11 +1,14 @@
 // Exact prices and order limits, from /me house.prices (the server's own numbers after every
 // modifier). Integer maths only, matching the engine:
-//   apply(base, bp) = floor(base * max(0, 10000 + bp) / 10000)
+//   cost(base, bp)  = ceil(base * max(0, 10000 + bp) / 10000)   what you pay (rounds up: splitting an order never saves)
+//   apply(base, bp) = floor(base * max(0, 10000 + bp) / 10000)  what you get (refining's yield)
 // If the server is too old to send prices, `have()` is false and callers fall back to estimates.
 import { store, raceOf } from './store.js';
 
 /** The engine's Ruleset::apply. Values stay well inside 2^53 for any legal order. */
 export const apply = (base, bp) => Math.floor((base * Math.max(0, 10000 + (bp || 0))) / 10000);
+/** The engine's Ruleset::cost: a price you pay rounds up (never below 0). */
+export const cost = (base, bp) => Math.ceil((base * Math.max(0, 10000 + (bp || 0))) / 10000);
 
 const P = () => store.house?.prices || null;
 /** Whether the server sent exact prices. */
@@ -33,7 +36,7 @@ export const exploreLimit = () => Math.min(P()?.explore.max ?? 1000, explorable(
 /** Gold to explore n acres. */
 export function exploreCost(n) {
   const e = P().explore;
-  return apply(n0(n) * e.gold_per_acre, e.bp);
+  return cost(n0(n) * e.gold_per_acre, e.bp);
 }
 /** Soldiers (slot 0) spent to explore n acres: ceil(n * soldiers_milli_per_acre / 1000); 0 on an old server. */
 export function exploreSoldiers(n) {
@@ -63,12 +66,12 @@ const unitGold = (slot) => (raceOf(store.house?.race)?.units[Number(slot)] || {}
 /** The extra on recruiting straight from peasants, in basis points (+30% now). */
 export const directBp = () => P()?.train.direct_bp ?? store.rules?.params.direct_cost_bp ?? 0;
 /**
- * Gold to train n of a unit slot. From soldiers: apply(n * gold, bp). Straight from peasants
- * (direct): apply(apply(n * gold, bp), direct_bp).
+ * Gold to train n of a unit slot. From soldiers: cost(n * gold, bp). Straight from peasants
+ * (direct): cost(cost(n * gold, bp), direct_bp).
  */
 export function trainCost(slot, n, direct = false) {
-  const c = apply(n0(n) * unitGold(slot), P().train.bp);
-  return direct ? apply(c, directBp()) : c;
+  const c = cost(n0(n) * unitGold(slot), P().train.bp);
+  return direct ? cost(c, directBp()) : c;
 }
 /** Who a training order draws on: soldiers (slot 0), or peasants when direct. */
 export const trainPool = (direct, h = store.house) => (direct ? h.peasants : h.units[0]);
@@ -90,7 +93,7 @@ export function buildCost(id, n) {
   if (!b || !c) return out;
   out.gold = c * b.gold;
   for (const [m, per] of Object.entries(b.materials)) {
-    const q = apply(c * per, P().build.materials_bp);
+    const q = cost(c * per, P().build.materials_bp);
     if (q) out.materials[m] = q;
   }
   return out;
@@ -130,16 +133,16 @@ export function buildProblem(id, n, budget) {
 
 // ---------- upgrades, mercenaries, refining, generals (null on a server too old to send them) ----------
 const ELITES = [3, 7, 9];
-/** Upgrade material for n of slot `from`: apply(n * each, bp), elites at the elite price. */
+/** Upgrade material for n of slot `from`: cost(n * each, bp), elites at the elite price. */
 export function upgradeCost(from, n) {
   const u = P()?.upgrade;
   if (!u) return null;
-  return apply(n0(n) * (ELITES.includes(Number(from)) ? u.elite : u.each), u.bp);
+  return cost(n0(n) * (ELITES.includes(Number(from)) ? u.elite : u.each), u.bp);
 }
-/** Gold to hire n mercenaries for an attack: apply(n * gold, bp). */
+/** Gold to hire n mercenaries for an attack: cost(n * gold, bp). */
 export function mercenaryCost(n) {
   const m = P()?.mercenary;
-  return m ? apply(n0(n) * m.gold, m.bp) : null;
+  return m ? cost(n0(n) * m.gold, m.bp) : null;
 }
 /** What `times` runs of a recipe make: apply(quantity * times, bp). */
 export function refineYield(quantity, times) {
@@ -149,7 +152,7 @@ export function refineYield(quantity, times) {
 /** A general with `traits` traits: { elites, material, amount, max }. */
 export function generalCost(traits) {
   const g = P()?.general;
-  return g ? { elites: g.elites, material: g.material, amount: apply(g.per_trait * n0(traits), g.bp), max: g.max } : null;
+  return g ? { elites: g.elites, material: g.material, amount: cost(g.per_trait * n0(traits), g.bp), max: g.max } : null;
 }
 /** Whether a race (identity) has a flag, e.g. 'elite_plus_plus'; null if the server doesn't send flags. */
 export function raceHas(race, flag) {

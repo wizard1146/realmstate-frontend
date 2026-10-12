@@ -6,20 +6,11 @@ import { store } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc, when, addr } from '../../core/words.js';
 import * as G from './generals.js';
+import { deposit, roomFor } from '../../core/hall.js';
 
 const has = (c, ...k) => !c || k.some((x) => c.has(x));
 const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
 const where = (x) => (x ? `${x.name} (${addr(x)})` : '?');
-
-/** What a bid or offer of `price` holds from you, against a seller house ref. */
-export function deposit(price, seller) {
-  const h = store.house, bp = store.hall?.out_of_realm_bp ?? store.rules.params.out_of_realm_bp;
-  const premium = seller && seller.realm !== h.realm ? Math.floor(price * bp / 10000) : 0;
-  return { premium, held: price + premium };
-}
-const roomFor = (kind) => (kind === 'general'
-  ? (store.house.generals.length < store.rules.params.general_max ? '' : `you keep the most generals a house may (${store.rules.params.general_max})`)
-  : (store.house.science.academics.length < store.house.science.academic_cap ? '' : 'no university room for another academic'));
 
 export function hallDetail(b, on) {
   const p = store.rules.params;

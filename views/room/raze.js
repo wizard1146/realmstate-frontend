@@ -1,16 +1,11 @@
-// Razing buildings (RES detail): tear finished buildings down, leaving barren land. The engine
-// charges raze_cost_base + raze_cost_per_land_milli × land / 1000 gold a building (integer
-// division), so the quote is exact.
+// Razing buildings (RES detail): tear finished buildings down, leaving barren land. The cost and
+// limits are core/land.js's (exact: the engine's own integer formula).
 import { store, say } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc } from '../../core/words.js';
+import { razeEach, razeable, razeMax, razeProblem } from '../../core/land.js';
 
 const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
-/** Gold to raze one building now. */
-export const razeEach = (h = store.house) => {
-  const P = store.rules.params;
-  return P.raze_cost_base + Math.floor((P.raze_cost_per_land_milli * h.land) / 1000);
-};
 
 export function razeHTML() {
   return `<form id="d-rz" class="dform" novalidate>
@@ -26,10 +21,9 @@ export function razeHTML() {
 /** Wires the form inside `box`; RAZE buttons with data-raze="<building>" anywhere in `scope` pick a row. */
 export function wireRaze(box, scope, on) {
   const $ = (id) => box.querySelector(`#d-rz-${id}`);
-  function owned() { const h = store.house; return store.rules.buildings.filter((b) => (h.buildings[b.building] || 0) > 0); }
   function update() {
     const h = store.house;
-    const list = owned();
+    const list = razeable(h);
     const v = $('b').value;
     const k = list.map((b) => `${b.building}:${h.buildings[b.building]}`).join();
     if ($('b').dataset.k !== k) {
@@ -38,11 +32,10 @@ export function wireRaze(box, scope, on) {
       if (list.some((b) => b.building === v)) $('b').value = v;
     }
     const id = $('b').value;
-    const have = h.buildings[id] || 0;
     const n = num($('n').value);
     const each = razeEach(h);
     const gold = n * each;
-    const why = !id ? 'nothing built' : n > have ? `you have ${fmt(have)} of those` : gold > h.gold ? `needs ${fmt(gold)} gold; you have ${fmt(h.gold)}` : '';
+    const why = razeProblem(id, n, h);
     $('q').textContent = `${fmt(gold)} gold${why ? ` · ${why}` : ''}`;
     $('q').classList.toggle('short', !!why);
     $('info').textContent = `Exact: ${fmt(each)} gold a building now (${fmt(store.rules.params.raze_cost_base)} + ${store.rules.params.raze_cost_per_land_milli / 1000} × ${fmt(h.land)} acres). The land turns barren at once; buildings under construction can't be razed.`;
@@ -50,9 +43,8 @@ export function wireRaze(box, scope, on) {
   on(box, 'input', update);
   on(box, 'click', (ev) => {
     if (!ev.target.closest('[data-rzmax]')) return;
-    const h = store.house;
-    const have = h.buildings[$('b').value] || 0;
-    const n = Math.min(have, Math.floor(h.gold / Math.max(1, razeEach(h))));
+    const have = store.house.buildings[$('b').value] || 0;
+    const n = razeMax($('b').value);
     $('n').value = String(n);
     if (!n) say(`MAX is 0: ${have ? 'not enough gold' : 'none built'}.`, 'bad');
     update();

@@ -1,8 +1,9 @@
 # Realmstate: War Room
 
 The official player front end for [Realmstate](https://github.com/wizard1146/realmstate), a
-tick-based strategy game of realms, states and houses. Every pane on one dense screen: actions,
-resources, military, news, chat, your state, the rankings and science.
+tick-based strategy game of realms, states and houses. Five views of the same game: Straightline (one
+plain page at a time, the default for newcomers), the War Room (every pane on one dense screen), the War
+Ring, the Atlas and the Map. See `PLAN.md` for what each is for.
 
 It talks to the game only through the public HTTP API and the `/live` WebSocket, documented in the
 wiki's [API for Tools](https://wizard1146.github.io/realmstate-wiki/api.html). Anything it does, your
