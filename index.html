@@ -7,6 +7,8 @@
 <title>Realmstate · War Room</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <script>
+  // Hosted (not this computer), always over https: a game lets only https sites connect.
+  if (location.protocol === 'http:' && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) location.replace('https://' + location.host + location.pathname + location.search + location.hash);
   // The remembered view, before anything paints (core/viewswitch.js keeps the same key).
   try { const v = localStorage.getItem('realmstate.view'); if (['line', 'room', 'ring', 'atlas', 'map'].includes(v)) document.documentElement.dataset.view = v; } catch (e) { /* storage off */ }
 </script>
