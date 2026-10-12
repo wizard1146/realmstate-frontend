@@ -5,9 +5,9 @@
 //                            game's own site and the page acts with the token it gets back.
 //
 // Served from this computer (the dev server), it is ''. From play.realmstate.net, the live game at
-// server.realmstate.net. Anywhere else (a copy on GitHub Pages), a game server on the player's own computer.
+// api.realmstate.net. Anywhere else (a copy on GitHub Pages), a game server on the player's own computer.
 // ?game=<address> overrides it for a browser tab, e.g. a Cloudflare tunnel's address; an empty
 // ?game= goes back.
 const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
-const LIVE = { 'play.realmstate.net': 'https://server.realmstate.net' };
+const LIVE = { 'play.realmstate.net': 'https://api.realmstate.net' };
 export const GAME = local ? '' : LIVE[location.hostname] || 'http://localhost:3300';
