@@ -93,10 +93,13 @@ export async function api(path, body, method) {
 export const command = (cmd) => api('/commands', cmd);
 export const auth = {
   devLogin: (email) => api('/auth/dev', { email }),
-  /** Same address: end the session. Connect mode: end this page's connection. */
+  /** Same address: end the session. Connect mode: end this page's connection, then sign out of the game's own
+   *  site too (its page offers the way back here), so the next connect asks who you are instead of finding you
+   *  still signed in there. */
   async logout() {
     if (!connected) return api('/auth/logout', {});
     try { if (currentToken()) await api('/auth/disconnect', {}); } finally { token.clear(); }
+    location.assign(`${API}/auth/signout?back=${encodeURIComponent(location.origin + location.pathname)}`);
     return { ok: true };
   },
 };
