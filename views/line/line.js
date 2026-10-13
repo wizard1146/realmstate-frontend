@@ -51,6 +51,7 @@ const KEY = 'realmstate.line.page';
 const MENU = [
   ['Your house', [
     ['throne', 'Throne', null, null, 'your house at a glance', { part: 'throne' }],
+    ['news', 'News', null, null, 'what happened to your house', { part: 'news' }],
     ['resources', 'Resources', null, null, 'what you hold, and how it moved each tick', { part: 'resources' }],
     ['land', 'Land & Exploration', null, null, 'what land you hold, and explore for more', { part: 'land' }],
     ['build', 'Build & Raze', null, null, 'put up buildings on barren land, or raze them', { part: 'build' }],
@@ -87,7 +88,6 @@ const MENU = [
     ['market', 'Market', null, null, 'buy and sell materials', { part: 'market' }],
   ]],
   ['Chronicle', [
-    ['news', 'News', null, null, 'what happened to your house', { part: 'news' }],
     ['ranks', 'Rankings', null, null, 'houses and states', { part: 'ranks' }],
   ]],
 ];

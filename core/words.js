@@ -191,10 +191,10 @@ export function newsLine(n) {
     case 'afflicted': return [`${n.by ? where(n.by) : 'A veiled army'} afflicted us with ${n.name} until tick ${n.until_tick}.`, 'bad'];
     case 'second_strike': {
       const killed = fmt((n.killed || []).reduce((a, b) => a + b, 0));
-      const ours = myHouseId === n.attacker?.id;
+      const ours = myHouseId === n.attacker?.house;
       return [ours ? `Second strike on ${where(n.target)}: ${n.success ? `${killed} specialists killed` : 'repulsed'}.` : `${where(n.attacker)} struck us a second time: ${n.success ? `${killed} specialists lost` : 'driven off'}.`, ours === n.success ? 'good' : 'bad'];
     }
-    case 'land_retaken': return [myHouseId === n.by?.id ? `We took back ${fmt(n.acres)} acres from ${where(n.from)}'s army.` : `${where(n.by)} took back ${fmt(n.acres)} acres from our army on its way home.`, myHouseId === n.by?.id ? 'good' : 'bad'];
+    case 'land_retaken': return [myHouseId === n.by?.house ? `We took back ${fmt(n.acres)} acres from ${where(n.from)}'s army.` : `${where(n.by)} took back ${fmt(n.acres)} acres from our army on its way home.`, myHouseId === n.by?.house ? 'good' : 'bad'];
     case 'quest_invited': return [`${cap(n.seeker)} ${n.seeker.startsWith('your ') ? 'are' : 'is'} invited to seek an unnamed Truth: ${n.episodes} episodes, to finish by tick ${n.until_tick}.`, 'good'];
     case 'quest_asks': return [`${cap(n.seeker)} ask${n.seeker.startsWith('your ') ? '' : 's'} for ${askText(n.ask)} (episode ${n.episode} of ${n.of}). Answer by tick ${n.until_tick}.`, ''];
     case 'quest_ended': return [`The quest of ${n.seeker || 'our seeker'} ended: ${QUEST_END[n.why] || n.why}.`, n.why === 'nothing' || n.why === 'declined' ? '' : 'bad'];
@@ -207,8 +207,35 @@ export function newsLine(n) {
     case 'wonder_started': return [`${where(n.by)} began the ${n.wonder}; our state's houses may fund it.`, ''];
     case 'wonder_funded': return [`The ${n.wonder} of ${where(n.by)} is fully funded; it finishes at tick ${n.done_tick}.`, 'good'];
     case 'wonder_lost': return [`Another house finished the ${n.wonder} first; ${n.refund_bp / 100}% of what our build was given came back.`, 'bad'];
-    case 'wonder_built': return [`The ${n.wonder} stands: ${where(n.by)} of state ${st(n.state)} finished it.`, myHouseId === n.by?.id ? 'good' : ''];
+    case 'wonder_built': return [`The ${n.wonder} stands: ${where(n.by)} of state ${st(n.state)} finished it.`, myHouseId === n.by?.house ? 'good' : ''];
     default: return [`${String(n.type || 'Something').replace(/_/g, ' ')} happened.`, ''];
+  }
+}
+
+/** A statemate's news (the State tab of News), told of them by name, not as "we": the kinds the server shares with the
+ * state (`/state/news`). Any other kind falls back to newsLine. Returns [text, tone], tone as the state sees it. */
+export function mateNewsLine(n, name) {
+  const sum = (a) => (a || []).reduce((x, y) => x + y, 0);
+  switch (n.type) {
+    case 'attacked': return [`${n.by ? where(n.by) : 'A veiled army'} ${verb(n.kind)} ${name}${n.success ? `${n.land_lost ? ` and took ${fmt(n.land_lost)} acres` : ''}${spoils(n.spoils, 'took')}` : ' and was driven off'}.`, n.success ? 'bad' : 'good'];
+    case 'attack_report': return [`${name}'s ${(names.attacks[n.kind] || n.kind || 'attack').toLowerCase()} on ${where(n.target)}: ${n.success ? `won${n.land ? `, ${fmt(n.land)} acres taken` : ''}${spoils(n.spoils, 'took')}` : 'repulsed'}; ${name} lost ${fmt(sum(n.troops_lost))} troops.`, n.success ? 'good' : 'bad'];
+    case 'second_strike': {
+      const killed = fmt(sum(n.killed)), theirs = n.attacker?.house === n.house;
+      return [theirs ? `${name} struck ${where(n.target)} a second time: ${n.success ? `${killed} specialists killed` : 'repulsed'}.` : `${where(n.attacker)} struck ${name} a second time: ${n.success ? `${killed} specialists lost` : 'driven off'}.`, theirs === n.success ? 'good' : 'bad'];
+    }
+    case 'land_retaken': return n.by?.house === n.house ? [`${name} took back ${fmt(n.acres)} acres from ${where(n.from)}'s army.`, 'good'] : [`${where(n.by)} took back ${fmt(n.acres)} acres from ${name}'s army on its way home.`, 'bad'];
+    case 'spies_caught': return [`${name} caught ${fmt(n.caught)} thieves from ${where(n.by)}${n.op ? ` (${names.ops[n.op] || n.op})` : ''}${n.framing ? `, trying to frame ${st(n.framing)}` : ''}.`, 'good'];
+    case 'operation_suffered': return [`Thieves struck ${name} (${n.op}): ${/delayed|growth|unsettled|cut/.test(n.what) ? n.what : `${fmt(n.taken)} ${n.what}`}${n.blamed ? `. They wore the colours of ${st(n.blamed)}` : ''}.`, 'bad'];
+    case 'afflicted': return [`${n.by ? where(n.by) : 'A veiled army'} afflicted ${name} with ${n.name} until tick ${n.until_tick}.`, 'bad'];
+    case 'burned': return [`${n.name} burned ${name}: ${fmt(n.peasants || 0)} peasants and ${fmt(sum(n.units))} troops at home died this tick (it burns until tick ${n.until_tick}).`, 'bad'];
+    case 'rite_resisted': return [`${name} resisted ${n.rite} from ${where(n.by)}.`, 'good'];
+    case 'hex_suffered': return [`${n.reflected ? `${name}'s own hex turned back on them` : `A hex struck ${name}`} (${n.rite}): ${hexTook(n.taken, n.what)}${n.until_tick ? `, until tick ${n.until_tick}` : ''}.`, 'bad'];
+    case 'dragon_raid': return n.driven_off ? [`${dragonWho(n)} fell on ${name}, and its defenders drove it off. +${fmt(n.renown)} renown.`, 'good']
+      : [`${dragonWho(n)} fell on ${name}. ${dragonToll(n)}`, 'bad'];
+    case 'starving': { const lost = sum(n.troops_lost); return [`${name} is starving: ${fmt(n.peasants)} peasants${lost ? ` and ${fmt(lost)} troops` : ''} died, and no peasants were born.`, 'bad']; }
+    case 'deserted': return [`${name} couldn't pay its troops' wages (${fmt(n.unpaid)} gold short), so ${plural(sum(n.units), 'troop', 'troops')} deserted.`, 'bad'];
+    case 'general_killed': return [`${name}'s general ${n.name} fell in battle.`, 'bad'];
+    default: return newsLine(n);
   }
 }
 export const newsText = (n) => newsLine(n)[0];

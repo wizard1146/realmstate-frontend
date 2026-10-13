@@ -14,6 +14,7 @@ export const store = {
   nextAt: null,        // ms timestamp of the next tick (from /age next_tick_at, or tick message at + tick_ms)
   news: [],            // /news, newest first, plus live items
   newsLoaded: false,
+  stateNews: null,     // /state/news: your statemates' news, newest first, each naming its house
   chats: { world: [], realm: [], state: [] }, // /chat/:channel, oldest first, plus live items
   chatsLoaded: { world: false, realm: false, state: false },
   unread: { world: 0, realm: 0, state: 0 },   // messages from others not yet seen, per channel (the war room clears them)
@@ -140,10 +141,10 @@ export function refreshMeSoon(ms = 400) { clearTimeout(meSoonTimer); meSoonTimer
 
 export function clearPrivate() {
   Object.assign(store, {
-    news: [], newsLoaded: false, chats: { world: [], realm: [], state: [] }, chatsLoaded: { world: false, realm: false, state: false },
+    news: [], newsLoaded: false, stateNews: null, chats: { world: [], realm: [], state: [] }, chatsLoaded: { world: false, realm: false, state: false },
     unread: { world: 0, realm: 0, state: 0 }, drafts: { world: '', realm: '', state: '' }, ticks: [], reports: [], reportsLoaded: false, state: null, target: null, colloquium: null, hall: null, offers: null, heirs: null, market: null, orders: null, relations: null,
   });
-  for (const k of ['news', 'chat', 'state', 'target', 'ticks', 'reports']) notify(k);
+  for (const k of ['news', 'statenews', 'chat', 'state', 'target', 'ticks', 'reports']) notify(k);
 }
 
 export function loadAll() {
@@ -190,6 +191,10 @@ async function newAge() {
 }
 
 // ---------- news and chat ----------
+/** Your statemates' news: their battles, intrigue and hexes, and the hardships of those who share them. */
+export async function loadStateNews() {
+  try { store.stateNews = await api('/state/news'); notify('statenews'); } catch (e) { complain(e); }
+}
 export async function loadNews() {
   try {
     const fresh = await api('/news');

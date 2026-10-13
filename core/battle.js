@@ -26,8 +26,9 @@ export function verdict(n) {
   return n.success ? ['LOST', 'bad'] : ['HELD', 'good'];
 }
 
-/** The card's HTML. full: every line (detail view); otherwise a two-line summary (pane). */
-export function battleCard(n, full) {
+/** The card's HTML. full: every line (detail view); otherwise a two-line summary (pane). mate: a statemate's name when
+ * the battle is theirs (the State tab of News), so the card speaks of them, not us. */
+export function battleCard(n, full, mate = null) {
   const mine = n.type === 'attack_report';
   const [word, tone] = verdict(n);
   const kind = names.attacks[n.kind] || n.kind || 'Attack';
@@ -37,6 +38,7 @@ export function battleCard(n, full) {
   const land = mine ? n.land : n.land_lost;
   const sp = spoilParts(n.spoils);
   const ourLoss = total(n.troops_lost), theirLoss = total(n.enemy_lost);
+  const us = mate || 'us', ours = mate ? `${mate}'s losses` : 'Our losses', theirs = mate ? 'Enemy losses' : 'Their losses';
   const notes = [];
   if (mine && n.protection_bp < 10000) notes.push(`hit often lately: ${pct(n.protection_bp)} of usual gains`);
   if (mine && n.size_bp < 10000) notes.push(`smaller house: ${pct(n.size_bp)} of usual gains`);
@@ -44,8 +46,8 @@ export function battleCard(n, full) {
     const bits = [];
     if (land) bits.push(`${mine ? '+' : '−'}${fmt(land)} acres`);
     if (sp.length) bits.push(`${mine ? 'took' : 'lost'} ${sp.join(', ')}`);
-    bits.push(`we lost ${fmt(ourLoss)}`);
-    if (mine) bits.push(`they lost ${fmt(theirLoss)}`);
+    bits.push(`${mate || 'we'} lost ${fmt(ourLoss)}`);
+    if (mine) bits.push(`${mate ? 'the enemy' : 'they'} lost ${fmt(theirLoss)}`);
     if (mine && n.returns_at) bits.push(`home ${dayTime(n.returns_at)}`);
     if (notes.length) bits.push(notes.join('; '));
     return `<div class="bcard bc-${tone}" data-battle="${n.at || ''}"><div class="bc-h">${head}</div><div class="bc-s">${esc(bits.join(' · '))}</div></div>`;
@@ -54,9 +56,9 @@ export function battleCard(n, full) {
   const row = (k, v, cls = '') => rows.push(`<div><dt>${esc(k)}</dt><dd class="${cls}">${v}</dd></div>`);
   if (mine) row('Offense sent', `<span class="num">${fmt(n.offense)}</span>`);
   row(mine ? 'Land taken' : 'Land lost', `<span class="num">${fmt(land || 0)}</span> acres`, land ? (mine ? 'up' : 'down') : 'zero');
-  row(mine ? 'Spoils' : 'Taken from us', esc(sp.join(', ') || 'none'), sp.length ? '' : 'zero');
-  row('Our losses', lossCell(n.troops_lost, true), ourLoss ? 'down' : 'zero');
-  if (mine) row('Their losses', lossCell(n.enemy_lost, false), theirLoss ? 'up' : 'zero');
+  row(mine ? 'Spoils' : `Taken from ${us}`, esc(sp.join(', ') || 'none'), sp.length ? '' : 'zero');
+  row(ours, lossCell(n.troops_lost, true), ourLoss ? 'down' : 'zero');
+  if (mine) row(theirs, lossCell(n.enemy_lost, false), theirLoss ? 'up' : 'zero');
   if (mine) row('Saved by medics', `<span class="num">${fmt(n.saved || 0)}</span>`, n.saved ? 'up' : 'zero');
   if (mine) row('Renown', `<span class="num">${n.renown ? `+${fmt(n.renown)}` : '0'}</span>`, n.renown ? 'up' : 'zero');
   if (mine) row('General', n.general_killed ? 'fell in battle' : 'unharmed', n.general_killed ? 'down' : 'zero');

@@ -5,6 +5,7 @@
 import { store, say, loadMarket } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc, when, dayTime } from '../../core/words.js';
+import { MAT_ICONS, matMark } from './world.js';
 import { num, MAX_Q, cap, book, best, feeBp, lockMin, crossBp, waitHold, buyHold, buyMax, crossWhere, fillNow, holder, hitSize, spoils, isLeader } from '../../core/market.js';
 
 const KEY = 'realmstate.line.market';
@@ -53,7 +54,7 @@ export function mountMarket(host, on) {
     const h = store.house, sp = spoils();
     $('mats').innerHTML = store.market.map((m) => {
       const bd = m.bids[0], ak = m.asks[0], held = h.materials[m.material] || 0;
-      return `<button type="button" role="listitem" class="mk-card${m.material === mat ? ' on' : ''}" data-mat="${esc(m.material)}" aria-pressed="${m.material === mat}">
+      return `<button type="button" role="listitem" class="mk-card${m.material === mat ? ' on' : ''}${MAT_ICONS.has(m.material) ? ' marked' : ''}" data-mat="${esc(m.material)}" aria-pressed="${m.material === mat}"${matMark(m.material)}>
         <span class="mk-name">${esc(m.name || cap(m.material))}</span>
         <span class="mk-held">${fmt(held)} held${sp[m.material] ? ` <span class="short">−${fmt(sp[m.material])} next tick</span>` : ''}</span>
         <span class="mk-px"><span>Bid <b>${bd ? fmt(bd.price) : '–'}</b></span><span>Ask <b>${ak ? fmt(ak.price) : '–'}</b></span><span>Last <b>${m.last.volume ? fmt(m.last.price) : '–'}</b></span></span>

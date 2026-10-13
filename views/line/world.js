@@ -17,9 +17,9 @@ const KEY = 'realmstate.line.world.tab';
 const SORTS = [['land', 'Land'], ['might', 'Might'], ['renown', 'Renown']];
 const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : '');
 /** Materials with an icon (views/line/assets/materials/<id>.png; the path is the stylesheet's, line.css, where the mask is drawn). */
-const MAT_ICONS = new Set(['bauxite', 'limestone', 'amber', 'pine', 'sulfur', 'paper']);
-/** A realm card's watermark: its material, faint, as Throne's throne (line.css draws it as a mask). */
-const matMark = (m) => (MAT_ICONS.has(m) ? ` style="--ico:url('assets/materials/${m}.png')"` : '');
+export const MAT_ICONS = new Set(['bauxite', 'limestone', 'amber', 'pine', 'sulfur', 'paper']);
+/** A card's watermark: its material, faint, as Throne's throne (line.css draws it as a mask). World and Market use it. */
+export const matMark = (m) => (MAT_ICONS.has(m) ? ` style="--ico:url('assets/materials/${m}.png')"` : '');
 
 export function mountWorld(host, on) {
   const P = store.rules?.params || {}, REALMS = P.realms || 13, SEATS = P.houses_per_state || 15;

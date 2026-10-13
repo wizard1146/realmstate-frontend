@@ -1483,7 +1483,10 @@
   & .lnews .nw-tools, & .lranks .rk-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 6px; }
   & .lnews .nw-tools label:not(.cf-check), & .lranks .rk-tools label { font-variant-caps: all-small-caps; letter-spacing: .08em; color: var(--l-muted); }
   & .lnews .nw-tools .cf-check { display: flex; align-items: center; gap: 6px; }
-  & .lnews .nw-tools #ln-count { margin-left: auto; }
+  & .lnews .nw-tools .nw-count { margin-left: auto; }
+  & .lnews .nw-note { margin: 0 0 4px; }
+  & .lnews .nw-who { font-weight: 600; color: var(--l-ink); margin-right: 2px; }
+  & .lnews .nw-battle .nw-who { display: block; margin-bottom: 4px; }
   & .lnews .nw-day { margin: 18px 0 2px; }
   & .lnews .nw-list { list-style: none; margin: 0; padding: 0; }
   & .lnews .nw-list > li { display: grid; grid-template-columns: 52px 1fr; gap: 12px; align-items: baseline; padding: 7px 8px; border-bottom: 1px solid var(--l-rule); border-left: 3px solid transparent; }
@@ -1548,6 +1551,11 @@
   & .lmkt .mk-card:hover { border-color: color-mix(in srgb, var(--l-gold) 60%, var(--l-rule)); }
   & .lmkt .mk-card.on { border-color: var(--l-gold); background: color-mix(in srgb, var(--l-gold) 9%, var(--l-page)); }
   & .lmkt .mk-card:focus-visible { outline: 2px solid var(--l-gold); outline-offset: 2px; }
+  /* A material card's backdrop: its icon, faint, at the right (as the World page's realm cards). */
+  & .lmkt .mk-card { position: relative; overflow: hidden; isolation: isolate; }
+  & .lmkt .mk-card.marked::after { content: ""; position: absolute; z-index: -1; pointer-events: none; right: 12px; top: 50%; width: 64px; aspect-ratio: 1;
+    transform: translateY(-50%); background: var(--l-ink); opacity: .08; -webkit-mask: var(--ico) center / contain no-repeat; mask: var(--ico) center / contain no-repeat; }
+  & .lmkt .mk-card.marked:hover::after, & .lmkt .mk-card.marked.on::after { opacity: .13; }
   & .lmkt .mk-name { font: 1.1rem var(--l-head-font); }
   & .lmkt .mk-held { font-size: .88em; }
   & .lmkt .mk-px { display: flex; gap: 10px; font-size: .84em; color: var(--l-muted); }

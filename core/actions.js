@@ -155,6 +155,8 @@ export const charRef = (kind, id) => ({ kind, id: Number(id) });
 /** Raise a general from elites and the general material. traits: identities, or [] for random. */
 export const recruitGeneral = (name, traits = [], opts = {}) => run({ type: 'recruit_general', house: me(), name: String(name).trim(), traits }, opts);
 /** Put a general at home in command of the home defense (null: none). */
+/** Let your state see your hardships (starving, desertion, a general killed) in its news, or stop. */
+export const shareLosses = (on, opts = {}) => run({ type: 'share_losses', house: me(), on: !!on }, opts);
 export const setDefender = (general, opts = {}) => run({ type: 'set_defender', house: me(), general: general == null ? null : Number(general) }, opts);
 /** The characters to keep into the next age, in order of preference ([] clears). heirs: [charRef]. */
 export const markHeirs = (heirs, opts = {}) => run({ type: 'mark_heirs', house: me(), heirs }, opts);
