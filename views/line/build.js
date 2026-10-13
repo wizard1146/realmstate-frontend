@@ -3,6 +3,7 @@
 // a count for each and one Build button for the lot; Raze tears finished buildings down. Sums, limits and reasons
 // from core/land.js and core/does.js, exact prices from core/prices.js, orders through core/actions.js.
 import { store } from '../../core/store.js';
+import { tickList } from './underway.js';
 import * as act from '../../core/actions.js';
 import * as price from '../../core/prices.js';
 import { fmt, esc, when } from '../../core/words.js';
@@ -284,7 +285,8 @@ export function mountBuild(host, on) {
     // Nothing under way: one empty row, so the grid keeps its shape.
     const rows = b.rows.length ? b.rows.map((r) => `<tr><th scope="row">${esc(bname(r.id))}</th>${cells(r)}</tr>`).join('')
       : `<tr><th scope="row"><span class="vh">Nothing being built</span></th>${cells({ ticks: Array(24).fill(0), later: 0 })}</tr>`;
-    $('uw').innerHTML = `<div class="scrollx"><table class="tbl ticks nocards"><thead><tr><th scope="col">Ticks from now</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
+    $('uw').innerHTML = `<div class="scrollx"><table class="tbl ticks nocards"><thead><tr><th scope="col">Ticks from now</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`
+      + tickList(b.rows.map((r) => ({ name: bname(r.id), ticks: r.ticks, later: r.later })), b.ends, 'Nothing being built.');
   }
   function draw() {
     lead(); fillRows(); raze();

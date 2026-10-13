@@ -10,6 +10,7 @@ import { trainNote } from '../../core/train.js';
 import { armed, jobs, trainByTick } from '../../core/military.js';
 import { throneGlyph } from './throne.js';
 import { mountAdvisor } from './advisor.js';
+import { tickList } from './underway.js';
 
 const n0 = (v) => Math.max(0, Math.floor(Number(v) || 0));
 const TABS = [['train', 'Train'], ['draft', 'Draft & Release'], ['shop', 'Arms & Aid']];
@@ -123,15 +124,19 @@ export function mountMilitary(host, on) {
     shownUnits = key;
     $('rows').innerHTML = list.map((i, k) => {
       const u = r.units[i], [o, d] = unitPoints(r, i), up = isUpgrade(i);
-      const name = `${up ? '<span class="sub-mark" aria-hidden="true">↳ </span>' : ''}${esc(u.name)}${i === SOLDIER ? ' <span class="dim">(soldiers)</span>' : i === THIEF ? ' <span class="dim">(thieves)</span>' : ''}`;
+      // As a card (phones), the name carries its points, "(6/1)", in place of the Off and Def rows; a unit not trained
+      // here says where it comes from instead of a row of dashes.
+      const from = can.has(i) ? '' : i === SOLDIER ? 'drafted (Draft &amp; Release)' : up ? 'upgraded under Arms &amp; Aid' : '';
+      const name = `${up ? '<span class="sub-mark" aria-hidden="true">↳ </span>' : ''}${esc(u.name)}${i === SOLDIER ? ' <span class="dim">(soldiers)</span>' : i === THIEF ? ' <span class="dim">(thieves)</span>' : ''}`
+        + `<span class="pts" title="${o} offence, ${d} defence each"> (${o}/${d})</span>${from ? `<span class="from">${from}</span>` : ''}`;
       const each = can.has(i) && price.have() ? fmt(price.trainCost(i, 1, direct)) : '';
       const cnt = can.has(i)
         ? `<td class="num"><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-slot="${i}" value="${esc(keep[i] || '')}" aria-label="${esc(u.name)} to train"></td>
            <td class="acts"><button type="button" class="btn mini" data-max="${i}" aria-label="Most ${esc(u.name)} with what the other rows leave">MAX</button><button type="button" class="x" data-x="${i}" aria-label="Clear ${esc(u.name)}" title="Clear this row">×</button></td>
            <td class="num each">${each}</td><td class="num cost" data-cost="${i}"></td>`
-        : '<td class="num dim">–</td><td></td><td class="num dim">–</td><td class="num dim">–</td>';   // not trained here (drafted, or upgraded under Arms & Aid)
+        : '<td class="num dim na">–</td><td class="na"></td><td class="num dim na">–</td><td class="num dim na">–</td>';   // not trained here (drafted, or upgraded under Arms & Aid)
       return `<tr class="${[up ? 'plus' : '', k % 2 ? 'alt' : ''].join(' ').trim()}"><th scope="row">${name}</th><td class="num pt">${o}</td><td class="num pt">${d}</td>`
-        + `<td class="num">${fmt(h.units[i])}</td><td class="num${h.away[i] ? '' : ' dim'}">${fmt(h.away[i])}</td><td class="num${training[i] ? '' : ' dim'}">${fmt(training[i])}</td>${cnt}</tr>`;
+        + `<td class="num">${fmt(h.units[i])}</td><td class="num${h.away[i] ? '' : ' dim zero'}">${fmt(h.away[i])}</td><td class="num${training[i] ? '' : ' dim zero'}">${fmt(training[i])}</td>${cnt}</tr>`;
     }).join('');
     totals();
   }
@@ -189,7 +194,8 @@ export function mountMilitary(host, on) {
     const name = (id) => (id === 'medics' ? 'Medics' : id === 'army' ? 'Armies home' : r?.units[id]?.name || `unit ${id}`);
     const rows = b.rows.length ? b.rows.map((x) => `<tr><th scope="row">${esc(name(x.id))}</th>${cells(x)}</tr>`).join('')
       : `<tr><th scope="row"><span class="vh">Nothing under way</span></th>${cells({ ticks: Array(24).fill(0), later: 0 })}</tr>`;
-    $('uw').innerHTML = `<div class="scrollx"><table class="tbl ticks nocards"><thead><tr><th scope="col">Ticks from now</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
+    $('uw').innerHTML = `<div class="scrollx"><table class="tbl ticks nocards"><thead><tr><th scope="col">Ticks from now</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`
+      + tickList(b.rows.map((x) => ({ name: x.id === 'army' ? 'troops home' : name(x.id), ticks: x.ticks, later: x.later })), b.ends, 'Nothing training or on its way home.');
   }
 
   // ---------- draft & release ----------

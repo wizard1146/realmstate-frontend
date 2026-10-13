@@ -2,6 +2,7 @@
 // its way over the next 24 ticks, as Utopia shows it. Sums and reasons from core/land.js, exact prices from
 // core/prices.js, the order through core/actions.js.
 import { store } from '../../core/store.js';
+import { tickList } from './underway.js';
 import * as act from '../../core/actions.js';
 import * as price from '../../core/prices.js';
 import { fmt, esc, dayTime, SOLDIER } from '../../core/words.js';
@@ -77,7 +78,8 @@ export function mountLand(host, on) {
     $('uw').innerHTML = `<div class="scrollx"><table class="tbl ticks nocards"><thead><tr><th scope="col">Ticks from now</th>${head}</tr></thead><tbody>
       <tr><th scope="row">Explored</th>${cells(b.explored, b.later.explored)}</tr>
       ${any(b.armies) || b.later.armies ? `<tr><th scope="row">With armies</th>${cells(b.armies, b.later.armies)}</tr><tr class="sum"><th scope="row">All</th>${cells(tot, b.later.explored + b.later.armies)}</tr>` : ''}
-      </tbody></table></div>`;
+      </tbody></table></div>`
+      + tickList([{ name: 'acres explored', ticks: b.explored, later: b.later.explored }, { name: 'acres with armies', ticks: b.armies, later: b.later.armies }], b.ends, 'No land on its way.', dayTime);
   }
 
   /** The order as a sentence, and whether it can go. */

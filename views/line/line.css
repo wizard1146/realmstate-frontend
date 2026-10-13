@@ -495,6 +495,12 @@
   & .lbuild .lb-groups { columns: 490px 2; column-gap: 30px; max-width: 1500px; }
   & .lbuild .lb-grp { break-inside: avoid; margin-bottom: 20px; padding-top: 10px; }   /* padding, not the heading's margin: a column break drops margins */
   & .lbuild .lb-grp > h3.sub { margin-top: 0; }
+  /* Phones: each section's heading stays at the top while you scroll through it, under the header, the tabs and
+     the order bar (all sticky), and the next section's heading pushes it off (it sticks within its own section). */
+  @media (max-width: 760px) {
+    & .lbuild .lb-grp > h3.sub { position: sticky; top: 125px; z-index: 2; margin: 0 -6px; padding: 8px 6px 6px; background: var(--l-page);
+      border-bottom: 1px solid var(--l-line); box-shadow: 0 4px 6px -6px color-mix(in srgb, var(--l-ink) 40%, transparent); }
+  }
   & .lbuild .lb-grp > table.lb-tbl { margin-top: 0; width: 100%; min-width: 0; table-layout: fixed; }   /* full width, or the fixed column widths are ignored */
   /* The same column widths in every group, so they fit a column and line up group to group. */
   & .lbuild .lb-grp .lb-tbl col.c-name { width: 21%; } & .lbuild .lb-grp .lb-tbl col.c-own { width: 58px; } & .lbuild .lb-grp .lb-tbl col.c-n { width: 76px; }
@@ -804,6 +810,29 @@
   @media (max-width: 760px) { & .lmil .st-glance { grid-template-columns: repeat(2, 1fr); } }
   /* As cards (cards.js), its cells keep their own height: the table's fixed row height would overlap them. */
   & .lmil .mil-tbl.cards tbody :is(td, th) { height: auto; }
+  /* Train as cards: the points ride on the name, "Corsair (6/1)", instead of an Off and a Def row; a unit trained
+     elsewhere (soldiers, the + units) is its name, where it comes from, and its counts, without the dashes and the
+     empty Away and Training. The title needs no "Unit" label. */
+  & .lmil .mil-tbl :is(.pts, .from) { display: none; }
+  & .lmil .mil-tbl.cards .pts { display: inline; font-weight: 400; color: var(--l-muted); font-variant-numeric: tabular-nums; }
+  & .lmil .mil-tbl.cards .from { display: block; font-weight: 400; font-size: .82em; color: var(--l-muted); }
+  & .lmil .mil-tbl.cards tr > th:first-child::before { display: none; }
+  & .lmil .mil-tbl.cards :is(td.pt, td.na) { display: none; }
+  & .lmil .mil-tbl.cards tr:has(td.na) td.zero { display: none; }
+  & .lmil .mil-tbl.cards tr:has(td.na) { grid-template-columns: repeat(3, minmax(0, 1fr)); padding-block: 8px; }
+  & .lmil .mil-tbl.cards td.cost:empty { display: none; }
+  /* Under way: on a phone, 25 columns can only squeeze or scroll, so the timeline reads as a list instead: a line
+     for each tick when something finishes (underway.js tickList). */
+  & .uw-phone { display: none; }
+  @media (max-width: 760px) {
+    & .scrollx:has(> table.ticks) { display: none; }
+    & .uw-phone { display: block; list-style: none; margin: 4px 0 0; padding: 0; border-top: 1px solid var(--l-line); }
+    & .uw-phone li { display: grid; grid-template-columns: 3.2em 5.6em minmax(0, 1fr); gap: 2px 10px; padding: 7px 4px; border-bottom: 1px solid var(--l-rule); align-items: baseline; }
+    & .uw-phone li b { font-variant-numeric: tabular-nums; color: var(--l-gold); }
+    & .uw-phone li .t { color: var(--l-muted); font-size: .88em; font-variant-numeric: tabular-nums; }
+    & .uw-phone li .w { overflow-wrap: anywhere; }
+    & .uw-phone li.none { display: block; color: var(--l-muted); }
+  }
 }
 
 :root[data-view="line"] {

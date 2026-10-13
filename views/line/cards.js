@@ -30,27 +30,36 @@ function label(t) {
 /** Lays out every table under `host`: cards where a table is too wide for a phone, a table otherwise. A table marked
  * nocards (a timeline, where the columns are the point) scrolls sideways instead. "Too wide" is measured as the
  * browser would lay the table out by itself (text wrapping, but names, numbers and inputs whole): a table with fixed
- * column widths never overflows, it squeezes its rows instead, so its own width says nothing. */
+ * column widths never overflows, it squeezes its rows instead, so its own width says nothing.
+ *
+ * It measures a hidden copy, never the table on the page: taking a long card stack back to a table, even for a
+ * moment, shortens the page, and the browser pulls a reader scrolled further down back up the page. A table only
+ * changes when its answer does. */
 export function cardify(host) {
   for (const t of host.querySelectorAll('table.tbl:not(.nocards)')) {
-    t.classList.remove('cards');
-    if (!phone() || !label(t)) continue;
+    if (!phone() || !label(t)) { t.classList.remove('cards'); continue; }
     const box = t.parentElement.closest('.scrollx') || t.parentElement;
-    const was = [t.style.tableLayout, t.style.minWidth];
-    t.style.tableLayout = 'auto';
-    t.style.minWidth = '0';
-    const wide = t.scrollWidth > box.clientWidth + 1;
-    [t.style.tableLayout, t.style.minWidth] = was;
-    if (wide) t.classList.add('cards');
+    const copy = t.cloneNode(true);
+    copy.classList.remove('cards');
+    copy.querySelectorAll('[id]').forEach((e) => e.removeAttribute('id'));
+    copy.removeAttribute('id');
+    copy.setAttribute('aria-hidden', 'true');
+    Object.assign(copy.style, { position: 'absolute', visibility: 'hidden', pointerEvents: 'none', left: '0', top: '0',
+      width: `${box.clientWidth}px`, minWidth: '0', tableLayout: 'auto' });
+    box.append(copy);
+    const wide = copy.offsetWidth > box.clientWidth + 1;
+    copy.remove();
+    if (t.classList.contains('cards') !== wide) t.classList.toggle('cards', wide);
   }
 }
 
 /** Keeps `hosts` cardified as their panels redraw and the window changes size. Returns a stop function. */
 export function watchCards(hosts, on) {
   let queued = false;
-  const run = () => { queued = false; hosts.forEach(cardify); };
-  const soon = () => { if (!queued) { queued = true; requestAnimationFrame(run); } };
-  const mo = new MutationObserver(soon);
+  const mo = new MutationObserver(() => soon());
+  // Its own changes (the measuring copy, labels) are not redraws: drop their records so they don't start it again.
+  const run = () => { queued = false; hosts.forEach(cardify); mo.takeRecords(); };
+  function soon() { if (!queued) { queued = true; requestAnimationFrame(run); } }
   for (const h of hosts) mo.observe(h, { childList: true, subtree: true });
   on(window, 'resize', soon);
   soon();

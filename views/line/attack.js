@@ -2,6 +2,7 @@
 // facts; the kind of attack and the general leading it; the army in one table (troops, then medics, mounts and
 // mercenaries); one order with a confirm step; armies coming home. The maths are core/attack.js's.
 import { store, raceOf, raceName, unitPoints, setTarget, reportsOn } from '../../core/store.js';
+import { tickList } from './underway.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc, addr, when, MERC } from '../../core/words.js';
 import { attackSlots, attackHint, buildingChoice, buildingOptions, attackQuote, extraMax, mercRatio, offenseParts } from '../../core/attack.js';
@@ -255,7 +256,8 @@ export function mountAttack(host, on) {
     shownTicks = key;
     const head = b.ends.map((t, k) => `<th scope="col" class="num" title="Tick ${fmt(store.tick + k + 1)}, ${esc(when(t))}">+${k + 1}</th>`).join('') + (row.later ? '<th scope="col" class="num">later</th>' : '');
     const cells = row.ticks.map((v) => `<td class="num${v ? ' on' : ''}">${v ? fmt(v) : ''}</td>`).join('') + (row.later ? `<td class="num on">${fmt(row.later)}</td>` : '');
-    $('uw').innerHTML = `<div class="scrollx"><table class="tbl ticks nocards"><thead><tr><th scope="col">Ticks from now</th>${head}</tr></thead><tbody><tr><th scope="row">Troops</th>${cells}</tr></tbody></table></div>`;
+    $('uw').innerHTML = `<div class="scrollx"><table class="tbl ticks nocards"><thead><tr><th scope="col">Ticks from now</th>${head}</tr></thead><tbody><tr><th scope="row">Troops</th>${cells}</tr></tbody></table></div>`
+      + tickList([{ name: 'troops home', ticks: row.ticks, later: row.later }], b.ends, 'No armies out.');
   }
 
   const advisor = mountAdvisor(host.querySelector('.latk'), 'attack');
