@@ -138,11 +138,16 @@ export function mountWorld(host, on) {
         ${SORTS.map(([k]) => `<td class="num${k === sort ? ' on' : ''}">${fmt(s.ranks[k].total)}</td>`).join('')}</tr>`;
     }).join('') || '<tr><td colspan="7" class="dim">Loading…</td></tr>';
   }
-  /** States as cards: one row a realm, its seven states in order; a state at war names its foe (data-foe). */
+  /** States as cards: one row a realm, its seven states in order; a state at war names its foe (data-foe). On a phone
+   *  each row is a strip that scrolls sideways, with ‹ › buttons (line.css); where each strip was scrolled to stays
+   *  through redraws. */
   function grid() {
+    const at = [...$('grid').querySelectorAll('.wd-gstrip')].map((x) => x.scrollLeft);
     $('grid').innerHTML = Array.from({ length: REALMS }, (_, k) => k + 1).map((n) => {
-      const r = realms.get(n);
-      return `<div class="wd-grow" role="list" aria-label="${esc(r?.name || `Realm ${n}`)}"><span class="wd-rlabel">${n}<span>${esc(r?.name || '')}</span></span>${statesOf(n).map((s) => {
+      const r = realms.get(n), name = esc(r?.name || `Realm ${n}`);
+      return `<div class="wd-grow"><span class="wd-rlabel">${n}<span>${esc(r?.name || '')}</span></span>
+        <button type="button" class="wd-garr" data-dir="-1" aria-label="Earlier states of ${name}">‹</button>
+        <div class="wd-gstrip" role="list" aria-label="${name}">${statesOf(n).map((s) => {
         const yours = n === mine && s.state === myState, foe = warOf(n, s.state);
         const fig = (k, label) => `<span class="wd-gf"><span>${label}</span>${s.ranks ? `#${s.ranks[k].rank}` : '–'}</span>`;
         return `<a href="#state" role="listitem" data-open-state="${n}:${s.state}" data-addr="${n}:${s.state}"${foe ? ` data-foe="${foe.realm}:${foe.state}"` : ''}
@@ -151,8 +156,17 @@ export function mountWorld(host, on) {
           <span class="wd-hs">${fmt(s.houses)}/${SEATS} houses</span>
           <span class="wd-gfigs">${fig('land', 'Land')}${fig('might', 'Might')}${fig('renown', 'Ren.')}</span>
           ${foe ? `<span class="wd-gwar">War · ${foe.realm}:${foe.state}</span>` : ''}</a>`;
-      }).join('')}</div>`;
+      }).join('')}</div>
+        <button type="button" class="wd-garr" data-dir="1" aria-label="Later states of ${name}">›</button></div>`;
     }).join('');
+    $('grid').querySelectorAll('.wd-gstrip').forEach((x, i) => { if (at[i]) x.scrollLeft = at[i]; arrows(x); });
+  }
+  /** A strip's ‹ › buttons: off at its ends (and both off when it doesn't scroll, as on a wide screen). */
+  function arrows(strip) {
+    const row = strip.closest('.wd-grow'), [prev, next] = row.querySelectorAll('.wd-garr');
+    const max = strip.scrollWidth - strip.clientWidth;
+    prev.disabled = strip.scrollLeft <= 1;
+    next.disabled = strip.scrollLeft >= max - 1;
   }
   function views() {
     host.querySelectorAll('[data-sview]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sview === sview)));
@@ -182,6 +196,16 @@ export function mountWorld(host, on) {
     const foe = card?.dataset.foe && $('grid').querySelector(`[data-addr="${card.dataset.foe}"]`);
     card?.classList.toggle('lit', on2); foe?.classList.toggle('lit', on2); foe?.classList.toggle('foe', on2);
   };
+  // ‹ ›: a strip's width at a time; its buttons follow its scroll (scroll doesn't bubble: listen on the way down).
+  on($('grid'), 'click', (ev) => {
+    const b = ev.target.closest('.wd-garr');
+    if (!b) return;
+    const strip = b.parentElement.querySelector('.wd-gstrip');
+    strip.scrollBy({ left: Number(b.dataset.dir) * strip.clientWidth * 0.9, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    setTimeout(() => arrows(strip), 450);   // and once the smooth scroll has settled, where scrollend isn't sent
+  });
+  for (const type of ['scroll', 'scrollend']) on($('grid'), type, (ev) => { if (ev.target.classList?.contains('wd-gstrip')) arrows(ev.target); }, { capture: true, passive: true });
+  on(window, 'resize', () => $('grid').querySelectorAll('.wd-gstrip').forEach(arrows), { passive: true });
   for (const [ev, on2] of [['mouseover', true], ['focusin', true], ['mouseout', false], ['focusout', false]]) {
     on($('grid'), ev, (e) => { const c = e.target.closest('.wd-gcard.war'); if (c && !(e.relatedTarget && c.contains(e.relatedTarget))) lit(c, on2); });
   }

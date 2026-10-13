@@ -680,8 +680,6 @@
     & .line-top .who { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     & .line-top .end { margin-left: 0; gap: 6px; }
     & .line-top .btn { padding: 2px 8px; min-height: 2rem; }
-    & .line-top #l-out { display: none; }   /* on phones, Sign out is the last item in the menu drawer */
-    & .line-side .line-menu .out { display: block; }
     & .line-res { flex-wrap: nowrap; overflow-x: auto; gap: 18px; padding: 6px 10px; scrollbar-width: none; }
     & .line-res::-webkit-scrollbar { display: none; }
     & .line-res div { flex: none; }
@@ -735,7 +733,6 @@
     & .traingrid .tg-tot { margin-left: 0; flex-basis: 100%; }
   }
   @media (max-width: 420px) { & .line-top .brand { display: none; } }   /* the house's name needs the room */
-  & .line-menu .out { display: none; }
   & .burger { display: none; }
 
 }
@@ -853,7 +850,7 @@
 :root[data-view="line"] {
   /* Attack: target and how side by side, the order bar, the army table, armies coming home. Build's layout (.lbuild). */
   & .line-main > .room:has(.latk.glyph)::after { -webkit-mask-image: url("assets/sword.png"); mask-image: url("assets/sword.png"); }
-  & .latk .atk-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 12px 40px; max-width: 1100px; margin-bottom: 18px; }
+  & .latk .atk-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 12px 40px; max-width: 1100px; margin-bottom: 18px; }
   & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon, .lhall, .lmkt, .llead, .lwar) .atk-find { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 12px; }
   & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon, .lhall, .lmkt, .llead, .lwar) .atk-find input { width: 110px; text-align: center; font-variant-numeric: tabular-nums; }
   & :is(.latk, .lint, .lacad, .lgen, .lcol, .ltru, .lwork, .lwon, .lhall, .lmkt, .llead, .lwar) .atk-card { min-height: 92px; padding: 12px 14px; border: 1px solid var(--l-rule); border-radius: 6px; background: color-mix(in srgb, var(--l-gold) 4%, var(--l-page)); }
@@ -880,6 +877,17 @@
   & .latk .atk-tbl td.pt { color: color-mix(in srgb, var(--l-muted) 70%, var(--l-page)); }
   & .latk .atk-tbl tr:is(:hover, :focus-within, .on) td.pt { color: var(--l-ink); }
   & .latk .atk-tbl td.sum { color: var(--l-muted); }
+  /* Phones (cards): a unit's name, its points and how many are home on one line; the count, MAX and the offense
+     it adds on the next. !important: the generic cards rules would otherwise give a lone button the whole row. */
+  @media (max-width: 760px) {
+    & .latk table.atk-tbl.cards tr:not(.card-group):not(.grp) { grid-template-columns: minmax(0, 1fr) 70px minmax(0, 1fr); grid-template-areas: "name pt home" "n max sum"; align-items: end; padding: 8px 6px; }
+    & .latk table.atk-tbl.cards tbody :is(td, th) { height: auto; }
+    & .latk table.atk-tbl.cards tr > :nth-child(1) { grid-area: name !important; align-self: center; } & .latk table.atk-tbl.cards tr > :nth-child(2) { grid-area: pt !important; }
+    & .latk table.atk-tbl.cards tr > :nth-child(3) { grid-area: home !important; } & .latk table.atk-tbl.cards tr > :nth-child(4) { grid-area: n !important; }
+    & .latk table.atk-tbl.cards tr > :nth-child(5) { grid-area: max !important; } & .latk table.atk-tbl.cards tr > :nth-child(6) { grid-area: sum !important; }
+    & .latk table.atk-tbl.cards tr > :nth-child(1)[data-label]::before { display: none; }
+    & .latk table.atk-tbl.cards tr > :only-child { grid-area: auto !important; grid-column: 1 / -1 !important; }
+  }
   & .latk .atk-tbl tr.grp th { padding-top: 14px; font: 600 .82rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); background: none; height: auto; }
   & .latk .atk-check { display: flex; align-items: center; gap: 8px; font-weight: 400; cursor: pointer; }
   & .latk .note { color: var(--l-muted); font-size: .88em; margin: 8px 0 26px; }
@@ -1060,6 +1068,8 @@
   & .lworld .wd-grid[hidden], & .lworld #wd-list[hidden] { display: none; }
   & .lworld .wd-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
   & .lworld .wd-grow { display: grid; grid-template-columns: 34px repeat(7, minmax(0, 1fr)); gap: 6px; }
+  & .lworld .wd-gstrip { display: contents; }   /* wide screens: the cards are the row's own columns */
+  & .lworld .wd-garr { display: none; }
   & .lworld .wd-rlabel { display: flex; flex-direction: column; align-items: center; justify-content: center; font: 1.1rem var(--l-head-font); color: var(--l-muted); }
   & .lworld .wd-rlabel span { display: none; }
   & .lworld .wd-gcard { display: flex; flex-direction: column; gap: 1px; min-height: 108px; padding: 7px 8px; border: 1px solid var(--l-rule); border-radius: 6px;
@@ -1078,7 +1088,20 @@
   & .lworld .wd-gcard.empty { opacity: .6; }
   & .lworld .wd-gcard.war { border-color: color-mix(in srgb, var(--l-bad) 45%, var(--l-rule)); background: color-mix(in srgb, var(--l-bad) 7%, var(--l-page)); }
   & .lworld .wd-gcard.lit { border-color: var(--l-bad); background: color-mix(in srgb, var(--l-bad) 16%, var(--l-page)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--l-bad) 45%, transparent); }
-  @media (max-width: 1100px) { & .lworld .wd-grid { overflow-x: auto; } & .lworld .wd-grow { min-width: 980px; } }
+  @media (min-width: 761px) and (max-width: 1100px) { & .lworld .wd-grid { overflow-x: auto; } & .lworld .wd-grow { min-width: 980px; } }
+  /* Phones: a realm a row, its name above, its states a strip that scrolls sideways, two cards at a time, with ‹ ›. */
+  @media (max-width: 760px) {
+    & .lworld .wd-grid { gap: 14px; }
+    & .lworld .wd-grow { grid-template-columns: 30px minmax(0, 1fr) 30px; grid-template-rows: auto auto; gap: 4px 4px; }
+    & .lworld .wd-rlabel { grid-column: 1 / -1; flex-direction: row; justify-content: flex-start; gap: 8px; font-size: 1rem; }
+    & .lworld .wd-rlabel span { display: inline; font-size: .9em; color: var(--l-ink); }
+    & .lworld .wd-gstrip { display: flex; gap: 6px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+    & .lworld .wd-gstrip::-webkit-scrollbar { display: none; }
+    & .lworld .wd-gstrip > .wd-gcard { flex: 0 0 calc(50% - 3px); scroll-snap-align: start; }
+    & .lworld .wd-garr { display: grid; place-items: center; padding: 0; border: 1px solid var(--l-rule); border-radius: 6px; background: var(--l-page); color: var(--l-gold); font: 1.4rem/1 var(--l-head-font); cursor: pointer; }
+    & .lworld .wd-garr:disabled { color: var(--l-muted); opacity: .4; cursor: default; }
+    & .lworld .wd-garr:focus-visible { outline: 2px solid var(--l-gold); outline-offset: 1px; }
+  }
 }
 
 :root[data-view="line"] {
@@ -1158,7 +1181,7 @@
   & .lint .atk-sheet .lform .field input { flex: 1; min-width: 0; }
   & .lint .atk-sheet .doing { max-width: none; margin: 10px 0; font-size: .92em; }
   & .lint .in-reps { max-width: 1300px; margin: 26px auto 0; }
-  & .lint .in-replist { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 12px; margin-top: 10px; }
+  & .lint .in-replist { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr)); gap: 12px; margin-top: 10px; }
   /* Spy reports: a faint parchment tint with a fine grain over it, like a page from the field (an SVG noise, no image file). */
   & .lint .in-rep { padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--l-gold) 30%, var(--l-rule)); border-radius: 6px;
     background-color: color-mix(in srgb, var(--l-gold) 6%, var(--l-page));
@@ -1208,7 +1231,7 @@
   & .lsci .sc-next { color: var(--l-muted); font-size: .8em; margin-top: 3px; }
   & :is(.lsci, .lcol, .lwork, .lwon, .llead) .sc-bar { height: 6px; margin-top: 6px; border-radius: 3px; background: color-mix(in srgb, var(--l-ink) 8%, var(--l-page)); overflow: hidden; }
   & :is(.lsci, .lcol, .lwork, .lwon, .llead) .sc-bar i { display: block; height: 100%; background: var(--l-gold); }
-  & .lsci .sc-tools { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 12px; margin-top: 14px; }
+  & .lsci .sc-tools { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 12px; margin-top: 14px; }
   & .lsci .sc-tool { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px 12px; border: 1px solid var(--l-rule); border-radius: 6px; }
   & .lsci .sc-tool h3.sub { flex-basis: 100%; margin: 0; }
   & .lsci .sc-tool .what { flex-basis: 100%; margin: 0 0 4px; max-width: none; font-size: .88em; }
@@ -1228,7 +1251,22 @@
   & .lsci .sc-tbl tbody tr.alt > * { background: color-mix(in srgb, var(--l-ink) 1.25%, transparent); }
   & .lsci .sc-tbl tbody tr:hover > * { background: color-mix(in srgb, var(--l-gold) 10%, transparent); }
   & .lsci .sc-tbl tbody tr.on > * { background: var(--l-self); }
-  @media (max-width: 900px) { & .lsci .sc-glance { grid-template-columns: repeat(2, 1fr); } & .lsci .sc-grp { overflow-x: auto; } & .lpart.lsci table.sc-tbl { min-width: 860px; } }
+  @media (max-width: 900px) { & .lsci .sc-glance { grid-template-columns: repeat(2, 1fr); } }
+  /* Phones (cards): a science's name and what it does, then invested and its bonus, then books, MAX and Invest on
+     one line, and what the books would give. */
+  @media (max-width: 760px) {
+    & .lsci table.sc-tbl.cards tr:not(.card-group) { grid-template-columns: minmax(0, 1fr) 64px 84px; grid-template-areas: "name name name" "does does does" "inv now now" "books max go" "after after after"; align-items: end; }
+    /* !important: the generic cards rules give a lone button the whole row (grid-column), which would undo these areas. */
+    & .lsci table.sc-tbl.cards tr > :nth-child(1) { grid-area: name !important; } & .lsci table.sc-tbl.cards tr > :nth-child(2) { grid-area: does !important; }
+    & .lsci table.sc-tbl.cards tr > :nth-child(3) { grid-area: inv !important; } & .lsci table.sc-tbl.cards tr > :nth-child(4) { grid-area: now !important; }
+    & .lsci table.sc-tbl.cards tr > :nth-child(5) { grid-area: books !important; } & .lsci table.sc-tbl.cards tr > :nth-child(6) { grid-area: max !important; }
+    & .lsci table.sc-tbl.cards tr > :nth-child(7) { grid-area: after !important; } & .lsci table.sc-tbl.cards tr > :nth-child(8) { grid-area: go !important; }
+    & .lsci table.sc-tbl.cards tr > :nth-child(1)[data-label]::before { display: none; }
+    & .lsci table.sc-tbl.cards td.after:empty { display: none; }
+    & .lsci table.sc-tbl.cards tr > :is(:nth-child(3), :nth-child(4)) { align-self: start; }
+  }
+  /* Tablets: the table keeps its columns and scrolls inside its box. Phones: it becomes cards (cards.js), at the page's width. */
+  @media (min-width: 761px) and (max-width: 900px) { & .lsci .sc-grp { overflow-x: auto; } & .lpart.lsci table.sc-tbl { min-width: 860px; } }
 }
 
 :root[data-view="line"] {
@@ -1237,6 +1275,7 @@
   & .lpart.lacad { max-width: 1300px; width: 100%; margin-inline: auto; }
   & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon, .lhall, .llead, .lwar) .ac-glance { grid-template-columns: repeat(4, 1fr); max-width: 900px; margin-bottom: 20px; }
   & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon, .lhall, .llead, .lwar) .ac-glance dd .of { font-size: .62em; color: var(--l-muted); }
+  @media (max-width: 760px) { & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon, .lhall, .llead, .lwar) .ac-glance { grid-template-columns: repeat(2, 1fr); } }
   & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon, .lhall, .llead, .lwar) .ac-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; margin-top: 8px; }
   & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon, .lhall, .llead, .lwar) .ac-card { padding: 11px 13px; border: 1px solid var(--l-rule); border-radius: 6px; background: var(--l-page); }
   & :is(.lacad, .lgen, .lcol, .ltru, .lwork, .lwon, .lhall, .llead, .lwar) .ac-card.waver { border-color: var(--l-bad); background: color-mix(in srgb, var(--l-bad) 6%, var(--l-page)); }
@@ -1337,11 +1376,27 @@
   & .ltru .tq-none { padding: 10px 0; }
   & :is(.ltru, .lwon, .lwar) dialog.tq-dlg { width: min(480px, calc(100vw - 32px)); }
   & :is(.ltru, .lwon, .lwar) dialog.tq-dlg .atk-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
-  & .lwork .wk-steps { display: flex; gap: 6px; list-style: none; padding: 0; margin: 4px auto 22px; max-width: 760px; }
-  & .lwork .wk-steps li { flex: 1; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--l-rule); border-radius: 6px; color: var(--l-muted); }
-  & .lwork .wk-steps li span { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid currentColor; font-size: .8em; }
-  & .lwork .wk-steps li.done { color: var(--l-good); border-color: color-mix(in srgb, var(--l-good) 45%, var(--l-rule)); }
-  & .lwork .wk-steps li.now { color: var(--l-ink); border-color: var(--l-gold); background: color-mix(in srgb, var(--l-gold) 9%, var(--l-page)); }
+  /* Realm work: four numbered steps down the page, each a fold-out; the current one opens (work.js). */
+  & .lwork .wk-what { max-width: 760px; margin: 4px auto 14px; }
+  & .lwork .wk-steps { list-style: none; padding: 0; margin: 0 auto 22px; max-width: 760px; display: grid; gap: 8px; }
+  & .lwork .wk-step { border: 1px solid var(--l-rule); border-radius: 6px; background: var(--l-page); }
+  & .lwork .wk-step > summary { display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; list-style: none; color: var(--l-muted); }
+  & .lwork .wk-step > summary::-webkit-details-marker { display: none; }
+  & .lwork .wk-step > summary::after { content: "\25B8"; margin-left: auto; padding-left: 8px; color: var(--l-muted); transition: transform .12s; }
+  & .lwork .wk-step[open] > summary::after { transform: rotate(90deg); }
+  & .lwork .wk-n { flex: none; display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid currentColor; font-size: .8em; }
+  & .lwork .wk-t { font-family: var(--l-head-font); font-size: 1.02em; color: var(--l-ink); }
+  & .lwork .wk-s { min-width: 0; font-size: .86em; color: var(--l-muted); overflow-wrap: anywhere; }
+  & .lwork .wk-step.done { border-color: color-mix(in srgb, var(--l-good) 45%, var(--l-rule)); }
+  & .lwork .wk-step.done > summary { color: var(--l-good); }
+  & .lwork .wk-step.now { border-color: var(--l-gold); }
+  & .lwork .wk-step.now > summary { color: var(--l-ink); background: color-mix(in srgb, var(--l-gold) 9%, var(--l-page)); border-radius: 6px; }
+  & .lwork .wk-body, & .lwork .wk-fundsheet { padding: 0 14px 12px 46px; }
+  & .lwork .wk-body p { margin: 6px 0; }
+  & .lwork .wk-fundsheet .lform .field { display: flex; gap: 6px; }
+  & .lwork .wk-fundsheet .lform .field input { flex: 1; min-width: 0; }
+  & .lwork .wk-fundsheet .doing { margin: 10px 0; font-size: .9em; }
+  @media (max-width: 760px) { & .lwork .wk-body, & .lwork .wk-fundsheet { padding-left: 14px; } & .lwork .wk-s { display: none; } & .lwork .wk-step:not([open]) .wk-s { display: inline; } }
   & :is(.lwork, .lwon, .llead) .wk-fund, & .lwork .wk-votes { margin: 8px 0 2px; font-size: .9em; }
   & .lwon .wo-cost { margin: 0 0 6px; font-size: .84em; color: var(--l-muted); }
   & .lwon .wo-card.standing { border-color: color-mix(in srgb, var(--l-good) 50%, var(--l-rule)); }

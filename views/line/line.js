@@ -110,8 +110,7 @@ const TEMPLATE = (view) => `
   <span class="tick">Tick <b id="l-tick">–</b> · next <b id="l-next">–</b></span>
   <span class="end">${switchHTML(view)}
     <button type="button" id="l-fonts" class="btn" aria-expanded="false" aria-controls="l-fontpanel" title="Fonts (F)">Aa</button>
-    <button type="button" id="l-theme" class="btn" aria-expanded="false" aria-controls="l-themepanel" title="Theme (P)"><span class="ico-pal" aria-hidden="true"></span><span class="vh">Theme</span></button>
-    <button type="button" id="l-out" class="btn">Sign out</button></span>
+    <button type="button" id="l-theme" class="btn" aria-expanded="false" aria-controls="l-themepanel" title="Theme (P)"><span class="ico-pal" aria-hidden="true"></span><span class="vh">Theme</span></button></span>
 </header>
 <dl class="line-res" id="l-res" aria-label="Your house at a glance"></dl>
 <div class="line-body">
@@ -120,7 +119,6 @@ const TEMPLATE = (view) => `
     <nav class="line-menu" id="l-menu" aria-label="Pages">
       ${MENU.map(([g, items]) => `<h2>${esc(g)}</h2><ul>${items.map(([id, label, , , what, extra]) =>
         `<li><a href="#${id}" ${extra?.chat ? 'data-chat aria-controls="lchat"' : `data-page="${id}"`} title="${esc(what)}">${esc(label)}</a></li>`).join('')}</ul>`).join('')}
-      <ul><li><a href="#" class="out" data-out>Sign out</a></li></ul>
     </nav>
     <nav class="line-foot" aria-label="You">
       <ul>${FOOT.map(([id, label, , , what]) => `<li><a href="#${id}" data-page="${id}" title="${esc(what)}">${esc(label)}</a></li>`).join('')}</ul>
@@ -248,8 +246,7 @@ export function mount(root) {
     if (page(id)[0] !== current) select(id);
     else if (id !== current) history.replaceState(null, '', `#${current}`);   // an old id for the page you're on
   });
-  on($('out'), 'click', () => act.signOut());
-  on(root.querySelector('[data-out]'), 'click', (ev) => { ev.preventDefault(); act.signOut(); });
+  // Signing out is on the Profile page.
   mountLook(root, on);
 
   // News as it arrives: a small card bottom right, with a link to the News page (not while you're on it).

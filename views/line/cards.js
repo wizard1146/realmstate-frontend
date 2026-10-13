@@ -39,15 +39,17 @@ export function cardify(host) {
   for (const t of host.querySelectorAll('table.tbl:not(.nocards)')) {
     if (!phone() || !label(t)) { t.classList.remove('cards'); continue; }
     const box = t.parentElement.closest('.scrollx') || t.parentElement;
+    // The room it has: its box, but never more than the page (a table's fixed columns can stretch its own box wider).
+    const room = Math.min(box.clientWidth, t.closest('.line-page')?.clientWidth || document.documentElement.clientWidth);
     const copy = t.cloneNode(true);
     copy.classList.remove('cards');
     copy.querySelectorAll('[id]').forEach((e) => e.removeAttribute('id'));
     copy.removeAttribute('id');
     copy.setAttribute('aria-hidden', 'true');
     Object.assign(copy.style, { position: 'absolute', visibility: 'hidden', pointerEvents: 'none', left: '0', top: '0',
-      width: `${box.clientWidth}px`, minWidth: '0', tableLayout: 'auto' });
+      width: `${room}px`, minWidth: '0', tableLayout: 'auto' });
     box.append(copy);
-    const wide = copy.offsetWidth > box.clientWidth + 1;
+    const wide = copy.offsetWidth > room + 1;
     copy.remove();
     if (t.classList.contains('cards') !== wide) t.classList.toggle('cards', wide);
   }
