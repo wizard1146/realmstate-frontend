@@ -90,7 +90,7 @@ export function mountState(host, on) {
       <label class="vh" for="ls-state">State</label><select id="ls-state"></select>
       <button type="button" class="btn" data-step="1" aria-label="Next state">›</button>
       <form id="ls-goto" class="st-goto" novalidate><label class="vh" for="ls-addr">Go to a state by its address, realm:state</label>
-        <input id="ls-addr" placeholder="1:3" inputmode="numeric" autocomplete="off" spellcheck="false" aria-describedby="ls-addr-why"><button class="btn">Go</button>
+        <input id="ls-addr" placeholder="1:3" inputmode="text" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" aria-describedby="ls-addr-why"><button class="btn">Go</button>
         <span class="short small" id="ls-addr-why" aria-live="polite"></span></form>
       <button type="button" class="btn" id="ls-home">Your state</button>
     </nav>

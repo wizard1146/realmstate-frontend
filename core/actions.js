@@ -186,7 +186,7 @@ export const leaveProtection = (opts = {}) => run({ type: 'leave_protection', ho
 // ---------- other houses ----------
 /** "1:1:3" -> that house's public facts, read fresh from /states/:r/:s. Throws a readable Error. */
 export async function resolveAddress(text) {
-  const m = /^\s*(\d+)\s*:\s*(\d+)\s*:\s*(\d+)\s*$/.exec(text || '');
+  const m = /^\s*(\d+)\s*[:\s.,/]\s*(\d+)\s*[:\s.,/]\s*(\d+)\s*$/.exec(text || ''); // \"1:3:5\", or with spaces, dots, commas or slashes
   if (!m) throw new Error('Write the address as realm:state:seat, for example 1:1:3.');
   const [r, s, seat] = m.slice(1).map(Number);
   const p = store.rules.params;

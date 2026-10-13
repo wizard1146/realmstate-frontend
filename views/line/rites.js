@@ -32,7 +32,7 @@ export function mountRites(host, on) {
             <h3 class="sub">On</h3>
             <form id="lr-tf" class="atk-find" novalidate>
               <label class="vh" for="lr-addr">Target house, by address</label>
-              <input id="lr-addr" placeholder="r:s:seat" inputmode="numeric" autocomplete="off" spellcheck="false">
+              <input id="lr-addr" placeholder="r:s:seat" inputmode="text" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">
               <button class="btn">Look up</button>
             </form>
             <div class="atk-card" id="lr-card" aria-live="polite"></div>
@@ -186,7 +186,7 @@ export function mountRites(host, on) {
   on($('addr'), 'input', () => {
     clearTimeout(typing);
     const v = $('addr').value.trim();
-    if (/^\d+:\d+:\d+$/.test(v) && (!target || v !== addr(target))) typing = setTimeout(() => lookUp(v), 450);
+    if (/^\d+[:\s.,/]+\d+[:\s.,/]+\d+$/.test(v) && (!target || v.replace(/[\s.,/]+/g, ':') !== addr(target))) typing = setTimeout(() => lookUp(v), 450);
   });
   on($('go'), 'click', async () => {
     const r = riteById(pick);

@@ -64,7 +64,7 @@ const TEMPLATE = (view) => `
 
 <form id="m-goto" class="goto" autocomplete="off">
   <label for="m-goto-addr" class="sc">Find</label>
-  <input id="m-goto-addr" name="addr" placeholder="realm:state:seat" inputmode="numeric" pattern="\\d+(:\\d+){0,2}" title="An address such as 1, 1:1 or 1:1:3">
+  <input id="m-goto-addr" name="addr" placeholder="realm:state:seat" inputmode="text" autocapitalize="off" autocorrect="off" pattern="\\d+(:\\d+){0,2}" title="An address such as 1, 1:1 or 1:1:3">
   <button class="small">Go</button>
 </form>
 

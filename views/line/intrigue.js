@@ -32,7 +32,7 @@ export function mountIntrigue(host, on) {
         <h3 class="sub">Target</h3>
         <form id="li-tf" class="atk-find" novalidate>
           <label class="vh" for="li-addr">Target house, by address</label>
-          <input id="li-addr" placeholder="r:s:seat" inputmode="numeric" autocomplete="off" spellcheck="false">
+          <input id="li-addr" placeholder="r:s:seat" inputmode="text" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">
           <button class="btn">Look up</button>
         </form>
         <div class="atk-card" id="li-card" aria-live="polite"><p class="dim">No target yet: type an address.</p></div>
@@ -41,7 +41,7 @@ export function mountIntrigue(host, on) {
         <div class="lform atk-grid">
           <label for="li-n">Thieves</label><span class="field"><input id="li-n" type="number" min="1" step="1" inputmode="numeric" placeholder="0"><button type="button" class="btn mini" id="li-max" aria-label="Every thief at home">MAX</button></span>
           <label for="li-x" id="li-xl" hidden></label><select id="li-x" hidden></select>
-          <label for="li-flag">False flag</label><input id="li-flag" placeholder="r:s (optional)" inputmode="numeric" autocomplete="off" aria-describedby="li-flagn">
+          <label for="li-flag">False flag</label><input id="li-flag" placeholder="r:s (optional)" inputmode="text" autocapitalize="off" autocorrect="off" autocomplete="off" aria-describedby="li-flagn">
           <p class="atk-note" id="li-flagn">Blame another state: more nerve, and if caught, they and you both turn hostile.</p>
         </div>
         <p class="doing" id="li-doing" aria-live="polite" hidden></p>
@@ -135,7 +135,7 @@ export function mountIntrigue(host, on) {
   on($('addr'), 'input', () => {
     clearTimeout(typing);
     const v = $('addr').value.trim();
-    if (/^\d+:\d+:\d+$/.test(v) && (!target || v !== addr(target))) typing = setTimeout(() => lookUp(v), 450);
+    if (/^\d+[:\s.,/]+\d+[:\s.,/]+\d+$/.test(v) && (!target || v.replace(/[\s.,/]+/g, ':') !== addr(target))) typing = setTimeout(() => lookUp(v), 450);
   });
 
   // ---------- the sheet: what it costs and does, and why it can't go ----------

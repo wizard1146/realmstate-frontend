@@ -46,7 +46,7 @@ export function mountAttack(host, on) {
         <h3 class="sub">Against</h3>
         <form id="la-tf" class="atk-find" novalidate>
           <label class="vh" for="la-addr">Target house, by address</label>
-          <input id="la-addr" placeholder="r:s:seat" inputmode="numeric" autocomplete="off" spellcheck="false">
+          <input id="la-addr" placeholder="r:s:seat" inputmode="text" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">
           <button class="btn">Look up</button>
           <button type="button" class="btn" id="la-pick" aria-haspopup="dialog">Rankings…</button>
         </form>
@@ -107,7 +107,7 @@ export function mountAttack(host, on) {
   on($('addr'), 'input', () => {
     clearTimeout(typing);
     const v = $('addr').value.trim();
-    if (/^\d+:\d+:\d+$/.test(v) && (!target || v !== addr(target))) typing = setTimeout(() => lookUp(v), 450);
+    if (/^\d+[:\s.,/]+\d+[:\s.,/]+\d+$/.test(v) && (!target || v.replace(/[\s.,/]+/g, ':') !== addr(target))) typing = setTimeout(() => lookUp(v), 450);
   });
 
   // What your state's spies last saw of the target's troops: the newest report that counted them.

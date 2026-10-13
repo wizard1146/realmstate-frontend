@@ -79,7 +79,7 @@ export function opLine(o, framed = false) {
 export function parseFrame(text) {
   const t = String(text || '').trim();
   if (!t) return null;
-  const m = /^(\d+)\s*:\s*(\d+)$/.exec(t);
+  const m = /^(\d+)\s*[:\s.,/]\s*(\d+)$/.exec(t);
   if (!m) throw new Error('Write the state to frame as realm:state, for example 6:2, or leave it empty.');
   return [Number(m[1]), Number(m[2])];
 }
