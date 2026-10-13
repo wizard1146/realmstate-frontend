@@ -41,7 +41,11 @@ becomes a lens inside Atlas or War Ring once the attack-range rule exists in the
 2. Straightline: a side menu of pages, single column; each page its own markup over `core/` logic (converting
    from War Room panels page by page).
 3. World shell out of `views/map/map.js`; the hex map becomes its first canvas.
-4. War Ring canvas from the mock-up: real wars, ceasefires, hostility; click a state for its sheet.
+4. War Ring (`views/ring`): the ring from the mock-up with real wars, ceasefires and your state's feelings, a panel
+   for the world, a state, a realm or a war, live on every tick. Every command the game takes opens in an action
+   window over the ring (`modal.js`; the forms in `acts/*.js`, one file per group), reached from the dock, the
+   command bar (/) or its context (a state's war and peace, your target); the ring behind previews the move. Your
+   house tab is the live status board. The ring resizes (divider, hidden panel) and zooms and pans. `core/` only.
 5. Atlas canvas from the mock-up; Range as its lens when the attack-range rule lands.
 6. Map: cut back hard (no blur, no looping animation, fewer marks), or drop it.
 

@@ -1,5 +1,5 @@
-/* The world views (War Ring, Atlas): placeholder styles until the shell is built (PLAN.md, steps 3-5). */
-:root:is([data-view="ring"], [data-view="atlas"]) {
+/* Atlas: placeholder styles until the shell is built (PLAN.md, steps 3-5). */
+:root[data-view="atlas"] {
   --bg: #e6eaef; --panel: #f7f9fb; --field: #fff; --ink: #1d2733; --muted: #5b6878; --line: #cdd5dd;
   --accent: #9a7426; --on-accent: #fffaf0; --bad: #a2442f; --good: #3d6b4f; --focus: #b8862b; --radius: 8px;
   & body { background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, sans-serif; }

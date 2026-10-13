@@ -19,7 +19,7 @@ const root = $('view');
 const loaders = {
   line: () => import('./views/line/line.js'),
   room: () => import('./views/room/room.js'),
-  ring: () => import('./views/world/world.js').then((m) => ({ mount: (root) => m.mount(root, 'ring') })),
+  ring: () => import('./views/ring/ring.js'),
   atlas: () => import('./views/world/world.js').then((m) => ({ mount: (root) => m.mount(root, 'atlas') })),
   map: () => import('./views/map/map.js'),
 };

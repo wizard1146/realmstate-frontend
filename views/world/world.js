@@ -1,5 +1,5 @@
-// The world views' shell (War Ring, Atlas): to be built out of views/map/map.js (see PLAN.md, steps 3-5).
-// For now a placeholder, so the view switch can reach every view.
+// Atlas: a placeholder until its canvas is built (PLAN.md, step 5), so the view switch can reach every view.
+// The War Ring has its own view (views/ring).
 import { switchHTML } from '../../core/viewswitch.js';
 
 const NAMES = { ring: 'War Ring', atlas: 'Atlas' };

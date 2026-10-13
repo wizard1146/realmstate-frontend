@@ -63,7 +63,8 @@ export function opDoes(o) {
 /** Nerve an operation costs: on success, and if the thieves are caught (half as much again). */
 export function opNerve(o, framed = false) {
   const P = store.rules.params;
-  const base = o.nerve_bp + (framed ? Math.floor(o.nerve_bp * (P.false_flag_nerve_bp || 0) / 10000) : 0);
+  // A false flag adds false_flag_nerve_bp flat (the engine's intrigue.rs: nerve_bp + false_flag_nerve_bp).
+  const base = o.nerve_bp + (framed ? P.false_flag_nerve_bp || 0 : 0);
   return { ok: base, caught: base + Math.floor(base * (P.nerve_fail_extra_bp || 0) / 10000) };
 }
 
