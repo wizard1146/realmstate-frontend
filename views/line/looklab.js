@@ -6,6 +6,7 @@
 const THEME_KEY = 'realmstate.line.theme';
 const FONT_KEY = 'realmstate.line.fonts';
 const ORN_KEY = 'realmstate.line.ornaments';
+const TEX_KEY = 'realmstate.line.texture';   // the ink wash and film grain behind the page
 
 /** [id, name, swatches (page, menu, accent)]. 'auto' is Vellum by day, Night Vigil in dark mode. */
 export const THEMES = [
@@ -66,33 +67,36 @@ function loadWeb(face) {
 }
 
 /** Applies the saved look (or the given parts of it) to the page. */
-export function apply({ theme, fonts, ornaments } = {}) {
+export function apply({ theme, fonts, ornaments, texture } = {}) {
   const root = document.documentElement;
   theme ??= read(THEME_KEY, 'auto');
   fonts ??= { ...FONT_DEFAULT, ...read(FONT_KEY, {}) };
   ornaments ??= read(ORN_KEY, true);
+  texture ??= read(TEX_KEY, true);
   if (theme === 'auto') delete root.dataset.lineTheme; else root.dataset.lineTheme = theme;
   root.dataset.lineOrn = ornaments ? 'on' : 'off';
+  root.dataset.lineTex = texture ? 'on' : 'off';
   const h = byName(HEADS, fonts.head), b = byName(BODIES, fonts.body);
   loadWeb(h); loadWeb(b);
   root.style.setProperty('--l-head-font', h.css);
   root.style.setProperty('--l-body-font', b.css);
   root.style.setProperty('--l-size', `${fonts.size}px`);
 }
-/** The saved look: { theme, fonts: { head, body, size }, ornaments }. */
-export const look = () => ({ theme: read(THEME_KEY, 'auto'), fonts: { ...FONT_DEFAULT, ...read(FONT_KEY, {}) }, ornaments: read(ORN_KEY, true) });
+/** The saved look: { theme, fonts: { head, body, size }, ornaments, texture }. */
+export const look = () => ({ theme: read(THEME_KEY, 'auto'), fonts: { ...FONT_DEFAULT, ...read(FONT_KEY, {}) }, ornaments: read(ORN_KEY, true), texture: read(TEX_KEY, true) });
 /** Saves part of the look and applies it (the Configuration page; the header panels catch up when opened). */
-export function setLook({ theme, fonts, ornaments }) {
+export function setLook({ theme, fonts, ornaments, texture }) {
   if (theme !== undefined) write(THEME_KEY, theme);
   if (fonts !== undefined) write(FONT_KEY, fonts);
   if (ornaments !== undefined) write(ORN_KEY, ornaments);
+  if (texture !== undefined) write(TEX_KEY, texture);
   apply();
 }
 export const FONT_DEFAULTS = FONT_DEFAULT;
 /** Takes the look off the page (when leaving Straightline). */
 export function clear() {
   const root = document.documentElement;
-  delete root.dataset.lineTheme; delete root.dataset.lineOrn;
+  delete root.dataset.lineTheme; delete root.dataset.lineOrn; delete root.dataset.lineTex;
   for (const p of ['--l-head-font', '--l-body-font', '--l-size']) root.style.removeProperty(p);
 }
 

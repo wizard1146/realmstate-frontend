@@ -153,6 +153,7 @@
 
   /* The page: a framed leaf, no wider than a page should be. Tables size to their content. */
   & .line-main { overflow-y: auto; padding: 12px 26px 44px; background-image: url("assets/ink-grain.svg"); }   /* ink wash under film grain, as on realmstate.net */
+  &[data-line-tex="off"] .line-main { background-image: none; }   /* Configuration > Texture */
   & .line-main > .room {
     display: block;   /* room.css makes .room display: contents (the War Room needs no box); the page does */
     position: relative; max-width: 960px; width: fit-content; min-width: min(100%, 620px); margin-inline: auto;   /* the leaf fits its content */ background: var(--l-page); border: 1px solid var(--l-frame);
@@ -467,6 +468,8 @@
   & .lpart .landbar i { width: 30px; aspect-ratio: 1; display: block;
     background: linear-gradient(90deg, var(--l-blue) 0 var(--b), color-mix(in srgb, var(--l-blue) 40%, var(--l-page)) var(--b) var(--c), var(--l-line) var(--c) 100%);
     -webkit-mask: var(--house) center / contain no-repeat; mask: var(--house) center / contain no-repeat; }   /* --house: the icon Configuration picked (land.js) */
+  & .lconfig .cf-texdemo { height: 90px; margin-top: 10px; border: 1px solid var(--l-line); border-radius: 4px; background: var(--l-bg) url("assets/ink-grain.svg"); }   /* a swatch of the texture, on or off */
+  &[data-line-tex="off"] .lconfig .cf-texdemo { background-image: none; }
   & .lconfig .cf-icons { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px 12px; }
   & .lconfig .cf-icon { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--l-line); border-radius: 4px; cursor: pointer; }
   & .lconfig .cf-icon:has(input:checked) { border-color: var(--l-gold); background: var(--l-self); }

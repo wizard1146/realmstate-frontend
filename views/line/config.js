@@ -1,5 +1,5 @@
 // Straightline's Configuration: how the game looks and reads for you, kept in this browser. The look (theme,
-// ornaments, fonts) is looklab's, the same settings as the header's palette and Aa panels; times in UTC or your
+// ornaments, fonts, the background texture) is looklab's, the same settings as the header's palette and Aa panels; times in UTC or your
 // own zone are core's (store.js).
 import { setClock, isUtc } from '../../core/store.js';
 import { esc } from '../../core/words.js';
@@ -11,7 +11,7 @@ import { pins, setPins } from '../../core/intelprefs.js';
 import { buildingGroups } from '../../core/land.js';
 import { NEWS_GROUPS, newsOff, setNewsOff, newsQuiet, setNewsQuiet } from '../../core/newsprefs.js';
 
-const TABS = [['general', 'General'], ['news', 'News'], ['intrigue', 'Intrigue']];
+const TABS = [['general', 'General'], ['texture', 'Texture'], ['news', 'News'], ['intrigue', 'Intrigue']];
 const KEY = 'realmstate.line.config.tab';
 const SURVEY_DEFAULT = ['forts', 'watch_towers'];
 
@@ -21,6 +21,13 @@ export function mountConfig(host, on) {
   host.innerHTML = `<div class="lpart lconfig">
     <div class="ltabs" role="tablist" aria-label="Settings">${TABS.map(([t, label]) =>
       `<button type="button" role="tab" id="cf-tab-${t}" aria-controls="cf-${t}" data-tab="${t}">${label}</button>`).join('')}</div>
+    <div role="tabpanel" id="cf-texture" aria-labelledby="cf-tab-texture" data-panel="texture">
+      <section><h3 class="sub">Background texture</h3>
+        <p class="dim">Behind the page: a faint ink wash under a fine film grain, as on realmstate.net. Turn it off for a plain, flat background.</p>
+        <label class="cf-check"><input type="checkbox" id="cf-tex"> Show the texture</label>
+        <div class="cf-texdemo" aria-hidden="true"></div></section>
+      <p class="dim small">This setting is kept in this browser only.</p>
+    </div>
     <div role="tabpanel" id="cf-news" aria-labelledby="cf-tab-news" data-panel="news">
       <section><h3 class="sub">What news you see</h3>
         <p class="dim"><b>News</b>: listed on the News page. <b>Pop-up</b>: also a card at the bottom right and the message line as it arrives (only for kinds in your News). The end of an age and notes from the game's staff always show.</p>
@@ -77,6 +84,7 @@ export function mountConfig(host, on) {
     const l = look();
     host.querySelectorAll('input[name="cf-theme"]').forEach((i) => { i.checked = i.value === l.theme; });
     $('orn').checked = l.ornaments;
+    $('tex').checked = l.texture;
     $('head').value = l.fonts.head; $('body').value = l.fonts.body; $('size').value = l.fonts.size; $('size-o').textContent = `${l.fonts.size}px`;
     $('upg').checked = upgradeRows();
     host.querySelectorAll('input[name="cf-icon"]').forEach((i) => { i.checked = i.value === landIcon(); });
@@ -117,6 +125,7 @@ export function mountConfig(host, on) {
     const t = ev.target;
     if (t.name === 'cf-theme') setLook({ theme: t.value });
     else if (t.id === 'cf-orn') setLook({ ornaments: t.checked });
+    else if (t.id === 'cf-tex') setLook({ texture: t.checked });
     else if (t.name === 'cf-clock') setClock(t.value === 'utc');
     else if (t.name === 'cf-icon') { try { localStorage.setItem(LAND_ICON_KEY, t.value); } catch { /* storage off */ } }
     else if (t.name === 'cf-adv') { try { localStorage.setItem(ADVISOR_KEY, t.value); } catch { /* storage off */ } }
