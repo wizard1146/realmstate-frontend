@@ -17,6 +17,12 @@ function dragonWho(n) {
 
 /** Display names, filled from /rules and your race by the store. */
 export const names = { buildings: {}, attacks: {}, ops: {}, rites: {}, riteFx: {}, units: [], traits: {}, mats: {}, dragons: {} };
+/** The store tells words how to find a house's race (identity) from what it has read, for a report's unit names. */
+let raceOfHouse = () => null;
+export const setRaceLookup = (fn) => { raceOfHouse = fn; };
+/** Unit names by slot for a race identity (from /rules), or null. */
+let raceUnits = () => null;
+export const setRaceUnits = (fn) => { raceUnits = fn; };
 
 export const fmt = (n) => (typeof n === 'number' && Number.isFinite(n) ? n.toLocaleString('en-US') : String(n ?? '–'));
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -378,15 +384,31 @@ const dragonToll = (n) => {
 };
 /** "302 Banks, 120 Farms": counts by key, buildings by their names (materials keep theirs). */
 const listing = (m) => Object.entries(m || {}).filter(([, n]) => n).map(([k, n]) => `${fmt(n)} ${names.buildings[k] || k}`).join(', ') || 'none';
-/** Troops as a spy sees them: {soldiers, offense, defense, elites} (base and upgraded together, no thieves). */
-export function forcesText(f) {
+/** "Ashstalkers" from "Ashstalker" (one of a count n). */
+function unitsWord(name, n) {
+  if (n === 1 || /s$/i.test(name)) return name;
+  if (/(x|ch|sh)$/i.test(name)) return `${name}es`;
+  if (/[^aeiou]y$/i.test(name)) return `${name.slice(0, -1)}ies`;
+  return `${name}s`;
+}
+/** A spy's four kinds of troops, by the race's own names where known: [[count, label], ...]. Soldiers, offensive and
+ * defensive specialists (O, D) and elites are slots 0-3; `race` is an identity, or null for the plain words. */
+function forcesParts(f, race) {
+  const u = race ? raceUnits(race) : null;
+  const kinds = [[f?.soldiers || 0, 0, 'soldiers', 'soldiers'], [f?.offense || 0, 1, 'offensive specialists', 'O'], [f?.defense || 0, 2, 'defensive specialists', 'D'], [f?.elites || 0, 3, 'elites', 'elites']];
+  return kinds.map(([n, slot, plain, tag]) => [n, u?.[slot] ? `${unitsWord(u[slot], n)} (${tag})` : (n === 1 ? plain.replace(/s$/, '') : plain)]);
+}
+/** Troops as a spy sees them: {soldiers, offense, defense, elites} (base and upgraded together, no thieves).
+ * race: the house's race identity, for its unit names ("1,741 Ashstalkers (O)"); without it, "1,741 offensive specialists". */
+export function forcesText(f, race = null) {
   if (!f) return 'none';
   if (Array.isArray(f)) return f.map((n, i) => (n ? `${fmt(n)} ${names.units[i] || `slot ${i}`}` : '')).filter(Boolean).join(', ') || 'none'; // an old report
-  const parts = [['soldiers', f.soldiers], ['offense', f.offense], ['defense', f.defense], ['elites', f.elites]].filter(([, n]) => n).map(([k, n]) => `${fmt(n)} ${k}`);
-  return parts.join(', ') || 'none';
+  return forcesParts(f, race).filter(([n]) => n).map(([n, label]) => `${fmt(n)} ${label}`).join(', ') || 'none';
 }
-/** The four kinds as numbers, for a table: [['Soldiers', n], ...]. */
-export const forcesRows = (f) => [['Soldiers', f?.soldiers || 0], ['Offense', f?.offense || 0], ['Defense', f?.defense || 0], ['Elites', f?.elites || 0]];
+/** The four kinds as numbers, for a table: [['Ashstalkers (O)', n], ...] (plain words without a race). */
+export const forcesRows = (f, race = null) => forcesParts(f, race).map(([n, label]) => [label.charAt(0).toUpperCase() + label.slice(1), n]);
+/** A report's house race: a dossier says it; other reports name the house, and the store may know its race. */
+const reportRace = (r) => r.race || (r.house ? raceOfHouse(r.house.house) : null);
 
 /** An intel report's kind: an operation's or rite's report has `kind`; a spy report is a dossier. */
 export const reportKind = (r) => r.kind || 'dossier';
@@ -394,9 +416,10 @@ export const REPORT_LABEL = { survey: 'SURVEY', muster: 'MUSTER', ledgers: 'LEDG
 
 /** Intel report rows: [label, value]. Values are numbers or plain text. */
 export function intelRows(r) {
+  const race = reportRace(r);
   switch (reportKind(r)) {
     case 'survey': return [['Land', r.land], ['Barren', r.barren], ['Buildings', listing(r.buildings)], ['Being built', listing(r.constructing)]];
-    case 'muster': return [['Troops home', forcesText(r.units)], ['Troops away', forcesText(r.away)], ['In training', r.training], ['Medics', r.medics], ['Horses / chariots', `${fmt(r.horses)} / ${fmt(r.chariots)}`],
+    case 'muster': return [['Troops home', forcesText(r.units, race)], ['Troops away', forcesText(r.away, race)], ['In training', r.training], ['Medics', r.medics], ['Horses / chariots', `${fmt(r.horses)} / ${fmt(r.chariots)}`],
       ['Generals', (r.generals || []).map(([n, t, away]) => `${n} (${t.join(', ') || 'no traits'})${away ? ' away' : ''}`).join('; ') || 'none'], ['Main general', r.defender || 'none'],
       ['Armies coming home', (r.armies || []).map(([at, troops, land]) => `${fmt(troops)} troops${land ? ` with ${fmt(land)} acres` : ''}, ${when(at)}`).join('; ') || 'none']];
     case 'ledgers': return [['Gold', r.gold], ['Food', r.food], ['Materials', listing(r.materials)],
@@ -404,13 +427,13 @@ export function intelRows(r) {
     case 'archives': return [['Books invested', listing(r.invested)], ['Unspent books (econ / mil / arc)', (r.books || []).map(fmt).join(' / ')],
       ['Scientists (econ / mil / arc)', (r.scientists || []).map(fmt).join(' / ')], ['Academics', (r.academics || []).map(([n, a]) => `${n} (${a.join(', ')})`).join('; ') || 'none']];
     case 'couriers': return r.news && r.news.length ? r.news.map((n) => [when(n.at), newsText(n)]) : [['News', 'nothing in the last day']];
-    case 'scrying': return [['Land', r.land], ['Peasants', r.peasants], ['Gold', r.gold], ['Food', r.food], ['Troops home', forcesText(r.units)]];
+    case 'scrying': return [['Land', r.land], ['Peasants', r.peasants], ['Gold', r.gold], ['Food', r.food], ['Troops home', forcesText(r.units, race)]];
     case 'omens': return r.rites && r.rites.length ? r.rites.map(([n, until]) => ['Rite in force', `${n} to tick ${until}`]) : [['Rites', 'none in force']];
     case 'roads': return r.armies && r.armies.length
       ? r.armies.map(([at, troops, land, from]) => ['Army', `${fmt(troops)} troops${land ? ` carrying ${fmt(land)} acres${from ? ` from ${where(from)}` : ''}` : ''}, home ${when(at)}`])
       : [['Armies', 'none on the road']];
     default: return [['Race', `${r.race || '?'} · ${r.personality || '?'}`], ['Land', `${fmt(r.land)}${r.incoming_land ? ` (+${fmt(r.incoming_land)} coming)` : ''}`], ['Peasants', r.peasants], ['Gold', r.gold], ['Food', r.food],
-      ['Troops home', forcesText(r.units)], ['Troops away', forcesText(r.away)], ['In training', r.training], ['Medics', r.medics], ['Renown', r.renown],
+      ['Troops home', forcesText(r.units, race)], ['Troops away', forcesText(r.away, race)], ['In training', r.training], ['Medics', r.medics], ['Renown', r.renown],
       ['Horses / chariots', `${fmt(r.horses)} / ${fmt(r.chariots)}`], ['Adepts', r.adepts || 0], ['Materials', listing(r.materials)],
       ['Buildings', listing(r.buildings)], ['Barren', r.barren],
       ['Generals', (r.generals || []).map(([n, t]) => `${n} (${t.join(', ') || 'no traits'})`).join('; ') || 'none'],

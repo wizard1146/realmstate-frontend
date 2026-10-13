@@ -2,7 +2,7 @@
 // Subversion), chosen by a click; the sheet on the right sends it (target, thieves, any choice it needs, a false
 // flag); your state's spy reports below, filtered by kind or by your target. Logic: core/intrigue.js, actions.
 import { pinnedShares } from '../../core/intelprefs.js';
-import { store, say, setTarget, reportsOn, loadReports } from '../../core/store.js';
+import { store, say, setTarget, reportsOn, loadReports, loadStateMembers } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc, addr, when, fullTime, intelRows, reportKind, REPORT_LABEL, THIEF } from '../../core/words.js';
 import { buildingGroups } from '../../core/land.js';
@@ -201,6 +201,16 @@ export function mountIntrigue(host, on) {
           ? surveyRows(r).map(([a, b, c]) => `<tr><th scope="row">${esc(a)}</th>${c ? `<td class="num dim">${esc(c)}</td>` : '<td></td>'}<td class="num">${esc(b)}</td></tr>`).join('')
           : intelRows(r).map(([a, b]) => `<tr><th scope="row">${esc(a)}</th><td class="${typeof b === 'number' ? 'num' : ''}">${esc(typeof b === 'number' ? fmt(b) : b)}</td></tr>`).join('')}</tbody></table></article>`;
     }).join('') : '<p class="dim">No reports here yet. Intel operations (Survey, Muster, Ledgers, Archives, Couriers, a Full Dossier) add them.</p>';
+    raceStates();
+  }
+  /** Troops read by the target's race (its unit names): read the states of reports that don't say it, then redraw once. */
+  const asked = new Set();
+  const known = (h) => [...store.world.values()].some(({ members }) => members.some((m) => m.id === h.house));
+  function raceStates() {
+    const want = [...new Set(shown.map((x) => x.report?.house).filter((h) => h && !known(h)).map((h) => `${h.realm}:${h.state}`))].filter((k) => !asked.has(k));
+    if (!want.length) return;
+    want.forEach((k) => asked.add(k));
+    Promise.all(want.map((k) => loadStateMembers(...k.split(':').map(Number)).catch(() => null))).then(reps);
   }
   on($('rf'), 'change', reps);
   // ---------- pages of reports: ‹ 1 2 3 … › ----------

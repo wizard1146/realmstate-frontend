@@ -2,7 +2,7 @@
 // Views read `store` and re-render when subscribe() calls them with the keys that changed.
 // All fetching lives here (and in actions.js); views never call fetch.
 import { api } from './api.js';
-import { names, newsLine, setClockUtc, clock, setMyHouse } from './words.js';
+import { names, newsLine, setClockUtc, clock, setMyHouse, setRaceUnits, setRaceLookup } from './words.js';
 import { newsSilent } from './newsprefs.js';
 
 export const store = {
@@ -85,6 +85,13 @@ export async function loadRules() {
 export const params = () => store.rules.params;
 export const playable = (list) => list.filter((d) => !d.unused && d.identity);
 export const raceOf = (id) => store.rules?.races.find((r) => r.identity === id);
+// Intel reports name units by the target's race: its unit names, and its race from any state read so far.
+setRaceUnits((id) => raceOf(id)?.units?.map((u) => u.name) || null);
+setRaceLookup((id) => {
+  if (store.target?.id === id) return store.target.race;
+  for (const { members } of store.world.values()) { const m = members.find((x) => x.id === id); if (m) return m.race; }
+  return store.rankings.find((x) => x.id === id)?.race || null;
+});
 export const raceName = (id) => raceOf(id)?.name || id;
 /**
  * Whether a race uses a unit slot: elite++ (9) only with the elite_plus_plus flag, or if the house
