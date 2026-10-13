@@ -106,6 +106,8 @@ export function mountState(host, on) {
         <button type="button" class="btn" id="ls-open-aid" aria-haspopup="dialog">Send aid</button></span></div>
       <div class="scrollx"><table class="tbl st-tbl"><thead><tr><th class="num">Seat</th><th>House</th><th>Race</th><th class="num">Land</th><th class="num">Might</th>
         <th class="num">Renown</th><th class="num" data-votes>Votes</th><th><span class="vh">Marks</span></th><th><span class="vh">Actions</span></th></tr></thead><tbody id="ls-rows"></tbody></table></div>
+      <!-- Phones: a line a house (name, land, might), its › opening the rest beneath it; the table is hidden. -->
+      <ul class="st-phone" id="ls-plist" aria-label="Houses"></ul>
       <p class="dim small" id="ls-votes"></p></section>
 
     <dialog class="ldlg st-stats" id="ls-dstats" aria-labelledby="ls-dstats-h">
@@ -189,7 +191,7 @@ export function mountState(host, on) {
       const st = info.states.find((x) => x.state === state) || {};
       other = { realm, state, name: st.name, realm_name: info.name, members, leader: st.leader, ranks: st.ranks };
       draw(); retitle();
-    } catch (e) { if (seq === loadSeq) { $('rows').innerHTML = `<tr><td colspan="9" class="short">${esc(e.message)}</td></tr>`; } }
+    } catch (e) { if (seq === loadSeq) { $('rows').innerHTML = `<tr><td colspan="9" class="short">${esc(e.message)}</td></tr>`; $('plist').innerHTML = `<li class="none short">${esc(e.message)}</li>`; } }
   }
   on(host.querySelector('.st-nav'), 'click', (ev) => {
     const b = ev.target.closest('button');
@@ -214,10 +216,11 @@ export function mountState(host, on) {
   on($('state'), 'change', () => go(at().realm, Number($('state').value)));
 
   let shownStats = '';
+  const opened = new Set();   // houses whose phone line is open, kept across redraws
   function draw() {
     const s = view(), h = store.house, P = store.rules?.params, yours = mine();
     host.querySelector('.lstate').classList.toggle('theirs', !yours);
-    if (!s || !h) { if (!yours) { $('glance').innerHTML = ''; $('rows').innerHTML = '<tr><td colspan="9" class="dim">Loading…</td></tr>'; } return; }
+    if (!s || !h) { if (!yours) { $('glance').innerHTML = ''; $('rows').innerHTML = '<tr><td colspan="9" class="dim">Loading…</td></tr>'; $('plist').innerHTML = '<li class="none dim">Loading…</li>'; } return; }
     const lead = leaderOf(s), votes = new Map((s.votes?.for || []).map((v) => [v.house, v.votes]));
     const mv = s.my_vote || {};
     // Standing: the state's totals, and its place among all states (the server ranks them; an old one doesn't).
@@ -230,13 +233,28 @@ export function mountState(host, on) {
     // Every seat in order; a seat no house holds is an open row.
     const seats = Math.max(P?.houses_per_state || 0, ...s.members.map((m) => m.seat));
     const bySeat = new Map(s.members.map((m) => [m.seat, m]));
-    $('rows').innerHTML = Array.from({ length: seats }, (_, k) => bySeat.get(k + 1) || { seat: k + 1, open: true }).map((m, k) => {
+    const all = Array.from({ length: seats }, (_, k) => bySeat.get(k + 1) || { seat: k + 1, open: true });
+    // A house's marks and its Vote and Aid buttons: the table's last cells, and the open part of a phone line.
+    const marksOf = (m) => [lead === m.id ? '<span class="mark lead">Leader</span>' : '', m.protected ? '<span class="mark prot" title="Under protection">Protected</span>' : '', m.id === h.id ? '<span class="mark you">You</span>' : ''].join('');
+    const actsOf = (m) => `<button type="button" class="btn mini" data-vote-for="${m.id}"${mv.type === 'for' && mv.house === m.id ? ' disabled title="Your vote already"' : ''} aria-label="Vote for ${esc(m.name)} to lead">Vote</button>`
+      + `${m.id === h.id ? '' : `<button type="button" class="btn mini" data-aid-to="${m.id}" aria-label="Send aid to ${esc(m.name)}">Aid</button>`}`;
+    $('rows').innerHTML = all.map((m, k) => {
       if (m.open) return `<tr class="open${k % 2 ? ' alt' : ''}"><td class="num dim">${m.seat}</td><th scope="row">Open seat</th><td colspan="${yours ? 7 : 6}"></td></tr>`;
-      const me = m.id === h.id, marks = [lead === m.id ? '<span class="mark lead">Leader</span>' : '', m.protected ? '<span class="mark prot" title="Under protection">Protected</span>' : '', me ? '<span class="mark you">You</span>' : ''].join('');
+      const me = m.id === h.id;
       return `<tr class="${[me ? 'self' : '', k % 2 ? 'alt' : ''].join(' ').trim()}"><td class="num dim">${m.seat}</td><th scope="row">${esc(m.name)}</th><td>${esc(raceName(m.race))}</td>`
-        + `<td class="num">${fmt(m.land)}</td><td class="num">${fmt(m.might)}</td><td class="num">${fmt(m.renown)}</td>${yours ? `<td class="num">${fmt(votes.get(m.id) || 0)}</td>` : ''}<td class="marks">${marks}</td>`
-        + (yours ? `<td class="acts"><button type="button" class="btn mini" data-vote-for="${m.id}"${mv.type === 'for' && mv.house === m.id ? ' disabled title="Your vote already"' : ''} aria-label="Vote for ${esc(m.name)} to lead">Vote</button>`
-        + `${me ? '' : `<button type="button" class="btn mini" data-aid-to="${m.id}" aria-label="Send aid to ${esc(m.name)}">Aid</button>`}</td></tr>` : '<td></td></tr>');
+        + `<td class="num">${fmt(m.land)}</td><td class="num">${fmt(m.might)}</td><td class="num">${fmt(m.renown)}</td>${yours ? `<td class="num">${fmt(votes.get(m.id) || 0)}</td>` : ''}<td class="marks">${marksOf(m)}</td>`
+        + (yours ? `<td class="acts">${actsOf(m)}</td></tr>` : '<td></td></tr>');
+    }).join('');
+    // Phones: name, land and might on one line; the › shows the seat, race, renown, votes, marks and buttons beneath.
+    const pair = (k, v) => `<div><dt>${k}</dt><dd>${v}</dd></div>`;
+    $('plist').innerHTML = '<li class="hd" aria-hidden="true"><span>House</span><span class="num">Land</span><span class="num">Might</span><span></span></li>' + all.map((m) => {
+      if (m.open) return `<li class="open"><span class="nm">Open seat</span></li>`;
+      const me = m.id === h.id, open = opened.has(m.id), id = `ls-p${m.id}`;
+      return `<li${me ? ' class="self"' : ''}><span class="nm">${esc(m.name)}</span>`
+        + `<span class="num"><span class="vh">Land </span>${fmt(m.land)}</span><span class="num"><span class="vh">Might </span>${fmt(m.might)}</span>`
+        + `<button type="button" class="more" data-more="${m.id}" aria-expanded="${open}" aria-controls="${id}" aria-label="More about ${esc(m.name)}"><span aria-hidden="true">›</span></button>`
+        + `<div class="det" id="${id}"${open ? '' : ' hidden'}><dl>${pair('Seat', m.seat)}${pair('Race', esc(raceName(m.race)))}${pair('Renown', fmt(m.renown))}${yours ? pair('Votes', fmt(votes.get(m.id) || 0)) : ''}</dl>`
+        + `${marksOf(m) ? `<p class="marks">${marksOf(m)}</p>` : ''}${yours ? `<p class="acts">${actsOf(m)}</p>` : ''}</div></li>`;
     }).join('');
     host.querySelector('[data-votes]').hidden = !yours;
     $('votes').textContent = yours && s.votes?.against ? `${fmt(s.votes.against)} vote${s.votes.against === 1 ? '' : 's'} against any leader.` : '';
@@ -275,12 +293,21 @@ export function mountState(host, on) {
     } catch (e) { if (seq === quoteSeq) show(e.message, true); }
   }
 
-  on($('rows'), 'click', (ev) => {
+  function rowClick(ev) {
     const b = ev.target.closest('button');
     if (!b) return;
+    if (b.dataset.more) {   // a phone line's ›: open or close just that line
+      const id = Number(b.dataset.more), open = !opened.has(id);
+      if (open) opened.add(id); else opened.delete(id);
+      b.setAttribute('aria-expanded', String(open));
+      $(`p${id}`).hidden = !open;
+      return;
+    }
     if (b.dataset.voteFor) act.vote({ type: 'for', house: Number(b.dataset.voteFor) }, { button: b });
     if (b.dataset.aidTo) { $('at').value = b.dataset.aidTo; openDlg($('daid'), b); quote(); $('an').focus(); }
-  });
+  }
+  on($('rows'), 'click', rowClick);
+  on($('plist'), 'click', rowClick);
   on($('aid'), 'input', quote);
   on($('aid'), 'change', quote);
   on($('amax'), 'click', () => { $('an').value = String(holding($('aw').value)); quote(); $('an').focus(); });

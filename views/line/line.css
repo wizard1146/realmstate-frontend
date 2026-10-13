@@ -303,6 +303,37 @@
   & .lstate .st-tbl .mark.lead { color: var(--l-gold); border-color: color-mix(in srgb, var(--l-gold) 60%, transparent); }
   & .lstate .st-tbl td.acts { white-space: nowrap; text-align: right; }
   & .lstate .st-tbl td.acts .btn + .btn { margin-left: 6px; }
+  /* Houses on a phone: a line a house, name | land, might, then a › that opens the rest beneath (state.js). The lines
+     share one grid (subgrid), so the figures line up down the list; a long name ends in an ellipsis. */
+  & .lstate .st-phone { display: none; }
+  @media (max-width: 760px) {
+    & .lstate .scrollx:has(> table.st-tbl) { display: none; }
+    & .lstate .st-phone { display: grid; grid-template-columns: minmax(0, 1fr) auto auto 2.4rem; column-gap: 10px; list-style: none; margin: 4px 0 0; padding: 0; border-top: 1px solid var(--l-line); }
+    & .lstate .st-phone li { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center; min-height: 2.6rem; padding: 0 0 0 6px; border-bottom: 1px solid var(--l-rule); }
+    & .lstate .st-phone li.hd { min-height: 0; padding-block: 4px; font: 600 .78rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
+    & .lstate .st-phone li.self { background: color-mix(in srgb, var(--l-gold) 10%, var(--l-page)); }
+    & .lstate .st-phone li.open .nm { color: var(--l-muted); font-style: italic; }
+    & .lstate .st-phone li.none { display: block; padding: 8px 6px; }
+    & .lstate .st-phone .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    & .lstate .st-phone .num { text-align: right; white-space: nowrap; font-variant-numeric: lining-nums tabular-nums; }
+    & .lstate .st-phone .more { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; padding: 0; border: 0; background: none; color: var(--l-gold); font: 1.4rem/1 var(--l-head-font); cursor: pointer; }
+    & .lstate .st-phone .more span { transition: transform .15s ease-out; }
+    & .lstate .st-phone .more[aria-expanded="true"] span { transform: rotate(90deg); }
+    & .lstate .st-phone .more:focus-visible { outline: 2px solid var(--l-gold); outline-offset: -2px; }
+    & .lstate .st-phone .det { grid-column: 1 / -1; padding: 2px 6px 10px 0; }
+    & .lstate .st-phone .det[hidden] { display: none; }
+    & .lstate .st-phone .det dl { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0; }
+    & .lstate .st-phone .det dl div { display: flex; gap: 6px; align-items: baseline; }
+    & .lstate .st-phone .det dt { font: 600 .82rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .1em; color: var(--l-muted); }
+    & .lstate .st-phone .det dd { margin: 0; font-variant-numeric: tabular-nums; }
+    & .lstate .st-phone .det p { margin: 8px 0 0; }
+    & .lstate .st-phone .mark { display: inline-block; margin-right: 6px; padding: 0 6px; border: 1px solid var(--l-line); border-radius: 3px; font-size: .78em; color: var(--l-muted); }
+    & .lstate .st-phone .mark.lead { color: var(--l-gold); border-color: color-mix(in srgb, var(--l-gold) 60%, transparent); }
+    & .lstate .st-phone .acts { display: flex; flex-wrap: wrap; gap: 8px; }
+    & .lstate .st-phone .acts .btn { margin: 0; min-height: 2.2rem; padding-inline: 14px; }
+    & .lstate .st-phone .acts .btn[hidden] { display: none; }
+  }
+  @media (max-width: 760px) and (prefers-reduced-motion: reduce) { & .lstate .st-phone .more span { transition: none; } }
   /* Build & Raze: wood planks (same setting). */
   & .line-main > .room:has(.lbuild.glyph)::after { width: clamp(120px, 17%, 240px); -webkit-mask-image: url("assets/planks.png"); mask-image: url("assets/planks.png"); }
   & .line-main > .room:has(.lbuild.glyph[data-tab="raze"])::after { -webkit-mask-image: url("assets/sledgehammer.png"); mask-image: url("assets/sledgehammer.png"); }   /* a sledgehammer while razing */
@@ -1153,7 +1184,8 @@
 }
 
 :root[data-view="line"] {
-  & dialog.wr-dlg { width: min(1000px, calc(100vw - 32px)); }
+  & dialog.wr-dlg { width: min(1280px, calc(100vw - 32px)); max-height: calc(100vh - 32px); }
+  & dialog.wr-dlg header h2 { font-size: 1.5em; }
   & dialog.wr-dlg h2 .vs { color: var(--l-bad); font-size: .75em; font-variant-caps: all-small-caps; margin: 0 4px; }
   & dialog.wr-dlg .wr-legend { margin: 12px 0 10px; font-size: .9em; color: var(--l-muted); }
   & dialog.wr-dlg .wr-legend b.a { color: var(--l-ink); } & dialog.wr-dlg .wr-legend b.b { color: var(--l-bad); }
@@ -1612,4 +1644,54 @@
 :root[data-view="line"] {
   /* Rites' groups ride Intrigue's carousel; a quiet line under the header says what the group is. */
   & .lrite .in-gnote { margin: 6px 0 0; text-align: center; }
+}
+
+:root[data-view="line"] {
+  /* One war's view (warview.js), in the Wars window and on your War page: a strip of each side then and now, and four
+     charts, side A ink and side B red, each with a soft fill, faint guides, and the war's span shaded from where it began. */
+  & .wv { --wv-a: color-mix(in srgb, var(--l-ink) 80%, var(--l-page)); --wv-b: var(--l-bad); }
+  & .wv b.a { color: var(--l-ink); } & .wv b.b { color: var(--l-bad); }
+  & .wv .up { color: var(--l-good); } & .wv .down { color: var(--l-bad); }
+  & .wv-strip { width: 100%; margin: 0 0 14px; }
+  & .wv-strip td { line-height: 1.35; }
+  & :is(.wv-strip, .lwar .wr-sidetbl) th[scope=row] { font-size: 1em; font-variant-caps: normal; letter-spacing: normal; text-transform: none; }
+  & :is(.wv-strip, .lwar .wr-sidetbl) th[scope=row] a { font-variant-caps: normal; text-transform: none; letter-spacing: normal; }
+  & .wv-strip .wv-was { color: var(--l-muted); font-size: .88em; }
+  & .wv-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  & .wv-chart { margin: 0; padding: 12px 14px 8px; border: 1px solid var(--l-rule); border-radius: 8px;
+    background: linear-gradient(to bottom, color-mix(in srgb, var(--l-gold) 5%, var(--l-page)), var(--l-page) 40%); }
+  & .wv-chart figcaption { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; margin-bottom: 8px; }
+  & .wv-chart .wv-k { font: 600 1.05em var(--l-head-font, inherit); font-variant-caps: all-small-caps; letter-spacing: .08em; color: var(--l-gold); }
+  & .wv-chart .wv-now { font-variant-numeric: tabular-nums; font-size: .9em; }
+  & .wv-chart .wv-now i { font-style: normal; color: var(--l-muted); margin: 0 8px; }
+  & .wv-plot { position: relative; }
+  & .wv-chart svg { display: block; width: 100%; height: clamp(150px, 22vh, 220px); overflow: visible; }
+  & .wv-chart path.line { fill: none; stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
+  & .wv-chart path.line.a { stroke: var(--wv-a); } & .wv-chart path.line.b { stroke: var(--wv-b); }
+  & .wv-chart stop.g0.a { stop-color: var(--wv-a); stop-opacity: .16; } & .wv-chart stop.g1.a { stop-color: var(--wv-a); stop-opacity: 0; }
+  & .wv-chart stop.g0.b { stop-color: var(--wv-b); stop-opacity: .2; } & .wv-chart stop.g1.b { stop-color: var(--wv-b); stop-opacity: 0; }
+  & .wv-chart line.grid { stroke: var(--l-rule); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  & .wv-chart rect.war { fill: color-mix(in srgb, var(--l-bad) 5%, transparent); }
+  & .wv-chart line.start { stroke: var(--l-gold); stroke-width: 1.5; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+  & .wv-began { position: absolute; top: 2px; transform: translateX(6px); font-size: .7em; letter-spacing: .08em; text-transform: uppercase; color: var(--l-gold); white-space: nowrap; }
+  & :is(.wv-hi, .wv-lo) { position: absolute; right: 2px; font-size: .7em; color: var(--l-muted); font-variant-numeric: tabular-nums; background: color-mix(in srgb, var(--l-page) 80%, transparent); padding: 0 3px; }
+  & .wv-hi { top: 0; } & .wv-lo { bottom: 0; }
+  & .wv-axis { display: flex; justify-content: space-between; font-size: .72em; color: var(--l-muted); margin-top: 4px; font-variant-numeric: tabular-nums; }
+  @media (max-width: 760px) { & .wv-charts { grid-template-columns: minmax(0, 1fr); } & .wv-strip { font-size: .85em; } }
+
+  /* Your War page: the war so far (the battles, then the war's view), and the two states side by side (desktop). */
+  & .lwar #lr-sofar { margin: 26px 0 8px; }
+  & .lwar .wr-legend { margin: 0 0 10px; font-size: .9em; color: var(--l-muted); }
+  & .lwar .wr-legend b.a { color: var(--l-ink); } & .lwar .wr-legend b.b { color: var(--l-bad); }
+  & .lwar .wr-ledger { margin-bottom: 6px; }
+  & .lwar .wr-ledger .up { color: var(--l-good); } & .lwar .wr-ledger .down { color: var(--l-bad); }
+  & .lwar .wr-sides { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 16px; align-items: start; }
+  & .lwar .wr-sides > .vs { align-self: center; color: var(--l-bad); font-variant-caps: all-small-caps; font-size: 1.2em; }
+  & .lwar .wr-side h4 { margin: 0 0 8px; font: 600 1.1em var(--l-head-font, inherit); }
+  & .lwar .wr-side.a h4 { color: var(--l-ink); } & .lwar .wr-side.b h4 { color: var(--l-bad); }
+  & .lwar .wr-sidetbl { width: 100%; }
+  & .lwar .wr-sidetbl th[scope=row] { max-width: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  & .lwar .wr-sidetbl .up { color: var(--l-good); } & .lwar .wr-sidetbl .down { color: var(--l-bad); }
+  & .lwar .wr-sidetbl tfoot th, & .lwar .wr-sidetbl tfoot td { font-weight: 600; border-top: 2px solid var(--l-line); }
+  @media (max-width: 760px) { & .lwar .ltabs [data-tab="sides"] { display: none; } }
 }

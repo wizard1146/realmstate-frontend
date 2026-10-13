@@ -2,18 +2,28 @@
 // peace dividend); your war as a card (Offer peace, Withdraw); every state that feels something either way, with
 // both meters and whether war is possible; and a sheet to act on one state (declare war, propose or break a
 // ceasefire), the irreversible ones behind a confirm window. The world's wars are on the Wars page. Leader only.
-import { store, say, loadWars, loadRelations } from '../../core/store.js';
+// At war, "The war so far": the battles between the two states (warLedger) and the Wars page's view of the war
+// (warview.js), your state first; and on desktop a Side by side tab, the two states' houses with their land and might.
+import { store, say, loadWars, loadRelations, loadStateNews } from '../../core/store.js';
+import { api } from '../../core/api.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc } from '../../core/words.js';
 import { isLeader, leaderWhy } from '../../core/truths.js';
 import { pct, st, same, feel, declareWhy } from '../../core/relations.js';
+import { warSeries, warView, swapped, warLedger } from './warview.js';
+import { tabsHTML, panelAttrs, wireTabs } from './ltabs.js';
 
 const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
 const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+const TABS = [['now', 'Overview'], ['sides', 'Side by side']];
+const phone = () => matchMedia('(max-width: 760px)').matches;
+const signed = (n) => `<span class="${n > 0 ? 'up' : n < 0 ? 'down' : 'dim'}">${n > 0 ? '+' : n < 0 ? '−' : '±'}${fmt(Math.abs(n))}</span>`;
 
 export function mountWar(host, on) {
   const P = store.rules.params;
   host.innerHTML = `<div class="lpart lwar">
+    ${tabsHTML(TABS, 'lr', 'War')}
+    <div ${panelAttrs('lr', 'now')}>
     <dl class="st-glance" id="lr-glance"></dl>
     <div class="atk-layout">
       <div class="atk-main">
@@ -30,8 +40,11 @@ export function mountWar(host, on) {
         <p class="dim small" id="lr-why"></p>
       </aside>
     </div>
+    <section id="lr-sofar" hidden><h3 class="sub">The war so far <span class="dim" id="lr-sofar-n"></span></h3><div id="lr-ledger"></div><div id="lr-view"></div></section>
     <h3 class="sub wr-relh">Relations <span class="dim">how each state feels about yours, and yours about it; only the two states see these</span></h3><div id="lr-rel"></div>
     <p class="dim small">Every war and ceasefire in the world, and each war's track over time, is on the <a href="#wars">Wars</a> page.</p>
+    </div>
+    <div ${panelAttrs('lr', 'sides')}><div id="lr-sides"></div></div>
     <dialog class="ldlg tq-dlg" id="lr-dlg" aria-labelledby="lr-dlg-h">
       <header><h2 id="lr-dlg-h"></h2><button type="button" class="x" data-close aria-label="Cancel (Esc)">×</button></header>
       <div class="body"><p id="lr-dlgp"></p><div class="atk-btns"><button type="button" class="btn" data-close>Not now</button><button type="button" class="btn danger" id="lr-dyes"></button></div></div></dialog>
@@ -116,16 +129,84 @@ export function mountWar(host, on) {
   on($('form'), 'input', sheet);
   on($('form'), 'submit', (ev) => ev.preventDefault());
 
+  // ---------- at war: the battles, the war's track, and the two states side by side ----------
+  const foeOf = (w) => (same(w.a, me()) ? w.b : w.a);
+  /** The war being fought, from the Wars list (which carries its id). */
+  const warRow = () => (store.wars?.wars || []).find((x) => same(x.a, me()) || same(x.b, me()));
+  let shown = '', ledger = null;
+  async function sofar() {
+    const w = warRow();
+    $('sofar').hidden = !w;
+    if (!w) { shown = ''; return; }
+    const foe = foeOf(w), L = ledger = warLedger(me(), foe, w.started_tick), o = L.ours, t = L.theirs;
+    $('sofar-n').textContent = `since tick ${fmt(w.started_tick)}, ${fmt(Math.max(0, store.tick - w.started_tick))} ticks`;
+    const net = o.land - t.land;
+    const line = (k, v, note) => `<div><dt>${k}</dt><dd>${v}</dd><dd class="rank"><span>${note}</span></dd></div>`;
+    $('ledger').innerHTML = `<dl class="st-glance wr-ledger">
+      ${line('Land from battles', signed(net), `took ${fmt(o.land)}, lost ${fmt(t.land)} acres`)}
+      ${line('Your attacks', `${fmt(o.won)} of ${fmt(o.n)}`, `won · they lost ${fmt(o.killed)} troops, you ${fmt(o.lost)}`)}
+      ${line('Their attacks', `${fmt(t.won)} of ${fmt(t.n)}`, `won · you lost ${fmt(t.lost)} troops`)}</dl>
+      <p class="dim small">Battles between the two states since the war began, from your news and your state's: robot statemates' battles count only from today's update on, and an attacker who veiled itself can't be told apart.</p>`;
+    const key = `${w.id}:${store.tick}`;
+    if (key === shown) return;
+    shown = key;
+    const view = $('view');
+    if (!view.innerHTML) view.innerHTML = '<p class="dim">Loading the war\'s track…</p>';
+    const [d] = await Promise.all([warSeries(w.id, true), loadNames(foe)]);
+    if (shown !== key) return;
+    const ours = same(d.a ?? w.a, me()) ? d : swapped(d);
+    view.innerHTML = `<p class="wr-legend"><b class="a">Your state</b> in ink, <b class="b">${esc(stName(foe))}</b> in red; the shaded part is the war.</p>${warView(ours, w.started_tick, 'Your state', esc(stName(foe)))}`;
+    sides(true);
+  }
+  // Side by side (desktop): each state's houses by land, with what battles in this war won or lost them.
+  const names = new Map(), members = new Map();   // "r:s" -> the state's name; its houses (/states/:r/:s)
+  const stName = (s) => names.get(st(s)) || `State ${st(s)}`;
+  /** The enemy state's name (from its realm's page), once. */
+  async function loadNames(foe) {
+    if (names.has(st(foe))) return;
+    try { const r = await api(`/realms/${foe.realm}`); for (const x of r.states) names.set(`${r.realm}:${x.state}`, x.name); } catch { /* the address will do */ }
+  }
+  let sidesAt = 0;
+  async function sides(fetchNow = false) {
+    const w = warRow();
+    if (!w) { $('sides').innerHTML = '<p class="dim">Your state is at peace: when it\'s at war, its houses and the enemy\'s are compared here.</p>'; return; }
+    const foe = foeOf(w);
+    if (fetchNow || !members.size || Date.now() - sidesAt > 60000) {
+      sidesAt = Date.now();
+      const got = await Promise.allSettled([me(), foe].map((s) => api(`/states/${s.realm}/${s.state}`)));
+      got.forEach((g, i) => { if (g.status === 'fulfilled') members.set(st(i ? foe : me()), g.value); });
+      await loadNames(foe);
+    }
+    const by = ledger?.byHouse || new Map();
+    const col = (s, cls, title) => {
+      const hs = [...(members.get(st(s)) || [])].sort((x, y) => y.land - x.land);
+      const tl = hs.reduce((a, h) => a + h.land, 0), tm = hs.reduce((a, h) => a + h.might, 0);
+      return `<section class="wr-side ${cls}"><h4>${title} <span class="dim">${st(s)}</span></h4>
+        <table class="tbl wr-sidetbl"><thead><tr><th>House</th><th class="num">Land</th><th class="num" title="Acres won or lost in battles between the two states in this war, as far as your news tells">In battle</th><th class="num">Might</th></tr></thead><tbody>
+        ${hs.map((h, i) => `<tr class="${[h.id === store.house?.id ? 'self' : '', i % 2 ? 'alt' : ''].filter(Boolean).join(' ')}"><th scope="row"><a href="#state" data-open-state="${st(s)}">${esc(h.name)}</a>${h.robot ? ' <span class="dim small">robot</span>' : ''}</th>
+          <td class="num">${fmt(h.land)}</td><td class="num">${by.has(h.id) ? signed(by.get(h.id)) : '<span class="dim">–</span>'}</td><td class="num">${fmt(h.might)}</td></tr>`).join('')}</tbody>
+        <tfoot><tr><th scope="row">${fmt(hs.length)} houses</th><td class="num">${fmt(tl)}</td><td></td><td class="num">${fmt(tm)}</td></tr></tfoot></table></section>`;
+    };
+    $('sides').innerHTML = `<p class="dim">Each state's houses, largest first. <b>In battle</b>: acres won or lost in battles between the two states since tick ${fmt(w.started_tick)}; how each state's totals moved is on Overview, under The war so far.</p>
+      <div class="wr-sides">${col(me(), 'a', 'Your state')}<span class="vs" aria-hidden="true">vs</span>${col(foe, 'b', esc(stName(foe)))}</div>`;
+  }
+
   function draw() {
     if (!store.house) return;
     if (!store.state) { $('glance').innerHTML = '<p class="dim">Loading your state…</p>'; return; }
-    glance(); war(); relations(); sheet();
+    glance(); war(); relations(); sheet(); sofar();
+    if (tabs.current() === 'sides') sides();
   }
+  // Side by side is for desktop: on a phone, Overview.
+  const tabs = wireTabs(host, on, { tabs: TABS, key: 'realmstate.line.war.tab', onShow: (t) => { if (t === 'sides') sides(); } });
+  if (phone() && tabs.current() === 'sides') tabs.show('now');
+  on(window, 'resize', () => { if (phone() && tabs.current() === 'sides') tabs.show('now'); });
+  if (!store.stateNews) loadStateNews();
   if (!store.relations) loadRelations();
   if (!store.wars) loadWars();
   draw();
   return {
-    update(c) { if (!c || ['state', 'house', 'wars', 'relations', 'age'].some((k) => c.has(k))) draw(); },
+    update(c) { if (!c || ['state', 'house', 'wars', 'relations', 'age', 'news', 'statenews'].some((k) => c.has(k))) draw(); },
     tick() {},
     destroy() { host.replaceChildren(); },
   };

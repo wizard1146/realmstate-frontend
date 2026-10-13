@@ -4,24 +4,10 @@
 import { store } from '../../core/store.js';
 import { api } from '../../core/api.js';
 import { fmt, esc } from '../../core/words.js';
+import { warSeries, warView } from './warview.js';
 
 const key = (s) => `${s.realm}:${s.state}`;
 const same = (a, b) => a && b && a.realm === b.realm && a.state === b.state;
-const SERIES = [['houses', 'Houses'], ['land', 'Land'], ['might', 'Might'], ['renown', 'Renown']];
-/** One small chart: both sides' lines over the ticks (side A ink, side B red), a gold line where the war began. */
-function chart(label, ticks, a, b, start) {
-  const W = 260, H = 84, all = [...a, ...b].filter((v) => v != null);
-  if (!ticks.length || !all.length) return '';
-  const lo = Math.min(...all), hi = Math.max(...all), span = hi - lo || 1, t0 = ticks[0], t1 = ticks[ticks.length - 1] || t0 + 1;
-  const x = (t) => ((t - t0) / Math.max(1, t1 - t0)) * W, y = (v) => H - 4 - ((v - lo) / span) * (H - 8);
-  const line = (vs, cls) => `<polyline class="${cls}" points="${vs.map((v, i) => (v == null ? '' : `${x(ticks[i]).toFixed(1)},${y(v).toFixed(1)}`)).filter(Boolean).join(' ')}"/>`;
-  const last = (vs) => vs.filter((v) => v != null).slice(-1)[0];
-  return `<figure class="wr-chart"><figcaption>${label}<span><b class="a">${fmt(last(a) ?? 0)}</b> · <b class="b">${fmt(last(b) ?? 0)}</b></span></figcaption>
-    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${label}: both sides over the ticks">
-      ${start >= t0 && start <= t1 ? `<line class="start" x1="${x(start).toFixed(1)}" x2="${x(start).toFixed(1)}" y1="0" y2="${H}"/>` : ''}${line(a, 'a')}${line(b, 'b')}</svg>
-    <span class="wr-axis"><span>tick ${fmt(t0)}</span><span>${fmt(lo)}–${fmt(hi)}</span><span>tick ${fmt(t1)}</span></span></figure>`;
-}
-
 const ENDS = { peace: 'Peace', withdraw: 'Withdrawal', withdrawal: 'Withdrawal', surrender: 'Surrender', timeout: 'Ran out', age: 'Age ended' };
 
 export function mountWars(host, on) {
@@ -94,21 +80,13 @@ export function mountWars(host, on) {
       : '<p class="dim">No war has ended yet this age.</p>';
   }
 
-  // ---------- tracking a war (being fought, or ended): its two sides tick by tick, in a window (/wars/:id/series) ----------
+  // ---------- tracking a war (being fought, or ended): its two sides tick by tick, in a window (warview.js) ----------
   const tracks = new Map();   // button key -> { kind, a, b, from, to, id }
-  const cache = new Map();    // the same key -> the series, or an Error
-  function trackBtn(kindOf, x) {
+    function trackBtn(kindOf, x) {
     const k = `${kindOf === 'war' ? 'w' : 'h'}:${x.id}`, from = x.started_tick;
     const to = kindOf === 'ended' ? x.ended_tick : w?.ticks ?? store.tick;
     tracks.set(k, { kind: kindOf, a: x.a, b: x.b, from, to, id: x.id });
     return `<button type="button" class="btn mini" data-track="${esc(k)}" aria-haspopup="dialog">Track</button>`;
-  }
-  async function fetchSeries(k, t) {
-    if (cache.has(k)) return cache.get(k);
-    let d;
-    try { d = await api(`/wars/${t.id}/series`); } catch (e) { d = e; }
-    cache.set(k, d);
-    return d;
   }
   const dlg = $('dlg');
   let opener = null, showing = '';
@@ -118,15 +96,12 @@ export function mountWars(host, on) {
     opener = from; showing = k;
     const an = esc(names.get(key(t.a)) || key(t.a)), bn = esc(names.get(key(t.b)) || key(t.b));
     $('dlg-h').innerHTML = `${an} <span class="vs">vs</span> ${bn}`;
-    const what = t.kind === 'ended' ? 'a war, ended' : 'at war';
-    $('dlg-b').innerHTML = `<p class="wr-legend">${what} · ticks ${fmt(t.from)}–${fmt(t.to)}. <b class="a">${an}</b> in ink, <b class="b">${bn}</b> in red; the gold line is where it began.</p><p class="dim">Loading…</p>`;
+    const what = t.kind === 'ended' ? 'A war, ended' : 'At war';
+    $('dlg-b').innerHTML = `<p class="wr-legend">${what} · ticks ${fmt(t.from)}–${fmt(t.to)}. <b class="a">${an}</b> in ink, <b class="b">${bn}</b> in red; the shaded part is the war.</p><p class="dim">Loading…</p>`;
     if (!dlg.open) dlg.showModal();
-    const d = await fetchSeries(k, t);
+    const d = await warSeries(t.id, t.kind === 'war');
     if (showing !== k || !dlg.open) return;
-    const body = d instanceof Error
-      ? `<p class="dim">${d.status === 404 ? 'The game doesn\'t keep a history of each state yet, so this war can\'t be tracked. It will be once the server records it.' : esc(d.message)}</p>`
-      : `<div class="wr-charts">${SERIES.map(([s2, label]) => chart(label, d.ticks || [], d.a_series?.[s2] || [], d.b_series?.[s2] || [], t.from)).join('')}</div>`;
-    $('dlg-b').querySelector('.dim:last-child').outerHTML = body;
+    $('dlg-b').querySelector('.dim:last-child').outerHTML = warView(d, t.from, an, bn);
   }
   on(host, 'click', (ev) => { const b = ev.target.closest('[data-track]'); if (b) openTrack(b.dataset.track, b); });
   on(dlg, 'click', (ev) => { if (ev.target === dlg || ev.target.closest('[data-close]')) dlg.close(); });
