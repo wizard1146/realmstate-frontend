@@ -16,13 +16,27 @@ import { mountAges } from './views/ages/ages.js';
 const $ = (id) => document.getElementById(id);
 const root = $('view');
 
-const loaders = {
-  line: () => import('./views/line/line.js'),
-  room: () => import('./views/room/room.js'),
-  ring: () => import('./views/ring/ring.js'),
-  atlas: () => import('./views/world/world.js').then((m) => ({ mount: (root) => m.mount(root, 'atlas') })),
-  map: () => import('./views/map/map.js'),
+// Each view's entry module. Its stylesheet sits beside it with the same name (views/line/line.css) and loads
+// with it; index.html starts the remembered view's early, with every module it imports (dev/preload.mjs).
+const VIEW_FILES = {
+  line: 'views/line/line.js',
+  room: 'views/room/room.js',
+  ring: 'views/ring/ring.js',
+  atlas: 'views/world/world.js',
+  map: 'views/map/map.js',
 };
+/** Load a stylesheet once; resolves when it applies (or fails: an unstyled view beats none). */
+function stylesheet(href) {
+  let link = [...document.querySelectorAll('link[rel="stylesheet"]')].find((l) => l.getAttribute('href') === href);
+  if (link?.sheet) return Promise.resolve();
+  if (!link) { link = document.createElement('link'); link.rel = 'stylesheet'; link.href = href; document.head.append(link); }
+  return new Promise((done) => { link.addEventListener('load', done, { once: true }); link.addEventListener('error', done, { once: true }); });
+}
+async function loadView(name) {
+  const file = VIEW_FILES[name];
+  const [mod] = await Promise.all([import(`./${file}`), stylesheet(file.replace(/\.js$/, '.css'))]);
+  return name === 'atlas' ? { mount: (root) => mod.mount(root, 'atlas') } : mod;
+}
 let viewName = savedView();
 let mounted = null;   // { name, inst } of the view on screen
 let mountSeq = 0;
@@ -43,7 +57,7 @@ async function mountView() {
   const seq = ++mountSeq;
   if (!store.house) { unmountView(); return; }
   if (mounted && mounted.name === viewName) return;
-  const mod = await loaders[viewName]();
+  const mod = await loadView(viewName);
   if (seq !== mountSeq || !store.house) return; // signed out, or switched again, meanwhile
   unmountView();
   mounted = { name: viewName, inst: mod.mount(root) };
@@ -51,7 +65,7 @@ async function mountView() {
 
 /** Switch views without a reload; focus lands on the new view's switch. */
 async function setView(name, { focus = false } = {}) {
-  if (!loaders[name] || name === viewName) return;
+  if (!VIEW_FILES[name] || name === viewName) return;
   viewName = name;
   saveView(name);
   applyViewName();

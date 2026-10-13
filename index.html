@@ -13,12 +13,42 @@
   try { const v = localStorage.getItem('realmstate.view'); if (['line', 'room', 'ring', 'atlas', 'map'].includes(v)) document.documentElement.dataset.view = v; } catch (e) { /* storage off */ }
 </script>
 <link rel="stylesheet" href="shell.css">
-<link rel="stylesheet" href="views/map/map.css">
-<link rel="stylesheet" href="views/line/line.css">
-<link rel="stylesheet" href="views/world/world.css">
-<link rel="stylesheet" href="views/ring/ring.css">
 <link rel="stylesheet" href="views/room/room.css">
 <link rel="stylesheet" href="views/ages/ages.css">
+<!-- preload: written by dev/preload.mjs; npm run check fails if it is out of date -->
+<link rel="modulepreload" href="app.js">
+<link rel="modulepreload" href="core/store.js">
+<link rel="modulepreload" href="core/api.js">
+<link rel="modulepreload" href="config.js">
+<link rel="modulepreload" href="core/words.js">
+<link rel="modulepreload" href="core/newsprefs.js">
+<link rel="modulepreload" href="core/live.js">
+<link rel="modulepreload" href="core/actions.js">
+<link rel="modulepreload" href="core/commands.js">
+<link rel="modulepreload" href="core/wiki.js">
+<link rel="modulepreload" href="core/prices.js">
+<link rel="modulepreload" href="core/names.js">
+<link rel="modulepreload" href="core/viewswitch.js">
+<link rel="modulepreload" href="core/addr.js">
+<link rel="modulepreload" href="views/ages/agebar.js">
+<link rel="modulepreload" href="core/ages.js">
+<link rel="modulepreload" href="views/ages/recap.js">
+<link rel="modulepreload" href="views/ages/ages.js">
+<link rel="modulepreload" href="views/room/tabs.js">
+<link rel="modulepreload" href="views/ages/victory.js">
+<link rel="modulepreload" href="views/ages/staff.js">
+<script>
+  // The remembered view's modules and stylesheet, asked for now rather than once app.js has loaded.
+  (() => {
+    const views = {"line":{"css":"views/line/line.css","js":["views/line/line.js","views/line/looklab.js","views/line/throne.js","core/land.js","core/pending.js","views/line/military.js","core/train.js","core/military.js","views/line/advisor.js","views/line/underway.js","views/line/attack.js","core/attack.js","core/generals.js","core/does.js","views/line/resources.js","core/trend.js","views/line/graph.js","views/line/land.js","views/line/build.js","views/line/chatbox.js","views/line/config.js","core/intelprefs.js","views/line/profile.js","views/line/world.js","views/line/state.js","views/line/wars.js","views/line/intrigue.js","core/intrigue.js","views/line/rites.js","core/rites.js","views/line/science.js","core/science.js","views/line/academics.js","core/heirs.js","views/line/generals.js","views/line/heirs.js","views/line/colloquium.js","views/line/truths.js","core/truths.js","views/line/work.js","views/line/wonders.js","views/line/news.js","core/battle.js","views/line/ltabs.js","views/line/ranks.js","views/line/hall.js","core/hall.js","views/line/market.js","core/market.js","views/line/leadership.js","core/relations.js","views/line/war.js","views/line/cards.js"]},"room":{"css":"views/room/room.css","js":["views/room/room.js","views/room/racebox.js","views/room/devlab.js","views/room/fontlab.js","views/room/palettelab.js","views/room/underway.js","core/pending.js","views/room/detail.js","views/room/chatbox.js","views/room/draft.js","core/military.js","views/room/orders.js","views/room/target.js","core/relations.js","views/room/generals.js","core/generals.js","core/does.js","views/room/intrigue.js","core/intelprefs.js","core/land.js","core/rites.js","core/intrigue.js","views/room/atkextra.js","core/attack.js","views/room/truthsui.js","views/room/market.js","core/market.js","core/truths.js","core/train.js","views/room/does.js","core/trend.js","views/room/graph.js","core/battle.js","views/room/scidetail.js","views/room/science.js","views/room/waver.js","core/science.js","views/room/colloq.js","views/room/heirs.js","core/heirs.js","views/room/gendetail.js","views/room/hall.js","core/hall.js","views/room/milacts.js","views/room/raze.js","views/room/statedetail.js","views/room/genpane.js"]},"ring":{"css":"views/ring/ring.css","js":["views/ring/ring.js","core/relations.js","core/truths.js","core/world.js","views/ring/geometry.js","views/ring/console.js","core/pending.js","core/rites.js","views/ring/acts/index.js","views/ring/acts/land.js","core/land.js","views/ring/acts/military.js","core/train.js","core/military.js","core/attack.js","core/generals.js","core/does.js","views/ring/acts/shadows.js","core/intrigue.js","views/ring/acts/magic.js","views/ring/acts/learning.js","core/science.js","views/ring/acts/statecraft.js","core/market.js","views/ring/acts/market.js","core/hall.js","views/ring/acts/house.js","core/heirs.js","views/ring/modal.js"]},"atlas":{"css":"views/world/world.css","js":["views/world/world.js"]},"map":{"css":"views/map/map.css","js":["views/map/map.js","views/map/worldmap.js","views/room/chatbox.js","views/room/detail.js","core/pending.js","views/room/draft.js","core/military.js","views/room/underway.js","views/room/orders.js","views/room/target.js","core/relations.js","views/room/generals.js","core/generals.js","core/does.js","views/room/intrigue.js","core/intelprefs.js","core/land.js","core/rites.js","core/intrigue.js","views/room/atkextra.js","core/attack.js","views/room/truthsui.js","views/room/market.js","core/market.js","core/truths.js","core/train.js","views/room/does.js","core/trend.js","views/room/graph.js","core/battle.js","views/room/scidetail.js","views/room/science.js","views/room/waver.js","core/science.js","views/room/colloq.js","views/room/heirs.js","core/heirs.js","views/room/racebox.js","views/room/gendetail.js","views/room/hall.js","core/hall.js","views/room/milacts.js","views/room/raze.js","views/room/statedetail.js"]}};
+    const v = views[document.documentElement.dataset.view];
+    if (!v) return;
+    for (const href of v.js) { const l = document.createElement('link'); l.rel = 'modulepreload'; l.href = href; document.head.append(l); }
+    if (document.querySelector('link[href="' + v.css + '"]')) return;   // room.css: always loaded
+    const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = v.css; document.head.append(css);
+  })();
+</script>
+<!-- /preload -->
 </head>
 <body>
 <a class="skip" href="#view">Skip to the game</a>

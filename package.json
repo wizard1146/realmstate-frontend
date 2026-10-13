@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node dev/serve.mjs",
-    "check": "node dev/check.mjs"
+    "check": "node dev/check.mjs",
+    "preload": "node dev/preload.mjs"
   }
 }

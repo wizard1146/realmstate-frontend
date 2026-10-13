@@ -1,4 +1,4 @@
-// Syntax-checks every JavaScript file (node --check). No dependencies.
+// Syntax-checks every JavaScript file (node --check), and that index.html's preload block is current. No dependencies.
 //   node dev/check.mjs
 import { readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -21,4 +21,7 @@ for (const f of files) {
   if (r.status !== 0) { bad++; console.log(`FAIL ${relative(root, f)}\n${r.stderr}`); }
 }
 console.log(bad ? `${bad} of ${files.length} files failed` : `all ${files.length} files OK`);
-process.exit(bad ? 1 : 0);
+// index.html's module preload list must match the imports (dev/preload.mjs).
+const pre = spawnSync(process.execPath, [join(root, 'dev/preload.mjs'), '--check'], { encoding: 'utf8' });
+process.stdout.write(pre.stdout + pre.stderr);
+process.exit(bad || pre.status ? 1 : 0);

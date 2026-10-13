@@ -28,3 +28,7 @@ the game: realms > states > houses, addresses `realm:state:house`. Never "kingdo
 - Hidden information stays hidden: show only what the API returns for the viewer.
 - Every pane and control must work by keyboard; keep the existing ARIA patterns (`views/room/tabs.js`).
 - `npm run check` must pass. Check changes in a real browser against a running game.
+- After adding, removing or moving an import, run `npm run preload`: it rewrites index.html's preload list (every
+  module the shell and each view import, fetched at once), and the check fails while that list is stale. A view's
+  stylesheet sits beside its entry module with the same name and loads with the view; only `shell.css`, `room.css`
+  and `ages.css` load for every view.
