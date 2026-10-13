@@ -20,7 +20,7 @@ export const names = { buildings: {}, attacks: {}, ops: {}, rites: {}, riteFx: {
 /** The store tells words how to find a house's race (identity) from what it has read, for a report's unit names. */
 let raceOfHouse = () => null;
 export const setRaceLookup = (fn) => { raceOfHouse = fn; };
-/** Unit names by slot for a race identity (from /rules), or null. */
+/** A race's units by slot ({name, off, def}) and whether its elites upgrade twice, from /rules; or null. */
 let raceUnits = () => null;
 export const setRaceUnits = (fn) => { raceUnits = fn; };
 
@@ -394,7 +394,7 @@ function unitsWord(name, n) {
 /** A spy's four kinds of troops, by the race's own names where known: [[count, label], ...]. Soldiers, offensive and
  * defensive specialists (O, D) and elites are slots 0-3; `race` is an identity, or null for the plain words. */
 function forcesParts(f, race) {
-  const u = race ? raceUnits(race) : null;
+  const u = race ? raceUnits(race)?.units.map((x) => x.name) : null;
   const kinds = [[f?.soldiers || 0, 0, 'soldiers', 'soldiers'], [f?.offense || 0, 1, 'offensive specialists', 'O'], [f?.defense || 0, 2, 'defensive specialists', 'D'], [f?.elites || 0, 3, 'elites', 'elites']];
   return kinds.map(([n, slot, plain, tag]) => [n, u?.[slot] ? `${unitsWord(u[slot], n)} (${tag})` : (n === 1 ? plain.replace(/s$/, '') : plain)]);
 }
@@ -407,6 +407,25 @@ export function forcesText(f, race = null) {
 }
 /** The four kinds as numbers, for a table: [['Ashstalkers (O)', n], ...] (plain words without a race). */
 export const forcesRows = (f, race = null) => forcesParts(f, race).map(([n, label]) => [label.charAt(0).toUpperCase() + label.slice(1), n]);
+/** Raw offense and defense points of a spy's troops, from all base units to all fully upgraded (offense+, defense+,
+ * elite+ or elite++), before the house's bonuses: { off: [low, high], def: [low, high] }, or null without the race. */
+export function forcePoints(f, race) {
+  const R = race ? raceUnits(race) : null;
+  if (!f || Array.isArray(f) || !R) return null;
+  const u = R.units, top = R.elitePP ? 9 : 7;
+  const kinds = [[f.soldiers || 0, 0, 0], [f.offense || 0, 1, 5], [f.defense || 0, 2, 6], [f.elites || 0, 3, top]];
+  const sum = (k, slotOf) => kinds.reduce((a, [n, base, up]) => a + n * ((u[slotOf(base, up)] || u[base])?.[k] || 0), 0);
+  const range = (k) => { const a = sum(k, (b) => b), b = sum(k, (_, up) => up); return [Math.min(a, b), Math.max(a, b)]; };
+  return { off: range('off'), def: range('def') };
+}
+const pointsText = ([lo, hi]) => (lo === hi ? `≈ ${fmt(lo)}` : `≈ ${fmt(lo)} (all base) to ${fmt(hi)} (all upgraded)`);
+/** Rows of raw points for troops at home (and away, if any): [[label, text], ...]. */
+function pointRows(r, race) {
+  const out = [], home = forcePoints(r.units, race), away = forcePoints(r.away, race);
+  if (home) out.push(['Offense at home, raw', pointsText(home.off)], ['Defense at home, raw', pointsText(home.def)]);
+  if (away && away.off[1]) out.push(['Offense away, raw', pointsText(away.off)]);
+  return out;
+}
 /** A report's house race: a dossier says it; other reports name the house, and the store may know its race. */
 const reportRace = (r) => r.race || (r.house ? raceOfHouse(r.house.house) : null);
 
@@ -419,7 +438,7 @@ export function intelRows(r) {
   const race = reportRace(r);
   switch (reportKind(r)) {
     case 'survey': return [['Land', r.land], ['Barren', r.barren], ['Buildings', listing(r.buildings)], ['Being built', listing(r.constructing)]];
-    case 'muster': return [['Troops home', forcesText(r.units, race)], ['Troops away', forcesText(r.away, race)], ['In training', r.training], ['Medics', r.medics], ['Horses / chariots', `${fmt(r.horses)} / ${fmt(r.chariots)}`],
+    case 'muster': return [['Troops home', forcesText(r.units, race)], ['Troops away', forcesText(r.away, race)], ...pointRows(r, race), ['In training', r.training], ['Medics', r.medics], ['Horses / chariots', `${fmt(r.horses)} / ${fmt(r.chariots)}`],
       ['Generals', (r.generals || []).map(([n, t, away]) => `${n} (${t.join(', ') || 'no traits'})${away ? ' away' : ''}`).join('; ') || 'none'], ['Main general', r.defender || 'none'],
       ['Armies coming home', (r.armies || []).map(([at, troops, land]) => `${fmt(troops)} troops${land ? ` with ${fmt(land)} acres` : ''}, ${when(at)}`).join('; ') || 'none']];
     case 'ledgers': return [['Gold', r.gold], ['Food', r.food], ['Materials', listing(r.materials)],
@@ -427,13 +446,13 @@ export function intelRows(r) {
     case 'archives': return [['Books invested', listing(r.invested)], ['Unspent books (econ / mil / arc)', (r.books || []).map(fmt).join(' / ')],
       ['Scientists (econ / mil / arc)', (r.scientists || []).map(fmt).join(' / ')], ['Academics', (r.academics || []).map(([n, a]) => `${n} (${a.join(', ')})`).join('; ') || 'none']];
     case 'couriers': return r.news && r.news.length ? r.news.map((n) => [when(n.at), newsText(n)]) : [['News', 'nothing in the last day']];
-    case 'scrying': return [['Land', r.land], ['Peasants', r.peasants], ['Gold', r.gold], ['Food', r.food], ['Troops home', forcesText(r.units, race)]];
+    case 'scrying': return [['Land', r.land], ['Peasants', r.peasants], ['Gold', r.gold], ['Food', r.food], ['Troops home', forcesText(r.units, race)], ...pointRows(r, race)];
     case 'omens': return r.rites && r.rites.length ? r.rites.map(([n, until]) => ['Rite in force', `${n} to tick ${until}`]) : [['Rites', 'none in force']];
     case 'roads': return r.armies && r.armies.length
       ? r.armies.map(([at, troops, land, from]) => ['Army', `${fmt(troops)} troops${land ? ` carrying ${fmt(land)} acres${from ? ` from ${where(from)}` : ''}` : ''}, home ${when(at)}`])
       : [['Armies', 'none on the road']];
     default: return [['Race', `${r.race || '?'} · ${r.personality || '?'}`], ['Land', `${fmt(r.land)}${r.incoming_land ? ` (+${fmt(r.incoming_land)} coming)` : ''}`], ['Peasants', r.peasants], ['Gold', r.gold], ['Food', r.food],
-      ['Troops home', forcesText(r.units, race)], ['Troops away', forcesText(r.away, race)], ['In training', r.training], ['Medics', r.medics], ['Renown', r.renown],
+      ['Troops home', forcesText(r.units, race)], ['Troops away', forcesText(r.away, race)], ...pointRows(r, race), ['In training', r.training], ['Medics', r.medics], ['Renown', r.renown],
       ['Horses / chariots', `${fmt(r.horses)} / ${fmt(r.chariots)}`], ['Adepts', r.adepts || 0], ['Materials', listing(r.materials)],
       ['Buildings', listing(r.buildings)], ['Barren', r.barren],
       ['Generals', (r.generals || []).map(([n, t]) => `${n} (${t.join(', ') || 'no traits'})`).join('; ') || 'none'],

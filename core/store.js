@@ -86,7 +86,11 @@ export const params = () => store.rules.params;
 export const playable = (list) => list.filter((d) => !d.unused && d.identity);
 export const raceOf = (id) => store.rules?.races.find((r) => r.identity === id);
 // Intel reports name units by the target's race: its unit names, and its race from any state read so far.
-setRaceUnits((id) => raceOf(id)?.units?.map((u) => u.name) || null);
+setRaceUnits((id) => {
+  const r = raceOf(id);
+  // Elite+ -> elite++ only for races with the flag (unknown on an old server: assume it if the slot exists).
+  return r?.units ? { units: r.units, elitePP: !!r.units[9] && (Array.isArray(r.flags) ? r.flags.includes('elite_plus_plus') : true) } : null;
+});
 setRaceLookup((id) => {
   if (store.target?.id === id) return store.target.race;
   for (const { members } of store.world.values()) { const m = members.find((x) => x.id === id); if (m) return m.race; }
