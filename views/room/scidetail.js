@@ -21,9 +21,9 @@ function curve(d, now, after, eff) {
   const W = 320, H = 92, L = 6, R = 6, T = 8, B = 16;
   const xmax = Math.max(10000, Math.ceil((Math.max(now, after) * 2) / 1000) * 1000);
   const e = d.effects[0];
-  const y0 = Math.abs(Math.trunc(S.rawBp(e.per_root_bp, xmax) * eff.mult)) || 1;
+  const y0 = Math.abs(S.effectBp(e, xmax, eff.mult)) || 1;
   const x = (b) => L + (b / xmax) * (W - L - R);
-  const y = (b) => T + (1 - Math.abs(Math.trunc(S.rawBp(e.per_root_bp, b) * eff.mult)) / y0) * (H - T - B);
+  const y = (b) => T + (1 - Math.abs(S.effectBp(e, b, eff.mult)) / y0) * (H - T - B);
   const pts = Array.from({ length: 41 }, (_, i) => (xmax * i) / 40).map((b) => `${x(b).toFixed(1)},${y(b).toFixed(1)}`).join(' ');
   const mark = (b, cls) => `<circle class="${cls}" cx="${x(b)}" cy="${y(b)}" r="3.5"/>`;
   return `<svg class="sc-curve" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(d.name)}: bonus by books invested, flattening as books grow (square root). Now ${fmt(now)}, after ${fmt(after)}.">

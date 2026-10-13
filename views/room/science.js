@@ -1,7 +1,7 @@
 // Science: books, scientists, sciences, academics and the state's Colloquium. This module holds the
 // shared maths and the compact SCI pane; scidetail.js draws the detail view.
 // Exact figures come from /me house.science, /rules and /colloquium. Previews of a new investment use
-// the engine's formula (bonus = per_root × isqrt(invested) / 100, then science efficiency); the
+// the engine's formula (core/science.js: limit × r / (r + r_half), then science efficiency); the
 // efficiency is read back from your current bonuses, so a preview is exact once any science has books.
 import { store } from '../../core/store.js';
 import { fmt, esc } from '../../core/words.js';
@@ -11,7 +11,7 @@ import { waverHTML } from './waver.js';
 import { truthsPaneHTML } from './truthsui.js';
 
 
-export { CATS, CAT_SHORT, sci, defs, rawBp, efficiency, bonusAt, rowOf, catOf, effText, ranks, rankName } from '../../core/science.js';
+export { CATS, CAT_SHORT, sci, defs, rawBp, effectBp, efficiency, bonusAt, rowOf, catOf, effText, ranks, rankName } from '../../core/science.js';
 import { CATS, CAT_SHORT, sci, defs, effText, rankName } from '../../core/science.js';
 
 // ---------- the compact pane: SCIENCE, ACADEMICS, COLLOQUIUM tabs ----------
