@@ -203,7 +203,7 @@ export function mountState(host, on) {
   // An address typed in: realm:state (a house's realm:state:seat goes to its state).
   on($('goto'), 'submit', (ev) => {
     ev.preventDefault();
-    const m = $('addr').value.trim().match(/^(\d+)\s*[:.\/ ]\s*(\d+)(?:\s*[:.\/ ]\s*\d+)?$/), why = $('addr-why');
+    const m = $('addr').value.trim().match(/^(\d+)\s*[:. ]\s*(\d+)(?:\s*[:. ]\s*\d+)?$/), why = $('addr-why');
     const r = m && Number(m[1]), st = m && Number(m[2]);
     if (!m) { why.textContent = 'Write it as realm:state, like 1:3.'; return; }
     if (r < 1 || r > REALMS || st < 1 || st > PER) { why.textContent = `There are ${REALMS} realms of ${PER} states.`; return; }

@@ -186,7 +186,7 @@ export function mountRites(host, on) {
   on($('addr'), 'input', () => {
     clearTimeout(typing);
     const v = $('addr').value.trim();
-    if (/^\d+[:\s.,/]+\d+[:\s.,/]+\d+$/.test(v) && (!target || v.replace(/[\s.,/]+/g, ':') !== addr(target))) typing = setTimeout(() => lookUp(v), 450);
+    if (/^\d+[:\s.,]+\d+[:\s.,]+\d+$/.test(v) && (!target || v.replace(/[\s.,]+/g, ':') !== addr(target))) typing = setTimeout(() => lookUp(v), 450);
   });
   on($('go'), 'click', async () => {
     const r = riteById(pick);

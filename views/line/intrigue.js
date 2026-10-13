@@ -135,7 +135,7 @@ export function mountIntrigue(host, on) {
   on($('addr'), 'input', () => {
     clearTimeout(typing);
     const v = $('addr').value.trim();
-    if (/^\d+[:\s.,/]+\d+[:\s.,/]+\d+$/.test(v) && (!target || v.replace(/[\s.,/]+/g, ':') !== addr(target))) typing = setTimeout(() => lookUp(v), 450);
+    if (/^\d+[:\s.,]+\d+[:\s.,]+\d+$/.test(v) && (!target || v.replace(/[\s.,]+/g, ':') !== addr(target))) typing = setTimeout(() => lookUp(v), 450);
   });
 
   // ---------- the sheet: what it costs and does, and why it can't go ----------
