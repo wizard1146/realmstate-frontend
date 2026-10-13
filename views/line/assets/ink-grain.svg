@@ -10,6 +10,6 @@
     <feColorMatrix type="saturate" values="0"/>
     <feComponentTransfer><feFuncA type="table" tableValues="0 0 .3 0 0"/></feComponentTransfer>
   </filter>
-  <rect width="400" height="400" filter="url(#wash)" opacity=".08"/>
-  <rect width="400" height="400" filter="url(#film)" opacity=".3"/>
+  <rect width="400" height="400" filter="url(#wash)" opacity=".025"/>
+  <rect width="400" height="400" filter="url(#film)" opacity=".18"/>
 </svg>
