@@ -135,6 +135,10 @@
   & .l-sword[hidden], & .l-shield[hidden] { display: none; }
   & .l-shield { position: absolute; right: -15px; top: 0; width: 28px; height: 28px; transform: translateY(-50%); pointer-events: none;
     background-color: var(--l-gold); -webkit-mask: url("assets/broken-shield.png") center / contain no-repeat; mask: url("assets/broken-shield.png") center / contain no-repeat; }
+  /* Some pages wear their own marker instead of the broken shield (game-icons.net, CC BY 3.0). */
+  & .l-shield[data-icon="attack"] { -webkit-mask-image: url("assets/attack.svg"); mask-image: url("assets/attack.svg"); }
+  & .l-shield[data-icon="intrigue"] { -webkit-mask-image: url("assets/intrigue.svg"); mask-image: url("assets/intrigue.svg"); }
+  & .l-shield[data-icon="rites"] { -webkit-mask-image: url("assets/rites.svg"); mask-image: url("assets/rites.svg"); }
   /* A group's heading: its name, and a gold rule running right. The group holding the current page slides its name
      to the right (the rule moves to its left), over 140ms. */
   & .line-menu h2 { margin: 16px 18px 4px 12px; font: 600 .92rem/1.2 var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .14em; color: var(--l-gold); display: flex; align-items: center; }

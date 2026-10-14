@@ -28,3 +28,7 @@
 - materials/paper.png: "Stationery stacked papers" by Magnific, Flaticon
   (https://www.flaticon.com/free-icon/stationery-stacked-papers_29343), free licence with attribution; the World
   page's paper. Credited in Configuration and on the wiki's About page.
+- attack.svg, intrigue.svg, rites.svg: "crossed swords", "domino mask" and "candle light" by Lorc, game-icons.net
+  (lorc/crossed-swords.svg, lorc/domino-mask.svg, lorc/candle-light.svg), CC BY 3.0, background removed; the menu's
+  marker beside Attack, Intrigue and Rites in place of the broken shield. Credited in Configuration (Images) and on
+  the wiki's About page.

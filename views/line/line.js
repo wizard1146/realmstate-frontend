@@ -163,7 +163,9 @@ export function mount(root) {
     $('title').textContent = label;
     $('what').textContent = what;
     heading();
-    $('main').dataset.page = pid;   // line.css styles some pages' headings by name (Throne's is centred, on its own)
+    $('main').dataset.page = pid;
+    // The marker beside the current page: a page's own icon where it has one (line.css), else the broken shield.
+    $('shield').dataset.icon = pid;   // line.css styles some pages' headings by name (Throne's is centred, on its own)
     if (!draw) return;
     // Parts first come down; then the part above (if any), and the page's own part.
     top?.destroy(); top = null;
