@@ -15,13 +15,18 @@ const prisOf = (t) => [...(t.tHead?.rows[0]?.cells || [])].map((c) => Number(c.d
 const watched = new WeakSet();
 const ro = new ResizeObserver((list) => {
   const ts = new Set();
-  for (const e of list) (e.target.matches('table.fit') ? [e.target] : e.target.querySelectorAll(':scope > table.fit')).forEach((t) => ts.add(t));
+  for (const e of list) {
+    // A table or box taken off the page (a page redraws its tables often): stop watching it, so it can go.
+    if (!e.target.isConnected) { ro.unobserve(e.target); watched.delete(e.target); continue; }
+    (e.target.matches('table.fit') ? [e.target] : e.target.querySelectorAll(':scope > table.fit')).forEach((t) => ts.add(t));
+  }
   ts.forEach(fit);
 });
 const watch = (el) => { if (!watched.has(el)) { watched.add(el); ro.observe(el); } };
 
 /** Hides `t`'s lowest-priority columns until it fits its box. */
 export function fit(t) {
+  if (!t.isConnected) return;   // redrawn away since it was queued
   watch(t); watch(t.parentElement);
   if (!t.parentElement.clientWidth) return;   // not shown: the box's watcher fits it when it is
   const pris = prisOf(t);
