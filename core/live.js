@@ -1,7 +1,8 @@
-// The /live WebSocket: news, chat, ticks and resync, fed into the store.
+// The /live WebSocket: news, the world feed, chat, ticks and resync, fed into the store.
 // Owned by the shell, not by a view, so switching views never drops it.
 import { liveUrl } from './api.js';
 import { store, onTick, addNews, addChat, resync, setLive } from './store.js';
+import { addWorldNews } from './worldnews.js';
 
 let ws = null;
 let tries = 0;
@@ -47,6 +48,7 @@ function open(u) {
     if (m.type === 'tick') onTick(m.number, m.at, m.report);
     else if (m.type === 'news') addNews(m.news);
     else if (m.type === 'chat') addChat(m.message);
+    else if (m.type === 'world_news') addWorldNews(m.news);
     else if (m.type === 'resync') resync();
   };
   sock.onerror = () => sock.close();

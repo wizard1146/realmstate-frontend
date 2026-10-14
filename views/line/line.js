@@ -37,6 +37,10 @@ import { mountWar } from './war.js';
 import { watchCards } from './cards.js';
 import { newsLine } from '../../core/words.js';
 import { newsSilent } from '../../core/newsprefs.js';
+import { feed, loadWorldNews, worldItems, feedOn } from '../../core/worldnews.js';
+import { world, loadWorld } from '../../core/world.js';
+/** Where each kind of world news leads. */
+const FEED_PAGE = { War: 'wars', Peace: 'wars', Truth: 'truths', Dragon: 'world', Market: 'market' };
 
 // Straightline's own page parts (not War Room panels): mount(host, on) -> { update(c), tick(), destroy() }.
 const PARTS = { throne: mountThrone, military: mountMilitary, attack: mountAttack, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState, wars: mountWars, intrigue: mountIntrigue, rites: mountRites, science: mountScience, academics: mountAcademics, generals: mountGenerals, heirs: mountHeirs, colloquium: mountColloquium, truths: mountTruths, work: mountWork, wonders: mountWonders, news: mountNews, ranks: mountRanks, hall: mountHall, market: mountMarket, leadership: mountLeadership, war: mountWar };
@@ -113,6 +117,10 @@ const TEMPLATE = (view) => `
     <button type="button" id="l-theme" class="btn" aria-expanded="false" aria-controls="l-themepanel" title="Theme (P)"><span class="ico-pal" aria-hidden="true"></span><span class="vh">Theme</span></button></span>
 </header>
 <dl class="line-res" id="l-res" aria-label="Your house at a glance"></dl>
+<div class="line-feed" id="l-feed" role="region" aria-label="World news" hidden>
+  <span class="lf-h" aria-hidden="true">World</span><div class="lf-view"><ul class="lf-track" id="l-feedlist"></ul></div>
+  <button type="button" class="lf-pause" id="l-feedpause" aria-pressed="false">Pause</button>
+</div>
 <div class="line-body">
   <div class="line-side" id="l-side">
     <div class="side-brand" aria-hidden="true"><span class="banner">Hegemoney:</span> REALMSTATE</div>
@@ -252,6 +260,26 @@ export function mount(root) {
   // Signing out is on the Profile page.
   mountLook(root, on);
 
+  // ---------- the world news strip: the world feed, scrolling under the resource line (Configuration > News) ----------
+  // Pointing at it, or tabbing into it, holds it still; Pause holds it until pressed again. Each item opens its page.
+  let held = false;
+  function drawFeed() {
+    const el = $('feed'), items = worldItems().slice(0, 15);
+    el.hidden = !feedOn() || !feed.ok || !items.length;
+    if (el.hidden) return;
+    const li = (copy) => items.map(([, [label, text]]) => `<li${copy ? ' aria-hidden="true"' : ''}><a href="#${FEED_PAGE[label] || 'world'}"${copy ? ' tabindex="-1"' : ''}><b class="lf-k k-${label.toLowerCase()}">${esc(label)}</b> ${esc(text)}</a></li>`).join('');
+    // Twice over, so it runs on without a gap: the track moves left by half its length, then starts again.
+    $('feedlist').innerHTML = li(false) + li(true);
+    $('feedlist').style.setProperty('--lf-dur', `${Math.max(30, items.length * 8)}s`);
+  }
+  on($('feedpause'), 'click', () => {
+    held = !held;
+    $('feed').classList.toggle('paused', held);
+    $('feedpause').setAttribute('aria-pressed', String(held));
+    $('feedpause').textContent = held ? 'Play' : 'Pause';
+  });
+  if (feedOn()) { loadWorldNews({ force: true }); if (!world.realms.size) loadWorld(); }
+
   // News as it arrives: a small card bottom right, with a link to the News page (not while you're on it).
   const MAX_TOASTS = 3, TOAST_MS = 10000;
   let lastMsg = store.msg.text;
@@ -331,6 +359,9 @@ export function mount(root) {
 
 
   const unsub = subscribe((c) => {
+    if (c.has('worldnews') || c.has('worldmap') || c.has('feedpref')) drawFeed();
+    if (c.has('feedpref') && feedOn()) { loadWorldNews({ force: true }); if (!world.realms.size) loadWorld(); }
+    if (c.has('tick') && feedOn()) loadWorldNews();   // at most once a minute; live news fills in between
     if (c.has('news') && current !== 'news') for (const d of c.get('news')) if (d.added && !newsSilent(d.added)) toast(d.added);
     // Messages from orders ("Built 10 Homes", errors) come as cards too: Straightline has no message line
     // (it moved the page each time it changed). Errors stay until dismissed or replaced; the rest go after 5 s.

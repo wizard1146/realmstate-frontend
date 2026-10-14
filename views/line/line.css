@@ -117,11 +117,12 @@
   /* Desktop: the menu runs the window's full height, the name of the game at its top; the header, the resource
      line and the page sit to its right. */
   @media (min-width: 761px) {
-    & .line { display: grid; grid-template-columns: 216px minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr);
-      grid-template-areas: "side top" "side res" "side main"; }
+    & .line { display: grid; grid-template-columns: 216px minmax(0, 1fr); grid-template-rows: auto auto auto minmax(0, 1fr);
+      grid-template-areas: "side top" "side res" "side feed" "side main"; }
     & .line-body { display: contents; }
     & .line-top { grid-area: top; }
     & .line-res { grid-area: res; }
+    & .line-feed { grid-area: feed; }
     & .line-side { grid-area: side; }
     & .line-main { grid-area: main; }
     & .line-top .brand { display: none; }
@@ -1806,4 +1807,35 @@
   & .detail-host table.tbl.fit :is(th, td).fx-clip { max-width: 14em; overflow: hidden; text-overflow: ellipsis; }
   & .detail-host table.tbl.fit.fx-squeeze :is(th, td).fx-last { width: 100%; max-width: 0; min-width: 8ch; overflow: hidden; text-overflow: ellipsis; }
   & .detail-host.lbuild table.tbl.fit td.fx-flex.does, & .detail-host .lbuild table.tbl.fit td.fx-flex.does { min-width: 18ch; }
+}
+
+:root[data-view="line"] {
+  /* The world news strip (line.js): the world feed running right to left under the resource line. */
+  & .line-feed { display: flex; align-items: center; gap: 12px; padding: 4px 12px 4px 18px; overflow: hidden; font-size: .86em;
+    background: var(--l-nav); color: var(--l-nav-ink); border-bottom: 1px solid var(--l-line); }
+  & .line-feed[hidden] { display: none; }
+  & .line-feed .lf-h { flex: none; font: 600 .95em var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .12em; color: var(--l-gold); }
+  & .line-feed .lf-view { flex: 1; min-width: 0; overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); }
+  & .line-feed .lf-track { display: flex; width: max-content; margin: 0; padding: 0; list-style: none; animation: lf-run var(--lf-dur, 60s) linear infinite; }
+  & .line-feed:is(:hover, :focus-within, .paused) .lf-track { animation-play-state: paused; }
+  & .line-feed li { flex: none; padding-right: 42px; white-space: nowrap; }
+  & .line-feed a { color: inherit; text-decoration: none; }
+  & .line-feed a:hover { text-decoration: underline; text-decoration-color: var(--l-gold); }
+  & .line-feed a:focus-visible { outline: 2px solid var(--l-gold); outline-offset: 2px; border-radius: 2px; }
+  & .line-feed .lf-k { margin-right: 4px; font-weight: 600; font-variant-caps: all-small-caps; letter-spacing: .08em; color: var(--l-nav-muted); }
+  & .line-feed .lf-k.k-war { color: #f0a08c; } & .line-feed .lf-k.k-peace { color: #a9d7b2; } & .line-feed .lf-k.k-truth { color: var(--l-gold); }
+  & .line-feed .lf-k.k-dragon { color: #e8b86a; } & .line-feed .lf-k.k-market { color: #a9c6e8; }
+  & .line-feed .lf-pause { flex: none; border: 1px solid color-mix(in srgb, var(--l-nav-ink) 30%, transparent); background: none; color: var(--l-nav-muted);
+    font: inherit; font-size: .9em; padding: 1px 8px; border-radius: 3px; cursor: pointer; }
+  & .line-feed .lf-pause:hover { color: var(--l-nav-ink); }
+  & .line-feed .lf-pause:focus-visible { outline: 2px solid var(--l-gold); }
+  @keyframes lf-run { to { transform: translateX(-50%); } }
+  /* No motion: the newest first, still; scroll sideways for the rest. */
+  @media (prefers-reduced-motion: reduce) {
+    & .line-feed .lf-track { animation: none; }
+    & .line-feed .lf-view { overflow-x: auto; -webkit-mask-image: none; mask-image: none; }
+    & .line-feed li[aria-hidden="true"] { display: none; }
+    & .line-feed .lf-pause { display: none; }
+  }
 }

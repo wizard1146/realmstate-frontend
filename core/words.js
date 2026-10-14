@@ -9,7 +9,7 @@ let myHouseId = null;
 export const setMyHouse = (id) => { myHouseId = id; };
 
 /** A dragon as a sentence's subject: "Seraphel the Pale Lantern, an Iridescent dragon," or "A Magma dragon" or "A dragon". */
-function dragonWho(n) {
+export function dragonWho(n) {
   const k = n.kind ? names.dragons?.[n.kind] || n.kind[0].toUpperCase() + n.kind.slice(1) : '';
   const kind = k ? `${/^[AEIOU]/i.test(k) ? 'an' : 'a'} ${k} dragon` : 'a dragon';
   return n.dragon ? `${n.dragon}, ${kind},` : kind[0].toUpperCase() + kind.slice(1);

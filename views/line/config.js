@@ -1,7 +1,8 @@
 // Straightline's Configuration: how the game looks and reads for you, kept in this browser, in tabs (Look, Fonts,
 // Reading, Images, News, Chat, Intrigue). The look (theme, ornaments, fonts, the background texture) is looklab's, the same settings as the header's palette and Aa panels; times in UTC or your
 // own zone are core's (store.js).
-import { setClock, isUtc } from '../../core/store.js';
+import { setClock, isUtc, notify } from '../../core/store.js';
+import { FEED_KEY, feedOn } from '../../core/worldnews.js';
 import { esc } from '../../core/words.js';
 import { THEMES, HEADS, BODIES, look, setLook, FONT_DEFAULTS, fontOptions, validFontName, tryFont, CUSTOM } from './looklab.js';
 import { UPGRADES_KEY, upgradeRows, GLYPH_KEY, throneGlyph } from './throne.js';
@@ -75,6 +76,9 @@ export function mountConfig(host, on) {
     <p class="dim small">These settings are kept in this browser only.</p>
     </div>
     <div role="tabpanel" id="cf-news" aria-labelledby="cf-tab-news" data-panel="news">
+      <section><h3 class="sub">World news strip</h3>
+        <p class="dim">A line under your house's figures, running with what the whole world may know: wars and ceasefires, Truths uncovered, dragons, and big market moves.</p>
+        <label class="cf-check"><input type="checkbox" id="cf-feed"> Show the world news strip</label></section>
       <section><h3 class="sub">What news you see</h3>
         <p class="dim"><b>News</b>: listed on the News page. <b>Pop-up</b>: also a card at the bottom right and the message line as it arrives (only for kinds in your News). The end of an age and notes from the game's staff always show.</p>
         <table class="tbl cf-news"><thead><tr><th scope="col">Kind</th><th scope="col">News</th><th scope="col">Pop-up</th></tr></thead><tbody>
@@ -110,6 +114,7 @@ export function mountConfig(host, on) {
     host.querySelectorAll('input[name="cf-theme"]').forEach((i) => { i.checked = i.value === l.theme; });
     $('orn').checked = l.ornaments;
     $('tex').checked = l.texture;
+    $('feed').checked = feedOn();
     $('head').innerHTML = fontOptions(HEADS, l.fonts.head, 'head'); $('body').innerHTML = fontOptions(BODIES, l.fonts.body, 'body'); $('size').value = l.fonts.size; $('size-o').textContent = `${l.fonts.size}px`;
     $('upg').checked = upgradeRows();
     host.querySelectorAll('input[name="cf-icon"]').forEach((i) => { i.checked = i.value === landIcon(); });
@@ -153,6 +158,7 @@ export function mountConfig(host, on) {
     if (t.name === 'cf-theme') setLook({ theme: t.value });
     else if (t.id === 'cf-orn') setLook({ ornaments: t.checked });
     else if (t.id === 'cf-tex') setLook({ texture: t.checked });
+    else if (t.id === 'cf-feed') { try { localStorage.setItem(FEED_KEY, JSON.stringify(t.checked)); } catch { /* storage off */ } notify('feedpref'); }
     else if (t.name === 'cf-clock') setClock(t.value === 'utc');
     else if (t.name === 'cf-icon') { try { localStorage.setItem(LAND_ICON_KEY, t.value); } catch { /* storage off */ } }
     else if (t.name === 'cf-adv') { try { localStorage.setItem(ADVISOR_KEY, t.value); } catch { /* storage off */ } }
