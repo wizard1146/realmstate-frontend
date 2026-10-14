@@ -1588,7 +1588,17 @@
   & .lnews .nw-more { display: flex; justify-content: center; margin: 16px 0; }
   & .lnews .nw-empty { padding: 20px 0; }
   & .lranks .ltabs { margin-bottom: 12px; }
-  & .lranks .rk-tools input { width: min(280px, 100%); }
+  & .lranks .rk-tools input[type=search] { width: min(240px, 100%); }
+  & .lranks .rk-by { display: inline-flex; border: 1px solid var(--l-line); border-radius: 4px; overflow: hidden; }
+  & .lranks .rk-by label { display: inline-flex; align-items: center; padding: 3px 10px; cursor: pointer; font-variant-caps: normal; letter-spacing: 0; color: var(--l-ink); }
+  & .lranks .rk-by label + label { border-left: 1px solid var(--l-line); }
+  & .lranks .rk-by input { position: absolute; opacity: 0; pointer-events: none; }
+  & .lranks .rk-by label:has(input:checked) { background: var(--l-gold); color: var(--l-page); font-weight: 600; }
+  & .lranks .rk-by label:has(input:focus-visible) { outline: 2px solid var(--l-gold); outline-offset: 1px; }
+  & .lranks .rk-tools .lbl { font-variant-caps: all-small-caps; letter-spacing: .08em; color: var(--l-muted); }
+  & .lranks .rk-sort { border: 0; background: none; padding: 0; font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit; font-variant-caps: inherit; cursor: pointer; }
+  & .lranks .rk-sort:hover, & .lranks .rk-sort.on { color: var(--l-ink); }
+  & .lranks .rk-sort:focus-visible { outline: 2px solid var(--l-gold); outline-offset: 2px; }
   & .lranks .rk-tools .small { margin-left: auto; }
   & .lranks table.rk-tbl { width: 100%; }
   & .lranks .rk-tbl th[scope=row] { text-align: left; font: inherit; font-variant-caps: normal; letter-spacing: 0; font-weight: 600; }
