@@ -61,7 +61,6 @@ const MENU = [
     ['military', 'Military', null, null, 'train troops; draft and release; medics, upgrades, chariots', { part: 'military' }],
     ['attack', 'Attack', null, null, 'send an army against another house', { part: 'attack' }],
     ['generals', 'Generals', null, null, 'raise and command generals; your heirs', { part: 'generals' }],
-    ['hall', 'Hall of Deeds', null, null, 'trade generals and academics', { part: 'hall' }],
   ]],
   ['Shadows & Magic', [
     ['intrigue', 'Intrigue', null, null, 'your thieves: operations and your state\'s spy reports', { part: 'intrigue' }],
@@ -86,6 +85,7 @@ const MENU = [
   ]],
   ['Market', [
     ['market', 'Market', null, null, 'buy and sell materials', { part: 'market' }],
+    ['hall', 'Hall of Deeds', null, null, 'trade generals and academics', { part: 'hall' }],
   ]],
   ['Chronicle', [
     ['ranks', 'Rankings', null, null, 'houses and states', { part: 'ranks' }],

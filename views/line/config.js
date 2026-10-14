@@ -1,5 +1,5 @@
-// Straightline's Configuration: how the game looks and reads for you, kept in this browser. The look (theme,
-// ornaments, fonts, the background texture) is looklab's, the same settings as the header's palette and Aa panels; times in UTC or your
+// Straightline's Configuration: how the game looks and reads for you, kept in this browser, in tabs (Look, Fonts,
+// Reading, Images, News, Intrigue). The look (theme, ornaments, fonts, the background texture) is looklab's, the same settings as the header's palette and Aa panels; times in UTC or your
 // own zone are core's (store.js).
 import { setClock, isUtc } from '../../core/store.js';
 import { esc } from '../../core/words.js';
@@ -11,22 +11,60 @@ import { pins, setPins } from '../../core/intelprefs.js';
 import { buildingGroups } from '../../core/land.js';
 import { NEWS_GROUPS, newsOff, setNewsOff, newsQuiet, setNewsQuiet } from '../../core/newsprefs.js';
 
-const TABS = [['general', 'General'], ['texture', 'Texture'], ['news', 'News'], ['intrigue', 'Intrigue']];
+const TABS = [['look', 'Look'], ['fonts', 'Fonts'], ['reading', 'Reading'], ['images', 'Images'], ['news', 'News'], ['intrigue', 'Intrigue']];
+/** Tabs since split up, and where their settings went. */
+const OLD_TABS = { general: 'look', texture: 'look' };
 const KEY = 'realmstate.line.config.tab';
 const SURVEY_DEFAULT = ['forts', 'watch_towers'];
 
 export function mountConfig(host, on) {
-  let tab = 'general';
-  try { const v = localStorage.getItem(KEY); if (TABS.some(([t]) => t === v)) tab = v; } catch { /* storage off */ }
+  let tab = TABS[0][0];
+  try { const v = OLD_TABS[localStorage.getItem(KEY)] || localStorage.getItem(KEY); if (TABS.some(([t]) => t === v)) tab = v; } catch { /* storage off */ }
   host.innerHTML = `<div class="lpart lconfig">
     <div class="ltabs" role="tablist" aria-label="Settings">${TABS.map(([t, label]) =>
       `<button type="button" role="tab" id="cf-tab-${t}" aria-controls="cf-${t}" data-tab="${t}">${label}</button>`).join('')}</div>
-    <div role="tabpanel" id="cf-texture" aria-labelledby="cf-tab-texture" data-panel="texture">
-      <section><h3 class="sub">Background texture</h3>
-        <p class="dim">Behind the page: a faint ink wash under a fine film grain, as on realmstate.net. Turn it off for a plain, flat background.</p>
-        <label class="cf-check"><input type="checkbox" id="cf-tex"> Show the texture</label>
-        <div class="cf-texdemo" aria-hidden="true"></div></section>
-      <p class="dim small">This setting is kept in this browser only.</p>
+    <div role="tabpanel" id="cf-look" aria-labelledby="cf-tab-look" data-panel="look">
+    <section><h3 class="sub">Theme</h3>
+      <fieldset class="cf-themes"><legend class="vh">Theme</legend>${THEMES.map(([id, name, sw]) =>
+        `<label class="cf-theme"><input type="radio" name="cf-theme" value="${id}"><span>${esc(name)}</span><span class="chips" aria-hidden="true">${sw.map((c) => `<i style="background:${c}"></i>`).join('')}</span></label>`).join('')}</fieldset>
+      <label class="cf-check"><input type="checkbox" id="cf-orn"> Ornaments: framed corners and ruled headings</label></section>
+    <section><h3 class="sub">Background texture</h3>
+      <p class="dim">Behind the page: a faint ink wash under a fine film grain, as on realmstate.net. Turn it off for a plain, flat background.</p>
+      <label class="cf-check"><input type="checkbox" id="cf-tex"> Show the texture</label>
+      <div class="cf-texdemo" aria-hidden="true"></div></section>
+    <p class="dim small">These settings are kept in this browser only.</p>
+    </div>
+    <div role="tabpanel" id="cf-fonts" aria-labelledby="cf-tab-fonts" data-panel="fonts">
+    <section><h3 class="sub">Fonts</h3>
+      <div class="cf-grid">
+        <label for="cf-head">Headings</label><select id="cf-head">${HEADS.map((f) => `<option>${esc(f.name)}</option>`).join('')}</select>
+        <label for="cf-body">Text</label><select id="cf-body">${BODIES.map((f) => `<option>${esc(f.name)}</option>`).join('')}</select>
+        <label for="cf-size">Size</label><span><input id="cf-size" type="range" min="13" max="19" step="1"> <output id="cf-size-o"></output></span>
+      </div>
+      <p class="cf-specimen"><span class="h">The Crown of Valmark</span><br>Gold 1,234,567 · Land 430 acres · Might 80,904</p>
+      <button type="button" class="btn" id="cf-reset">Default fonts</button></section>
+    <p class="dim small">These settings are kept in this browser only.</p>
+    </div>
+    <div role="tabpanel" id="cf-reading" aria-labelledby="cf-tab-reading" data-panel="reading">
+    <section><h3 class="sub">Advisors</h3>
+      <fieldset class="cf-clock"><legend class="vh">Advisors</legend>${ADVISOR_MODES.map(([k, label]) =>
+        `<label><input type="radio" name="cf-adv" value="${k}"> ${esc(label)}</label>`).join('')}</fieldset></section>
+    <section><h3 class="sub">Times</h3>
+      <fieldset class="cf-clock"><legend class="vh">Show times in</legend>
+        <label><input type="radio" name="cf-clock" value="utc"> UTC, the game's own clock</label>
+        <label><input type="radio" name="cf-clock" value="local"> Your local time</label></fieldset></section>
+    <section><h3 class="sub">Units</h3>
+      <label class="cf-check"><input type="checkbox" id="cf-upg"> List upgraded units on rows of their own (otherwise each is counted in with its base unit, marked *)</label></section>
+    <p class="dim small">These settings are kept in this browser only.</p>
+    </div>
+    <div role="tabpanel" id="cf-images" aria-labelledby="cf-tab-images" data-panel="images">
+    <section><h3 class="sub">Land</h3>
+      <fieldset class="cf-icons"><legend>The houses in the land bar</legend>${LAND_ICONS.map(([k, name]) =>
+        `<label class="cf-icon"><input type="radio" name="cf-icon" value="${k}"><i style="--house:${iconUrl(k)}" aria-hidden="true"></i> ${esc(name)}</label>`).join('')}</fieldset></section>
+    <section><h3 class="sub">Page images</h3>
+      <label class="cf-check"><input type="checkbox" id="cf-glyph"> A faint image in the background: a throne on Throne, wheat on Resources, a compass on Land &amp; Exploration, planks on Build, a sledgehammer on Raze, a fort on State, a shield on Military</label>
+      <p class="dim small cf-credit">Throne image by Amethyst prime, from <a href="https://www.flaticon.com/free-icon/throne_10623266" target="_blank" rel="noopener">Flaticon</a>. Compass by meaicon, from <a href="https://www.flaticon.com/free-icon/compass_18513259" target="_blank" rel="noopener">Flaticon</a>. Wood planks by Vectorsclub, from <a href="https://www.flaticon.com/free-icon/wood-planks_18333413" target="_blank" rel="noopener">Flaticon</a>. Sledgehammer by andinur, from <a href="https://www.flaticon.com/free-icon/sledgehammer_8591563" target="_blank" rel="noopener">Flaticon</a>. Bauxite ("Gold") by Magnific, from <a href="https://www.flaticon.com/free-icon/gold_9921041" target="_blank" rel="noopener">Flaticon</a>. Limestone ("Nature") by FACH, from <a href="https://www.flaticon.com/free-icon/nature_18891485" target="_blank" rel="noopener">Flaticon</a>. Amber ("Dried insect in amber") by Smashicons, from <a href="https://www.flaticon.com/free-icon/dried-insect-in-amber_1674503" target="_blank" rel="noopener">Flaticon</a>. Pine ("Pines") by KP Arts, from <a href="https://www.flaticon.com/free-icon/pines_6960250" target="_blank" rel="noopener">Flaticon</a>. Sulfur ("Sulphur") by Magnific, from <a href="https://www.flaticon.com/free-icon/sulphur_1999794" target="_blank" rel="noopener">Flaticon</a>. Paper ("Stationery stacked papers") by Magnific, from <a href="https://www.flaticon.com/free-icon/stationery-stacked-papers_29343" target="_blank" rel="noopener">Flaticon</a>. Hill fort and templar shield by Delapouite, from <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>, CC BY 3.0. Wheat by Lorc, from <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>, <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>.</p></section>
+    <p class="dim small">These settings are kept in this browser only.</p>
     </div>
     <div role="tabpanel" id="cf-news" aria-labelledby="cf-tab-news" data-panel="news">
       <section><h3 class="sub">What news you see</h3>
@@ -47,35 +85,6 @@ export function mountConfig(host, on) {
           `<label><input type="checkbox" name="cf-pin" value="${esc(d.building)}"> ${esc(d.name)}</label>`).join('')}</div>`).join('')}</fieldset>
         <div class="cf-pinbtns"><button type="button" class="btn" id="cf-pin-def">Default (Forts, Watch Towers)</button><button type="button" class="btn" id="cf-pin-none">None</button></div></section>
       <p class="dim small">These settings are kept in this browser only.</p>
-    </div>
-    <div role="tabpanel" id="cf-general" aria-labelledby="cf-tab-general" data-panel="general">
-    <section><h3 class="sub">Theme</h3>
-      <fieldset class="cf-themes"><legend class="vh">Theme</legend>${THEMES.map(([id, name, sw]) =>
-        `<label class="cf-theme"><input type="radio" name="cf-theme" value="${id}"><span>${esc(name)}</span><span class="chips" aria-hidden="true">${sw.map((c) => `<i style="background:${c}"></i>`).join('')}</span></label>`).join('')}</fieldset>
-      <label class="cf-check"><input type="checkbox" id="cf-orn"> Ornaments: framed corners and ruled headings</label></section>
-    <section><h3 class="sub">Fonts</h3>
-      <div class="cf-grid">
-        <label for="cf-head">Headings</label><select id="cf-head">${HEADS.map((f) => `<option>${esc(f.name)}</option>`).join('')}</select>
-        <label for="cf-body">Text</label><select id="cf-body">${BODIES.map((f) => `<option>${esc(f.name)}</option>`).join('')}</select>
-        <label for="cf-size">Size</label><span><input id="cf-size" type="range" min="13" max="19" step="1"> <output id="cf-size-o"></output></span>
-      </div>
-      <p class="cf-specimen"><span class="h">The Crown of Valmark</span><br>Gold 1,234,567 · Land 430 acres · Might 80,904</p>
-      <button type="button" class="btn" id="cf-reset">Default fonts</button></section>
-    <section><h3 class="sub">Advisors</h3>
-      <fieldset class="cf-clock"><legend class="vh">Advisors</legend>${ADVISOR_MODES.map(([k, label]) =>
-        `<label><input type="radio" name="cf-adv" value="${k}"> ${esc(label)}</label>`).join('')}</fieldset></section>
-    <section><h3 class="sub">Land</h3>
-      <fieldset class="cf-icons"><legend>The houses in the land bar</legend>${LAND_ICONS.map(([k, name]) =>
-        `<label class="cf-icon"><input type="radio" name="cf-icon" value="${k}"><i style="--house:${iconUrl(k)}" aria-hidden="true"></i> ${esc(name)}</label>`).join('')}</fieldset></section>
-    <section><h3 class="sub">Throne</h3>
-      <label class="cf-check"><input type="checkbox" id="cf-glyph"> A faint image in the background: a throne on Throne, wheat on Resources, a compass on Land &amp; Exploration, planks on Build, a sledgehammer on Raze, a fort on State, a shield on Military</label>
-      <p class="dim small cf-credit">Throne image by Amethyst prime, from <a href="https://www.flaticon.com/free-icon/throne_10623266" target="_blank" rel="noopener">Flaticon</a>. Compass by meaicon, from <a href="https://www.flaticon.com/free-icon/compass_18513259" target="_blank" rel="noopener">Flaticon</a>. Wood planks by Vectorsclub, from <a href="https://www.flaticon.com/free-icon/wood-planks_18333413" target="_blank" rel="noopener">Flaticon</a>. Sledgehammer by andinur, from <a href="https://www.flaticon.com/free-icon/sledgehammer_8591563" target="_blank" rel="noopener">Flaticon</a>. Bauxite ("Gold") by Magnific, from <a href="https://www.flaticon.com/free-icon/gold_9921041" target="_blank" rel="noopener">Flaticon</a>. Limestone ("Nature") by FACH, from <a href="https://www.flaticon.com/free-icon/nature_18891485" target="_blank" rel="noopener">Flaticon</a>. Amber ("Dried insect in amber") by Smashicons, from <a href="https://www.flaticon.com/free-icon/dried-insect-in-amber_1674503" target="_blank" rel="noopener">Flaticon</a>. Pine ("Pines") by KP Arts, from <a href="https://www.flaticon.com/free-icon/pines_6960250" target="_blank" rel="noopener">Flaticon</a>. Sulfur ("Sulphur") by Magnific, from <a href="https://www.flaticon.com/free-icon/sulphur_1999794" target="_blank" rel="noopener">Flaticon</a>. Paper ("Stationery stacked papers") by Magnific, from <a href="https://www.flaticon.com/free-icon/stationery-stacked-papers_29343" target="_blank" rel="noopener">Flaticon</a>. Hill fort and templar shield by Delapouite, from <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>, CC BY 3.0. Wheat by Lorc, from <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>, <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>.</p>
-      <label class="cf-check"><input type="checkbox" id="cf-upg"> List upgraded units on rows of their own (otherwise each is counted in with its base unit, marked *)</label></section>
-    <section><h3 class="sub">Times</h3>
-      <fieldset class="cf-clock"><legend class="vh">Show times in</legend>
-        <label><input type="radio" name="cf-clock" value="utc"> UTC, the game's own clock</label>
-        <label><input type="radio" name="cf-clock" value="local"> Your local time</label></fieldset></section>
-    <p class="dim small">These settings are kept in this browser only.</p>
     </div>
   </div>`;
   const $ = (id) => host.querySelector(`#cf-${id}`);

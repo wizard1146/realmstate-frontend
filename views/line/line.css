@@ -1498,11 +1498,12 @@
 
 :root[data-view="line"] {
   /* Intrigue's report pages; Configuration's tabs and the Intrigue checklist. */
-  & .lint .in-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; margin: 16px 0 4px; }
-  & .lint .in-pager .btn.mini { min-width: 32px; }
-  & .lint .in-pager .btn.mini.on { background: var(--l-gold); border-color: var(--l-gold); color: var(--l-page); }
-  & .lint .in-pager .gap { color: var(--l-muted); padding: 0 2px; }
-  & .lint .in-pager .small { margin-left: 8px; }
+  & :is(.lint, .lwars) .in-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; margin: 16px 0 4px; }
+  & :is(.lint, .lwars) .in-pager .btn.mini { min-width: 32px; }
+  & :is(.lint, .lwars) .in-pager .btn.mini.on { background: var(--l-gold); border-color: var(--l-gold); color: var(--l-page); }
+  & :is(.lint, .lwars) .in-pager .gap { color: var(--l-muted); padding: 0 2px; }
+  & .lwars .wr-n { margin-left: 4px; font-size: .85em; font-variant-numeric: tabular-nums; opacity: .7; }
+  & :is(.lint, .lwars) .in-pager .small { margin-left: 8px; }
   & .lconfig > .ltabs { margin-bottom: 14px; }
   & .lconfig .cf-pins { border: 0; padding: 0; margin: 0; columns: 220px 3; column-gap: 24px; }
   & .lconfig .cf-pins .cf-pgrp { break-inside: avoid; margin-bottom: 12px; }
