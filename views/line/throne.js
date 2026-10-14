@@ -1,8 +1,10 @@
 // Straightline's Throne: your house at a glance, in small tables that flow into one, two or three columns as the
 // page widens (line.css). Your house; the core figures; your people; your land; what you hold. Protection, while
-// it lasts, is a line at the foot of the page. Read straight from the store (/me, /state); nothing is worked out
-// here that the server sends.
-import { store, raceOf, raceName, persName, isProtected, slotUsed, unitPoints } from '../../core/store.js';
+// it lasts, is a line at the foot of the page. A state's leader whose Colloquium researches nothing is asked, at the
+// top, to choose a project (only the leader can). Read straight from the store (/me, /state, /colloquium); nothing
+// is worked out here that the server sends.
+import { store, raceOf, raceName, persName, isProtected, slotUsed, unitPoints, loadColloquium } from '../../core/store.js';
+import { isLeader } from '../../core/truths.js';
 import { fmt, esc, UNIT_ORDER, THIEF, SOLDIER, MERC, baseOf, isUpgrade } from '../../core/words.js';
 import { landSplit } from '../../core/land.js';
 import * as pend from '../../core/pending.js';
@@ -32,8 +34,9 @@ const METRICS = ['Count', 'Offense', 'Defense'];
 let metric = 0;
 
 export function mountThrone(host, on) {
-  host.innerHTML = `<div class="throne${throneGlyph() ? ' glyph' : ''}"><div class="tgrid"></div><p class="tprot" hidden></p></div>`;
-  const grid = host.querySelector('.tgrid'), prot = host.querySelector('.tprot');
+  host.innerHTML = `<div class="throne${throneGlyph() ? ' glyph' : ''}"><p class="tcol" hidden></p><div class="tgrid"></div><p class="tprot" hidden></p></div>`;
+  const grid = host.querySelector('.tgrid'), prot = host.querySelector('.tprot'), col = host.querySelector('.tcol');
+  let asked = false;   // the Colloquium, read once for a leader (the store keeps it current after)
 
   function render() {
     const h = store.house, race = raceOf(h?.race);
@@ -111,6 +114,12 @@ export function mountThrone(host, on) {
 
     grid.innerHTML = house + core + people + infra + res + mats + spirit;
     grid.dataset.metric = metric;
+    // The leader, while the state's Colloquium researches nothing: a line asking them to choose.
+    const lead = isLeader();
+    if (lead && !store.colloquium && !asked) { asked = true; loadColloquium(); }
+    const idle = lead && store.colloquium && !store.colloquium.active;
+    col.hidden = !idle;
+    if (idle) col.innerHTML = 'Your state\'s Colloquium is researching nothing. As its leader, <a href="#colloquium">choose a project →</a>';
     prot.hidden = !isProtected(h);
     if (isProtected(h)) prot.textContent = `Under Protection (ticks remaining: ${fmt(h.protected_until - h.ticks_now)})`;
   }
@@ -124,7 +133,7 @@ export function mountThrone(host, on) {
   });
   render();
   return {
-    update(c) { if (!c || c.has('house') || c.has('me') || c.has('rules') || c.has('state')) render(); },
+    update(c) { if (!c || c.has('house') || c.has('me') || c.has('rules') || c.has('state') || c.has('colloquium')) render(); },
     tick() {},
     destroy() { host.replaceChildren(); },
   };

@@ -395,6 +395,11 @@
     background: color-mix(in srgb, var(--l-lime) 16%, var(--l-page)); border-top: 1px solid color-mix(in srgb, var(--l-lime) 45%, var(--l-page));
     color: color-mix(in srgb, var(--l-lime) 75%, var(--l-ink)); }   /* lime, tuned to each theme (--l-lime); text deepened to read on the tint */
   & .throne .tprot[hidden] { display: none; }
+  /* The leader's Colloquium prompt: a gold band at the top of the page. */
+  & .throne .tcol { margin: 0 0 16px; padding: 10px 14px; border: 1px solid var(--l-gold); border-radius: 6px; text-align: center;
+    background: color-mix(in srgb, var(--l-gold) 12%, var(--l-page)); }
+  & .throne .tcol a { font-weight: 600; }
+  & .throne .tcol[hidden] { display: none; }
   /* News: a toolbar strip over a steady-width feed; times in a narrow column, battle reports as framed cards. */
   & .line-page .dtools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 0 0 14px; padding: 8px 12px;
     background: var(--l-self); border: 1px solid var(--l-line); border-radius: 4px; }
