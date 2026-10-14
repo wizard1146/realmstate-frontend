@@ -24,7 +24,7 @@ export function mountRanks(host, on) {
       <div class="rk-tools">
         <span class="lbl" id="lk-byl">Top 100 by</span><span class="rk-by" role="radiogroup" aria-labelledby="lk-byl">${BY.map(([k, l]) =>
           `<label><input type="radio" name="lk-by" value="${k}"> ${l}</label>`).join('')}</span>
-        <label for="lk-race">Race</label><select id="lk-race"><option value="">All races</option>${(store.rules?.races || []).filter(Boolean).map((r) =>
+        <label for="lk-race">Race</label><select id="lk-race"><option value="">All races</option>${(store.rules?.races || []).filter((r) => r?.identity).map((r) =>
           `<option value="${esc(r.identity)}">${esc(r.name)}</option>`).join('')}</select>
         <label for="lk-find">Find</label><input id="lk-find" type="search" placeholder="a name or an address" autocomplete="off">
         <span class="dim small" id="lk-hn"></span></div>
