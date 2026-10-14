@@ -3,7 +3,7 @@
 // own zone are core's (store.js).
 import { setClock, isUtc } from '../../core/store.js';
 import { esc } from '../../core/words.js';
-import { THEMES, HEADS, BODIES, look, setLook, FONT_DEFAULTS } from './looklab.js';
+import { THEMES, HEADS, BODIES, look, setLook, FONT_DEFAULTS, fontOptions, validFontName, tryFont, CUSTOM } from './looklab.js';
 import { UPGRADES_KEY, upgradeRows, GLYPH_KEY, throneGlyph } from './throne.js';
 import { ADVISOR_KEY, ADVISOR_MODES, advisorMode } from './advisor.js';
 import { LAND_ICONS, LAND_ICON_KEY, landIcon, iconUrl } from './land.js';
@@ -38,12 +38,19 @@ export function mountConfig(host, on) {
     <div role="tabpanel" id="cf-fonts" aria-labelledby="cf-tab-fonts" data-panel="fonts">
     <section><h3 class="sub">Fonts</h3>
       <div class="cf-grid">
-        <label for="cf-head">Headings</label><select id="cf-head">${HEADS.map((f) => `<option>${esc(f.name)}</option>`).join('')}</select>
-        <label for="cf-body">Text</label><select id="cf-body">${BODIES.map((f) => `<option>${esc(f.name)}</option>`).join('')}</select>
+        <label for="cf-head">Headings</label><select id="cf-head"></select>
+        <label for="cf-body">Text</label><select id="cf-body"></select>
         <label for="cf-size">Size</label><span><input id="cf-size" type="range" min="13" max="19" step="1"> <output id="cf-size-o"></output></span>
       </div>
       <p class="cf-specimen"><span class="h">The Crown of Valmark</span><br>Gold 1,234,567 · Land 430 acres · Might 80,904</p>
       <button type="button" class="btn" id="cf-reset">Default fonts</button></section>
+    <section><h3 class="sub">Your own font</h3>
+      <p class="dim">Any family from <a href="https://fonts.google.com" target="_blank" rel="noopener">Google Fonts</a>, by its name (letters, numbers and spaces, as Google writes it).</p>
+      <div class="cf-grid cf-own">
+        <label for="cf-own-head">Headings</label><span class="field"><input id="cf-own-head" type="text" maxlength="50" placeholder="e.g. Spectral SC" autocomplete="off" spellcheck="false"><button type="button" class="btn" data-own="head">Use</button></span>
+        <label for="cf-own-body">Text</label><span class="field"><input id="cf-own-body" type="text" maxlength="50" placeholder="e.g. Nunito Sans" autocomplete="off" spellcheck="false"><button type="button" class="btn" data-own="body">Use</button></span>
+      </div>
+      <p class="doing" id="cf-own-msg" aria-live="polite" hidden></p></section>
     <p class="dim small">These settings are kept in this browser only.</p>
     </div>
     <div role="tabpanel" id="cf-reading" aria-labelledby="cf-tab-reading" data-panel="reading">
@@ -103,7 +110,7 @@ export function mountConfig(host, on) {
     host.querySelectorAll('input[name="cf-theme"]').forEach((i) => { i.checked = i.value === l.theme; });
     $('orn').checked = l.ornaments;
     $('tex').checked = l.texture;
-    $('head').value = l.fonts.head; $('body').value = l.fonts.body; $('size').value = l.fonts.size; $('size-o').textContent = `${l.fonts.size}px`;
+    $('head').innerHTML = fontOptions(HEADS, l.fonts.head, 'head'); $('body').innerHTML = fontOptions(BODIES, l.fonts.body, 'body'); $('size').value = l.fonts.size; $('size-o').textContent = `${l.fonts.size}px`;
     $('upg').checked = upgradeRows();
     host.querySelectorAll('input[name="cf-icon"]').forEach((i) => { i.checked = i.value === landIcon(); });
     host.querySelectorAll('input[name="cf-adv"]').forEach((i) => { i.checked = i.value === advisorMode(); });
@@ -164,6 +171,23 @@ export function mountConfig(host, on) {
     $('size-o').textContent = `${fonts.size}px`;
   });
   on($('reset'), 'click', () => { setLook({ fonts: { ...FONT_DEFAULTS } }); fill(); });
+  // Your own font: a plain name only (looklab.js), used once Google Fonts has it.
+  const ownSay = (text, bad = false) => { const m = $('own-msg'); m.hidden = false; m.textContent = text; m.classList.toggle('short', bad); };
+  on(host, 'click', async (ev) => {
+    const b = ev.target.closest('[data-own]');
+    if (!b) return;
+    const k = b.dataset.own, n = $(`own-${k}`).value.trim().replace(/\s+/g, ' ');
+    if (!n) { ownSay('Type the name of a Google Fonts family first.', true); return; }
+    if (!validFontName(n)) { ownSay('Only letters, numbers and single spaces, 50 at most: a font\'s name as Google Fonts writes it.', true); return; }
+    b.disabled = true;
+    ownSay(`Looking for ${n} on Google Fonts…`);
+    const ok = await tryFont(n);
+    b.disabled = false;
+    if (!ok) { ownSay(`Google Fonts has no family called ${n}. Check the spelling and capitals.`, true); return; }
+    setLook({ fonts: { ...look().fonts, [k]: `${CUSTOM}${n}` } });
+    fill();
+    ownSay(`${n} is now your ${k === 'head' ? 'heading' : 'text'} font.`);
+  });
   fill();
   showTab(tab);
   return {

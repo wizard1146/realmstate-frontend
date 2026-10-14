@@ -1,7 +1,10 @@
 // Straightline's look: a theme (colours, a medieval set of its own) and fonts (heading face, body face, size),
 // like the War Room's palette and font labs. Two buttons in the header and two panels; P and F open them.
 // Themes are CSS blocks keyed on html[data-line-theme] (line.css); fonts are three CSS properties on :root.
-// Web faces load from Google Fonts only when picked; whichever we settle on gets self-hosted.
+// Web faces load from Google Fonts only when picked; whichever we settle on gets self-hosted. A player may also name
+// any Google Fonts family of their own (Configuration > Fonts): only a plain name is taken (letters, numbers, single
+// spaces), so nothing typed can reach the CSS or the font address as anything but a name, and it is used only once
+// Google Fonts has answered with that family.
 
 const THEME_KEY = 'realmstate.line.theme';
 const FONT_KEY = 'realmstate.line.fonts';
@@ -55,7 +58,35 @@ const FONT_DEFAULT = { head: 'Rosarivo', body: 'Source Sans 3', size: 15 };
 
 const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
 const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage off */ } };
-const byName = (list, n) => list.find((f) => f.name === n) || list[0];
+/** A player's own font: a Google Fonts family name, plain (letters, numbers, single spaces; 50 at most). */
+export const CUSTOM = 'custom:';
+export const validFontName = (n) => typeof n === 'string' && n.length <= 50 && /^[A-Za-z0-9]+( [A-Za-z0-9]+)*$/.test(n);
+const FALLBACK = { head: 'Georgia, serif', body: 'system-ui, -apple-system, "Segoe UI", sans-serif' };
+const customFace = (n, kind) => ({ name: `${CUSTOM}${n}`, label: `${n} · yours`, css: `"${n}", ${FALLBACK[kind]}`, src: WEB, gf: n.replace(/ /g, '+') });
+const byName = (list, n, kind) => {
+  if (typeof n === 'string' && n.startsWith(CUSTOM) && validFontName(n.slice(CUSTOM.length))) return customFace(n.slice(CUSTOM.length), kind);
+  return list.find((f) => f.name === n) || list[0];
+};
+/** A select's options: the list's faces, and the player's own font when it's the one chosen. */
+export const fontOptions = (list, current, kind) => [...list, ...(String(current).startsWith(CUSTOM) ? [byName(list, current, kind)] : [])]
+  .map((f) => `<option value="${f.name.replace(/"/g, '')}"${f.name === current ? ' selected' : ''}>${f.label || f.name}${f.src === WEB && !f.label ? ' · web' : ''}</option>`).join('');
+/** Whether Google Fonts has a family by this name: loads it (only a valid name), true once a face of it is ready. */
+export async function tryFont(n) {
+  if (!validFontName(n)) return false;
+  const face = customFace(n, 'body');
+  const ok = await new Promise((resolve) => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `https://fonts.googleapis.com/css2?family=${face.gf}&display=swap`;
+    link.onload = () => resolve(true);
+    link.onerror = () => { link.remove(); resolve(false); };   // Google Fonts answers an unknown family with an error
+    document.head.append(link);
+  });
+  if (!ok) return false;
+  loaded.add(face.gf);
+  try { await document.fonts.load(`16px "${n}"`); } catch { /* the check below says */ }
+  return document.fonts.check(`16px "${n}"`);
+}
 const loaded = new Set();
 function loadWeb(face) {
   if (face.src !== WEB || loaded.has(face.gf)) return;
@@ -76,7 +107,7 @@ export function apply({ theme, fonts, ornaments, texture } = {}) {
   if (theme === 'auto') delete root.dataset.lineTheme; else root.dataset.lineTheme = theme;
   root.dataset.lineOrn = ornaments ? 'on' : 'off';
   root.dataset.lineTex = texture ? 'on' : 'off';
-  const h = byName(HEADS, fonts.head), b = byName(BODIES, fonts.body);
+  const h = byName(HEADS, fonts.head, 'head'), b = byName(BODIES, fonts.body, 'body');
   loadWeb(h); loadWeb(b);
   root.style.setProperty('--l-head-font', h.css);
   root.style.setProperty('--l-body-font', b.css);
@@ -100,7 +131,6 @@ export function clear() {
   for (const p of ['--l-head-font', '--l-body-font', '--l-size']) root.style.removeProperty(p);
 }
 
-const opt = (f, sel) => `<option value="${f.name}"${f.name === sel ? ' selected' : ''}>${f.name}${f.src === WEB ? ' · web' : ''}</option>`;
 
 /** The two buttons (#l-theme, #l-fonts, already in the header) and their panels. `blocked()` turns the keys off. */
 export function mountLook(root, on, { blocked = () => false } = {}) {
@@ -117,8 +147,8 @@ export function mountLook(root, on, { blocked = () => false } = {}) {
   const fpanel = document.createElement('section');
   fpanel.className = 'look-panel'; fpanel.id = 'l-fontpanel'; fpanel.hidden = true; fpanel.setAttribute('aria-label', 'Fonts');
   fpanel.innerHTML = `<header><b>Fonts</b><span class="dim">F toggles</span><button type="button" class="x" data-close aria-label="Close">×</button></header>
-    <label>Headings <select data-k="head">${HEADS.map((f) => opt(f, fonts.head)).join('')}</select></label>
-    <label>Body <select data-k="body">${BODIES.map((f) => opt(f, fonts.body)).join('')}</select></label>
+    <label>Headings <select data-k="head">${fontOptions(HEADS, fonts.head, 'head')}</select></label>
+    <label>Body <select data-k="body">${fontOptions(BODIES, fonts.body, 'body')}</select></label>
     <label>Size <span class="row"><input data-k="size" type="range" min="13" max="19" step="1" value="${fonts.size}"> <output>${fonts.size}px</output></span></label>
     <p class="specimen"><span class="h">The Crown of Valmark</span><br>Gold 1,234,567 · Land 430 acres · Might 80,904</p>
     <p class="dim small">Web faces load from Google Fonts while we choose; the chosen ones get self-hosted.</p>
@@ -145,7 +175,9 @@ export function mountLook(root, on, { blocked = () => false } = {}) {
     if (ev.target.name === 'l-theme') { theme = ev.target.value; write(THEME_KEY, theme); apply({ theme }); }
     if (ev.target.dataset.k === 'orn') { ornaments = ev.target.checked; write(ORN_KEY, ornaments); apply({ ornaments }); }
   });
-  const sync = () => { fpanel.querySelector('[data-k="head"]').value = fonts.head; fpanel.querySelector('[data-k="body"]').value = fonts.body; fpanel.querySelector('[data-k="size"]').value = fonts.size; fpanel.querySelector('output').textContent = `${fonts.size}px`; };
+  const sync = () => {
+    fpanel.querySelector('[data-k="head"]').innerHTML = fontOptions(HEADS, fonts.head, 'head');
+    fpanel.querySelector('[data-k="body"]').innerHTML = fontOptions(BODIES, fonts.body, 'body'); fpanel.querySelector('[data-k="size"]').value = fonts.size; fpanel.querySelector('output').textContent = `${fonts.size}px`; };
   on(fpanel, 'input', (ev) => {
     const k = ev.target.dataset.k;
     if (!k) return;
