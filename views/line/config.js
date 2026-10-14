@@ -1,5 +1,5 @@
 // Straightline's Configuration: how the game looks and reads for you, kept in this browser, in tabs (Look, Fonts,
-// Reading, Images, News, Intrigue). The look (theme, ornaments, fonts, the background texture) is looklab's, the same settings as the header's palette and Aa panels; times in UTC or your
+// Reading, Images, News, Chat, Intrigue). The look (theme, ornaments, fonts, the background texture) is looklab's, the same settings as the header's palette and Aa panels; times in UTC or your
 // own zone are core's (store.js).
 import { setClock, isUtc } from '../../core/store.js';
 import { esc } from '../../core/words.js';
@@ -10,8 +10,9 @@ import { LAND_ICONS, LAND_ICON_KEY, landIcon, iconUrl } from './land.js';
 import { pins, setPins } from '../../core/intelprefs.js';
 import { buildingGroups } from '../../core/land.js';
 import { NEWS_GROUPS, newsOff, setNewsOff, newsQuiet, setNewsQuiet } from '../../core/newsprefs.js';
+import { ALERT_MODES, CHAT_LABEL, alertModes, setAlertMode } from './chatbox.js';
 
-const TABS = [['look', 'Look'], ['fonts', 'Fonts'], ['reading', 'Reading'], ['images', 'Images'], ['news', 'News'], ['intrigue', 'Intrigue']];
+const TABS = [['look', 'Look'], ['fonts', 'Fonts'], ['reading', 'Reading'], ['images', 'Images'], ['news', 'News'], ['chat', 'Chat'], ['intrigue', 'Intrigue']];
 /** Tabs since split up, and where their settings went. */
 const OLD_TABS = { general: 'look', texture: 'look' };
 const KEY = 'realmstate.line.config.tab';
@@ -78,6 +79,14 @@ export function mountConfig(host, on) {
         <div class="cf-pinbtns"><button type="button" class="btn" id="cf-news-all">Show all</button></div></section>
       <p class="dim small">These settings are kept in this browser only.</p>
     </div>
+    <div role="tabpanel" id="cf-chat" aria-labelledby="cf-tab-chat" data-panel="chat">
+      <section><h3 class="sub">New messages</h3>
+        <p class="dim">While a channel isn't on screen, how its new messages show. <b>Count only</b>: a number on the Chat button. <b>Bubble</b>: also the newest message, beside the button, for a few seconds. <b>Feed</b>: also the last few messages, stacked by the button, each fading after half a minute. Click either to open that channel.</p>
+        <table class="tbl cf-news cf-chat"><thead><tr><th scope="col">Channel</th>${ALERT_MODES.map(([, l]) => `<th scope="col">${esc(l)}</th>`).join('')}</tr></thead><tbody>
+        ${Object.entries(CHAT_LABEL).map(([c, name]) => `<tr><th scope="row" id="cf-ch-${c}">${esc(name)}</th>${ALERT_MODES.map(([k, l]) =>
+          `<td><input type="radio" name="cf-chat-${c}" value="${k}" aria-label="${esc(name)}: ${esc(l)}"></td>`).join('')}</tr>`).join('')}</tbody></table></section>
+      <p class="dim small">These settings are kept in this browser only.</p>
+    </div>
     <div role="tabpanel" id="cf-intrigue" aria-labelledby="cf-tab-intrigue" data-panel="intrigue">
       <section><h3 class="sub">Survey cards</h3>
         <p class="dim">What a survey's card shows on the Intrigue page, after their land: each building's share of it. The full survey opens when you click its card.</p>
@@ -105,6 +114,8 @@ export function mountConfig(host, on) {
     host.querySelectorAll('input[name="cf-news"]').forEach((i) => { i.checked = !off.has(i.value); });
     // A pop-up only for kinds in your News: otherwise it's unticked and can't be changed.
     host.querySelectorAll('input[name="cf-pop"]').forEach((i) => { const listed = !off.has(i.value); i.disabled = !listed; i.checked = listed && !quiet.has(i.value); i.closest('tr').classList.toggle('off', !listed); });
+    const am = alertModes();
+    host.querySelectorAll('input[name^="cf-chat-"]').forEach((i) => { i.checked = am[i.name.slice(8)] === i.value; });
     const p = pins();
     host.querySelectorAll('input[name="cf-pin"]').forEach((i) => { i.checked = p.includes(i.value); });
   }
@@ -140,6 +151,7 @@ export function mountConfig(host, on) {
     else if (t.name === 'cf-adv') { try { localStorage.setItem(ADVISOR_KEY, t.value); } catch { /* storage off */ } }
     else if (t.id === 'cf-glyph') { try { localStorage.setItem(GLYPH_KEY, JSON.stringify(t.checked)); } catch { /* storage off */ } }
     else if (t.name === 'cf-pin') savePins();
+    else if (t.name?.startsWith('cf-chat-')) setAlertMode(t.name.slice(8), t.value);
     else if (t.name === 'cf-news') { setNewsOff([...host.querySelectorAll('input[name="cf-news"]')].filter((i) => !i.checked).map((i) => i.value)); fill(); }
     else if (t.name === 'cf-pop') setNewsQuiet([...host.querySelectorAll('input[name="cf-pop"]')].filter((i) => !i.disabled && !i.checked).map((i) => i.value).concat([...newsQuiet()].filter((g) => host.querySelector(`input[name="cf-pop"][value="${g}"]`)?.disabled)));
     else if (t.id === 'cf-upg') { try { localStorage.setItem(UPGRADES_KEY, JSON.stringify(t.checked)); } catch { /* storage off */ } }

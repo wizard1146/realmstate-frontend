@@ -3,7 +3,9 @@
 // where it sits and its size are remembered. Channels are tabs (World, Realm, State), or with Mix on, tickboxes:
 // the ticked channels in one list, each line marked with its channel, and a "to" picker for sending.
 // It stays open as you move between pages; only × (or Esc inside it, or C) closes it. Unread messages show on each
-// channel as a count in brackets, and the channel flashes.
+// channel as a count in brackets, and the channel flashes. While a channel isn't on screen, its new messages can also
+// show beside the Chat button (Configuration > Chat, per channel): a bubble with the newest, or a feed of the last
+// few lines, each fading after a while; either opens the chat on that channel.
 // Messages, unread counts, drafts and sending (slash commands too) are core's (store.js, actions.js).
 import { store, markRead, CHANNELS } from '../../core/store.js';
 import * as act from '../../core/actions.js';
@@ -15,6 +17,22 @@ const LABEL = { world: 'World', realm: 'Realm', state: 'State' };
 const TAG = { world: 'W', realm: 'R', state: 'S' };
 const MIN_W = 300, MIN_H = 260, GAP = 8;
 const read = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
+
+/** How each channel tells of new messages while it isn't on screen: 'count' (the Chat button's count only), 'bubble'
+ *  or 'feed'. Configuration > Chat sets it. */
+export const ALERT_KEY = 'realmstate.line.chat.alerts';
+export const ALERT_MODES = [['count', 'Count only'], ['bubble', 'Bubble'], ['feed', 'Feed']];
+export const CHAT_LABEL = LABEL;
+export function alertModes() {
+  let v = {};
+  try { v = JSON.parse(localStorage.getItem(ALERT_KEY)) || {}; } catch { /* storage off */ }
+  return Object.fromEntries(CHANNELS.map((c) => [c, ALERT_MODES.some(([k]) => k === v[c]) ? v[c] : 'count']));
+}
+export function setAlertMode(ch, mode) {
+  const v = { ...alertModes(), [ch]: mode };
+  try { localStorage.setItem(ALERT_KEY, JSON.stringify(v)); } catch { /* storage off */ }
+}
+const BUBBLE_MS = 7000, FEED_MS = 30000, FEED_MAX = 4;
 
 export function mountChatbox(root, on) {
   const saved = read();
@@ -210,13 +228,68 @@ export function mountChatbox(root, on) {
   chrome();
   if (st.open) { place(); render(true); syncInput(); seen(); }
 
+  // ---------- a bubble or a feed beside the Chat button, for channels not on screen ----------
+  const bubble = document.createElement('div');
+  bubble.className = 'lchat-bubble';
+  bubble.setAttribute('role', 'status');
+  bubble.hidden = true;
+  const feed = document.createElement('div');
+  feed.className = 'lchat-feed';
+  feed.setAttribute('aria-label', 'New chat messages');
+  feed.innerHTML = '<ul></ul><button type="button" class="x" aria-label="Clear these">×</button>';
+  feed.hidden = true;
+  root.append(bubble, feed);
+  const line = (m, ch) => `<b class="ch-${ch}">${TAG[ch]}</b> <span class="who">${esc(m.name)}:</span> ${esc(String(m.text).slice(0, 160))}`;
+  let bubbleTimer = 0;
+  function pop(m, ch) {
+    bubble.innerHTML = `<button type="button" data-open-ch="${ch}" title="Open ${LABEL[ch]} chat">${line(m, ch)}</button>`;
+    bubble.hidden = false;
+    stack();
+    clearTimeout(bubbleTimer);
+    bubbleTimer = setTimeout(() => { bubble.hidden = true; stack(); }, BUBBLE_MS);
+  }
+  function addFeed(m, ch) {
+    const ul = feed.querySelector('ul'), li = document.createElement('li');
+    li.innerHTML = `<button type="button" data-open-ch="${ch}" title="Open ${LABEL[ch]} chat">${line(m, ch)}</button>`;
+    ul.append(li);
+    while (ul.children.length > FEED_MAX) ul.firstElementChild.remove();
+    feed.hidden = false;
+    stack();
+    setTimeout(() => { li.remove(); if (!ul.children.length) { feed.hidden = true; stack(); } }, FEED_MS);
+  }
+  /** The feed sits just above the Chat button, and the bubble above the feed (or the button). */
+  function stack() {
+    const b = btn.getBoundingClientRect(), base = window.innerHeight - b.top + 8;
+    feed.style.bottom = `${base}px`;
+    bubble.style.bottom = `${base + (feed.hidden ? 0 : feed.offsetHeight + 8)}px`;
+  }
+  function clearAlerts() { bubble.hidden = true; feed.hidden = true; feed.querySelector('ul').replaceChildren(); }
+  for (const el of [bubble, feed]) {
+    on(el, 'click', (ev) => {
+      if (ev.target.closest('.x')) { clearAlerts(); return; }
+      const b = ev.target.closest('[data-open-ch]');
+      if (!b) return;
+      st.mix = false; st.tab = b.dataset.openCh; chrome();
+      clearAlerts();
+      show(true);
+    });
+  }
+  on(window, 'resize', stack);
+  /** A new message: told beside the button, as its channel asks, unless the chat already shows it (or it's yours). */
+  function alert(d) {
+    const m = d.added, ch = d.channel;
+    if (!m || (store.house && m.house === store.house.id) || (st.open && shown().includes(ch))) return;
+    const mode = alertModes()[ch];
+    if (mode === 'bubble') pop(m, ch); else if (mode === 'feed') addFeed(m, ch);
+  }
+
   return {
     open() { show(true); },
     update(c) {
-      if (c.has('chat')) { const ch = c.get('chat'); if (!ch.length || ch.some((d) => !d.channel || shown().includes(d.channel))) render(false); seen(); }
+      if (c.has('chat')) { const ch = c.get('chat'); ch.filter((d) => d.added).forEach(alert); if (!ch.length || ch.some((d) => !d.channel || shown().includes(d.channel))) render(false); seen(); }
       if (c.has('chat') || c.has('unread')) counts();
       if (c.has('timemode')) render(false);
     },
-    destroy() { btn.remove(); win.remove(); },
+    destroy() { clearTimeout(bubbleTimer); btn.remove(); win.remove(); bubble.remove(); feed.remove(); },
   };
 }

@@ -642,6 +642,29 @@
   & .lchat-btn .n:empty { display: none; }   /* no empty badge nudging the label off centre */
   & .lchat-btn .n:not(:empty) { min-width: 1.4em; padding: 0 5px; border-radius: 9px; background: var(--l-bad); color: #fff; font-size: .78em; line-height: 1.5; text-align: center; }
   /* New messages while the box is closed: the button flashes. Unread channels: a count in brackets, and a flash. */
+  /* New messages beside the Chat button (chatbox.js): a bubble with the newest, or a feed of the last few. */
+  & :is(.lchat-bubble, .lchat-feed) { position: fixed; right: 20px; z-index: 34; max-width: min(380px, calc(100vw - 40px)); background: var(--l-page);
+    border: 1px solid var(--l-frame); border-radius: 8px; box-shadow: 0 4px 14px rgba(20, 16, 10, .18); font-size: .9em; }
+  & :is(.lchat-bubble, .lchat-feed)[hidden] { display: none; }
+  & .lchat-bubble { animation: l-pop .18s ease-out; }
+  & .lchat-bubble::after { content: ""; position: absolute; right: 28px; bottom: -6px; width: 10px; height: 10px; background: var(--l-page);
+    border-right: 1px solid var(--l-frame); border-bottom: 1px solid var(--l-frame); transform: rotate(45deg); }
+  & :is(.lchat-bubble, .lchat-feed) button[data-open-ch] { display: block; width: 100%; padding: 8px 12px; border: 0; background: none; text-align: left;
+    font: inherit; color: var(--l-ink); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 8px; }
+  & :is(.lchat-bubble, .lchat-feed) button[data-open-ch]:hover { background: color-mix(in srgb, var(--l-gold) 10%, transparent); }
+  & :is(.lchat-bubble, .lchat-feed) button[data-open-ch]:focus-visible { outline: 2px solid var(--l-gold); outline-offset: -2px; }
+  & :is(.lchat-bubble, .lchat-feed) .who { font-weight: 600; }
+  & :is(.lchat-bubble, .lchat-feed) b[class^="ch-"] { display: inline-block; min-width: 1.4em; margin-right: 2px; text-align: center; border-radius: 3px; font-size: .78em;
+    color: var(--l-page); background: var(--l-muted); }
+  & :is(.lchat-bubble, .lchat-feed) b.ch-world { background: var(--l-blue); } & :is(.lchat-bubble, .lchat-feed) b.ch-state { background: var(--l-gold); }
+  & .lchat-feed { display: flex; align-items: flex-start; padding: 2px 0; }
+  & .lchat-feed ul { flex: 1; min-width: 0; margin: 0; padding: 0; list-style: none; }
+  & .lchat-feed li + li { border-top: 1px solid var(--l-rule); }
+  & .lchat-feed li button[data-open-ch] { border-radius: 0; padding: 5px 10px; }
+  & .lchat-feed .x { border: 0; background: none; color: var(--l-muted); font-size: 1.2rem; line-height: 1; padding: 4px 8px; cursor: pointer; }
+  & .lchat-feed .x:hover { color: var(--l-ink); }
+  @keyframes l-pop { from { opacity: 0; transform: translateY(6px); } }
+  @media (prefers-reduced-motion: reduce) { & .lchat-bubble { animation: none; } }
   & .lchat-btn.flash { animation: l-flash 1.1s ease-in-out infinite; }
   & .lchat .has-unread { color: var(--l-ink); font-weight: 600; animation: l-tab-flash 1.6s ease-in-out infinite; }
   & .lchat .n { font-weight: 700; color: var(--l-bad); }
