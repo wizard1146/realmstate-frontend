@@ -1,7 +1,8 @@
 // Straightline's Science: books and scientists at a glance; each category (economy, military, arcane) as a card with
 // its rank and the way to the next; paper and moving scientists in one place; then every science in its category's
-// table, each with its own Invest (a count, Max, the bonus now and after). Between them, the curve every science
-// follows, with your sciences on it (and where a typed count would take one). Logic: core/science.js, actions.
+// table, each with its own Invest (a count, Max, the bonus now and after). The curve every science follows, with
+// your sciences on it (and where a typed count would take one), opens from ⓘ on the efficiency card; on a page wide
+// enough it stands beside everything instead, in a tall panel. Logic: core/science.js, actions.
 import { store } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc } from '../../core/words.js';
@@ -15,7 +16,7 @@ const niceStep = (span, n) => { const raw = span / n || 1, p = 10 ** Math.floor(
 const short = (v) => (v >= 1e6 ? `${+(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `${+(v / 1e3).toFixed(1)}k` : fmt(v));
 
 export function mountScience(host, on) {
-  host.innerHTML = `<div class="lpart lsci">
+  host.innerHTML = `<div class="lpart lsci"><div class="sc-main">
     <dl class="st-glance sc-glance" id="ls2-glance"></dl>
     <div class="sc-cats" id="ls2-cats"></div>
     <div class="sc-tools">
@@ -32,9 +33,13 @@ export function mountScience(host, on) {
         <button class="btn" id="ls2-mgo">Move</button></form>
     </div>
     <p class="note" id="ls2-ladder"></p>
-    <section class="sc-graph" id="ls2-curve" aria-labelledby="ls2-ch"><h3 class="sub" id="ls2-ch">The curve</h3>
-      <p class="what" id="ls2-cwhat"></p><div class="sc-chart" id="ls2-chart"></div><p class="sc-read" id="ls2-read" aria-live="polite"></p></section>
-    <div id="ls2-list"></div>
+    <div id="ls2-list"></div></div>
+    <aside class="sc-side" id="ls2-side" aria-label="The science curve">
+      <section class="sc-graph" id="ls2-curve" aria-labelledby="ls2-ch"><h3 class="sub" id="ls2-ch">The curve</h3>
+        <p class="what" id="ls2-cwhat"></p><div class="sc-chart" id="ls2-chart"></div><p class="sc-read" id="ls2-read" aria-live="polite"></p></section></aside>
+    <dialog class="ldlg sc-dlg" id="ls2-dlg" aria-labelledby="ls2-dlgh">
+      <header><h2 id="ls2-dlgh">The curve</h2><button type="button" class="x" data-close aria-label="Close (Esc)">×</button></header>
+      <div class="body" id="ls2-dlgb"></div></dialog>
   </div>`;
   const $ = (id) => host.querySelector(`#ls2-${id}`);
   const P = store.rules.params;
@@ -46,7 +51,8 @@ export function mountScience(host, on) {
     const card = (k, v, note = '') => `<div><dt>${k}</dt><dd>${v}</dd>${note ? `<dd class="rank"><span>${note}</span></dd>` : ''}</div>`;
     $('glance').innerHTML = card('Books', fmt(total(s.books)), `+${fmt(next)} next tick`) + card('Scientists', fmt(total(s.scientists)), `new ones join ${s.focus}`)
       + card('Invested', fmt(s.books_invested), 'books in sciences')
-      + card('Science efficiency', eff.exact ? `${(eff.mult * 100).toFixed(1)}%` : '–', eff.exact ? 'libraries and academics' : 'known once a science has books');
+      + card('Science efficiency', eff.exact ? `${(eff.mult * 100).toFixed(1)}%` : '–', eff.exact ? 'libraries and academics' : 'known once a science has books').replace('</div>',
+        hasCurve() ? '<dd class="sc-infod"><button type="button" class="sc-info" data-curve aria-haspopup="dialog">ⓘ The curve</button></dd></div>' : '</div>');
   }
 
   // ---------- the categories ----------
@@ -133,7 +139,7 @@ export function mountScience(host, on) {
     }
     pts.sort((a, b) => a.inv - b.inv || a.now - b.now);
     $('cwhat').textContent = `Every science follows this curve: its bonus is its limit times how far along it is. Books bring less the more a science has; at your efficiency${eff.exact ? '' : ' (≈)'}, a science gives half its limit at ${fmt(Math.round(half))} books.`;
-    const W = Math.max(280, Math.min(1100, Math.round(box.clientWidth || 720))), H = W > 720 ? 270 : 220, L = 46, R = 14, T = 12, B = 30;
+    const W = Math.max(280, Math.min(1100, Math.round(box.clientWidth || 720))), H = box.closest('.sc-side') ? Math.round(W * 1.3) : W > 720 ? 270 : 220, L = 46, R = 14, T = 12, B = 30;
     const top = Math.max(half, ...pts.map((p) => p.inv * 1.25)), xs = niceStep(top, W > 520 ? 6 : 3), xmax = Math.ceil(top / xs) * xs;
     const x = (v) => L + (v / xmax) * (W - L - R), y = (f) => T + (1 - f) * (H - T - B);
     const g = [];
@@ -183,6 +189,30 @@ export function mountScience(host, on) {
   });
   let sized = 0;
   on(window, 'resize', () => { clearTimeout(sized); sized = setTimeout(() => { if (host.querySelector('.lsci')) curve(); }, 150); });
+
+  // ---------- where the curve stands: beside the page when it's wide enough, else in a window from ⓘ ----------
+  const WIDE = 1500;   // the room around the page (px) from which the panel fits beside the tables (line.css widens the page)
+  const lsci = host.querySelector('.lsci'), dlg = $('dlg');
+  let opener = null;
+  function placeCurve() {
+    if (!$('curve')) return;   // no science data: the page is a note
+    const wide = lsci.parentElement.clientWidth >= WIDE;
+    lsci.classList.toggle('wide', wide);
+    if (wide && dlg.open) dlg.close();
+    const home = wide ? $('side') : $('dlgb');
+    if ($('curve').parentElement !== home) { home.append($('curve')); curve(); }
+  }
+  const sizes = new ResizeObserver(() => placeCurve());
+  sizes.observe(lsci.parentElement);
+  on(host, 'click', (ev) => {
+    const b = ev.target.closest('[data-curve]');
+    if (!b) return;
+    opener = b;
+    dlg.showModal();
+    curve();
+  });
+  on(dlg, 'click', (ev) => { if (ev.target === dlg || ev.target.closest('[data-close]')) dlg.close(); });
+  on(dlg, 'close', () => { if (opener?.isConnected) opener.focus(); else host.querySelector('[data-curve]')?.focus(); });
   on($('list'), 'input', after);
   on($('list'), 'click', async (ev) => {
     const mx = ev.target.closest('[data-smax]'), go = ev.target.closest('[data-invest]');
@@ -196,6 +226,6 @@ export function mountScience(host, on) {
   return {
     update(c) { if (!c || c.has('house') || c.has('rules')) draw(); },
     tick() {},
-    destroy() { host.replaceChildren(); },
+    destroy() { sizes.disconnect(); host.replaceChildren(); },
   };
 }

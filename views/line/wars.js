@@ -133,7 +133,7 @@ export function mountWars(host, on) {
     $('dlg-h').innerHTML = `${an} <span class="vs">vs</span> ${bn}`;
     const what = t.kind === 'ended' ? 'A war, ended' : 'At war';
     $('dlg-b').innerHTML = `<p class="wr-legend">${what} · ticks ${fmt(t.from)}–${fmt(t.to)}. <b class="a">${an}</b> in ink, <b class="b">${bn}</b> in red; the shaded part is the war.</p><p class="dim">Loading…</p>`;
-    if (!dlg.open) dlg.showModal();
+    if (!dlg.open) { place(); dlg.showModal(); }
     const d = await warSeries(t.id, t.kind === 'war');
     if (showing !== k || !dlg.open) return;
     $('dlg-b').querySelector('.dim:last-child').outerHTML = warView(d, t.from, an, bn);
@@ -187,8 +187,17 @@ export function mountWars(host, on) {
     ev.preventDefault();
     show(pg + (ev.key === 'ArrowRight' ? 1 : -1));
   });
+  // On a desktop the window stays over the page's own area, clear of the header and the menu (line.css reads these).
+  function place() {
+    const main = host.closest('.line-main'), r = main?.getBoundingClientRect();
+    const wide = matchMedia('(min-width: 761px)').matches && r;
+    for (const [k, v] of Object.entries({ l: r?.left, t: r?.top, w: r?.width, h: r?.height })) {
+      if (wide) dlg.style.setProperty(`--dlg-${k}`, `${Math.round(v)}px`); else dlg.style.removeProperty(`--dlg-${k}`);
+    }
+    dlg.classList.toggle('inmain', !!wide);
+  }
   let fitting = 0;
-  on(window, 'resize', () => { clearTimeout(fitting); fitting = setTimeout(() => { if (dlg.open) fit(); }, 150); });
+  on(window, 'resize', () => { clearTimeout(fitting); fitting = setTimeout(() => { if (dlg.open) { place(); fit(); } }, 150); });
   on(host, 'click', (ev) => { const b = ev.target.closest('[data-track]'); if (b) openTrack(b.dataset.track, b); });
   on(dlg, 'click', (ev) => { if (ev.target === dlg || ev.target.closest('[data-close]')) dlg.close(); });
   on(dlg, 'close', () => { showing = ''; if (opener?.isConnected) opener.focus(); else host.querySelector(`[data-track="${CSS.escape(opener?.dataset.track || '')}"]`)?.focus(); });

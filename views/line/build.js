@@ -99,14 +99,14 @@ export function mountBuild(host, on) {
   }
   /** The rows, once (the buildings come from /rules); fillRows() keeps their figures current without touching the inputs. */
   function makeRows() {
-    // Grouped by purpose: a small table each, one under another at the full width (line.css), so a row stays on one line.
+    // Grouped by purpose: a small table each, one under another at the full width, a row on one line: Benefits ends in
+    // "…" where it runs out of room (all of it in the cell's title), and goes first on a narrow screen (fit.js).
     const groups = groupsOf();
-    tbody.innerHTML = groups.map(([g, ds]) => `<section class="lb-grp"><h3 class="sub">${esc(g)}</h3><table class="tbl lb-tbl">
-      <colgroup><col class="c-name"><col class="c-does"><col class="c-own"><col class="c-pct"><col class="c-n"><col class="c-cost"></colgroup>
-      <thead><tr><th>Building</th><th title="What it gives you now; point at a building's name for what the next 1% of your land in it would add">Benefits</th><th class="num">Owned</th><th class="num" title="Its share of your acres">Share</th><th>Count</th><th class="num">Cost</th></tr></thead><tbody>` + ds.map((d, k) => {
+    tbody.innerHTML = groups.map(([g, ds]) => `<section class="lb-grp"><h3 class="sub">${esc(g)}</h3><table class="tbl lb-tbl fit">
+      <thead><tr><th>Building</th><th data-pri="5" title="What it gives you now; point at a building's name for what the next 1% of your land in it would add">Benefits</th><th class="num">Owned</th><th class="num" data-pri="4" title="Its share of your acres">Share</th><th>Count</th><th class="num" data-pri="3">Cost</th></tr></thead><tbody>` + ds.map((d, k) => {
       const id = esc(d.building);
       return `<tr data-row="${id}"${k % 2 ? ' class="alt"' : ''}><th scope="row">${wikiName(d)}<span class="dim small" data-cap></span></th>
-        <td class="does small" title="${esc(d.description)}" data-does></td>
+        <td class="does small fx-flex" title="${esc(d.description)}" data-does></td>
         <td class="num" data-own></td><td class="num pct" data-pct></td>
         <td class="num acts"><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-b="${id}" aria-label="${esc(d.name)} to build"><button type="button" class="btn mini" data-max="${id}" aria-label="Most ${esc(d.name)} you can build with what the other rows leave">MAX</button><button type="button" class="x" data-x="${id}" aria-label="Clear ${esc(d.name)}" title="Clear this row">×</button></td>
         <td class="num cost" data-cost="${id}"></td></tr>`;
@@ -127,12 +127,12 @@ export function mountBuild(host, on) {
       const next = x ? x.more.map((y) => y.short).join(' · ') : '';
       const cell = tr.querySelector('[data-does]');
       // Both in one place (stacked), so the row is as tall as the longer and doesn't move when they swap.
-      cell.innerHTML = (x ? `<span class="bn"><span class="bn-now">${now ? esc(now) : '<span class="nil" aria-label="nothing yet">–</span>'}</span>`
+      cell.innerHTML = '<span class="bn-line">' + (x ? `<span class="bn"><span class="bn-now">${now ? esc(now) : '<span class="nil" aria-label="nothing yet">–</span>'}</span>`
         + `<span class="bn-next" aria-hidden="true"><b>Next 1%${x.extra ? ` (+${fmt(x.extra)})` : ''}:</b> ${esc(next || 'no change')}</span></span>` : esc(d.description))
-        + (needs ? `<span class="needs">needs ${esc(needs)}</span>` : '');
+        + (needs ? `<span class="needs">needs ${esc(needs)}</span>` : '') + '</span>';
       // Its share of your acres.
       tr.querySelector('[data-pct]').textContent = h.land ? `${(((h.buildings[id] || 0) * 100) / h.land).toFixed(1)}%` : '';
-      cell.title = `${x ? `+1% land: ${x.more.map((y) => y.short).join(' · ') || 'no change'}\n\n` : ''}${d.description}`;
+      cell.title = `${now ? `${now}\n` : ''}${needs ? `Needs ${needs}\n` : ''}${x ? `+1% land: ${x.more.map((y) => y.short).join(' · ') || 'no change'}\n\n` : ''}${d.description}`;
       // Owned, and (+n) while n more are being built.
       tr.querySelector('[data-own]').innerHTML = `${fmt(h.buildings[id] || 0)}${k ? ` <span class="bld" title="${fmt(k)} being built">+${fmt(k)}</span>` : ''}`;
       tr.querySelector('[data-max]').disabled = !exact;
@@ -202,12 +202,11 @@ export function mountBuild(host, on) {
   // ---------- raze: the same groups, smaller (no bonuses): owned, a count to raze, Max, and the gold it costs ----------
   const rz = $('rz-rows');
   function makeRazeRows() {
-    rz.innerHTML = groupsOf().map(([g, ds]) => `<section class="lb-grp"><h3 class="sub">${esc(g)}</h3><table class="tbl lb-tbl rz-tbl">
-      <colgroup><col class="c-name"><col class="c-own"><col class="c-n"><col class="c-cost"></colgroup>
-      <thead><tr><th>Building</th><th class="num">Owned</th><th>Raze</th><th class="num">Cost</th></tr></thead><tbody>`
+    rz.innerHTML = groupsOf().map(([g, ds]) => `<section class="lb-grp"><h3 class="sub">${esc(g)}</h3><table class="tbl lb-tbl rz-tbl fit">
+      <thead><tr><th>Building</th><th class="num">Owned</th><th>Raze</th><th class="num fx-flex" data-pri="3">Cost</th></tr></thead><tbody>`
       + ds.map((d, k) => `<tr data-rz="${esc(d.building)}"${k % 2 ? ' class="alt"' : ''}><th scope="row">${wikiName(d)}</th><td class="num" data-own></td>
         <td class="num acts"><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-r="${esc(d.building)}" aria-label="${esc(d.name)} to raze"><button type="button" class="btn mini" data-rzmax="${esc(d.building)}" aria-label="All the ${esc(d.name)} you can raze with the gold the other rows leave">MAX</button><button type="button" class="x" data-x="${esc(d.building)}" aria-label="Clear ${esc(d.name)}" title="Clear this row">×</button></td>
-        <td class="num cost" data-rzcost="${esc(d.building)}"></td></tr>`).join('') + '</tbody></table></section>').join('');
+        <td class="num cost fx-flex" data-rzcost="${esc(d.building)}"></td></tr>`).join('') + '</tbody></table></section>').join('');
   }
   const rzInputs = () => [...rz.querySelectorAll('input[data-r]')];
   const rzOrder = () => rzInputs().map((i) => ({ id: i.dataset.r, n: n0(i.value) })).filter((r) => r.n);
