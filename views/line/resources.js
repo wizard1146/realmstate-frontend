@@ -29,7 +29,7 @@ export function mountResources(host, on) {
   // Throne's layout (line.css): the page's full width, tables flowing into up to three columns, each kept whole.
   host.innerHTML = `<div class="throne res2${throneGlyph() ? ' glyph' : ''}"><div class="tgrid"></div><p class="dim small note" id="l-res-note"></p>
     <section class="res-refine" id="l-ref" hidden><h3 class="sub">Refine <span class="dim">turn raw materials into refined ones, at once</span></h3>
-      <table class="tbl"><thead><tr><th>Make</th><th>Recipe</th><th class="num">Times</th><th></th><th>Uses and makes</th><th></th></tr></thead><tbody id="l-ref-rows"></tbody></table></section></div>`;
+      <table class="tbl fit"><thead><tr><th data-fx="last">Make</th><th data-pri="4" data-fx="flex">Recipe</th><th class="num">Times</th><th></th><th data-pri="3" data-fx="clip">Uses and makes</th><th></th></tr></thead><tbody id="l-ref-rows"></tbody></table></section></div>`;
   const graph = mountGraph(host);
   const grid = host.querySelector('.tgrid');
 

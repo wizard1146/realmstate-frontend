@@ -84,7 +84,7 @@ export function mountWar(host, on) {
     const R = store.relations;
     if (!R) { $('rel').innerHTML = '<p class="dim">Loading relations…</p>'; return; }
     const T = R.thresholds, rows = (R.relations || []).slice().sort((a, b) => b.they_feel.points - a.they_feel.points);
-    $('rel').innerHTML = rows.length ? `<table class="tbl wr-tbl"><thead><tr><th>State</th><th>They feel</th><th>You feel</th><th class="num">Their land</th><th>War <span class="vh">(choose a state to see why)</span></th><th><span class="vh">Choose</span></th></tr></thead><tbody>
+    $('rel').innerHTML = rows.length ? `<table class="tbl wr-tbl fit"><thead><tr><th data-fx="last">State</th><th data-pri="2">They feel</th><th data-pri="3">You feel</th><th class="num" data-pri="4">Their land</th><th data-pri="5" data-fx="clip">War <span class="vh">(choose a state to see why)</span></th><th><span class="vh">Choose</span></th></tr></thead><tbody>
       ${rows.map((r) => { const why = declareWhy(r), out = r.land_ratio_bp < R.war_range_bp[0] || r.land_ratio_bp > R.war_range_bp[1];
         return `<tr><th scope="row"><a href="#state" data-open-state="${st(r.state)}">${st(r.state)}</a>${r.ceasefire_proposed_to_us ? `<br><span class="small">they ask a ${fmt(r.ceasefire_proposed_to_us)}-tick ceasefire</span>` : ''}${r.ceasefire_we_proposed ? `<br><span class="dim small">you asked ${fmt(r.ceasefire_we_proposed)}</span>` : ''}</th>
           <td>${meter(r.they_feel, T)}</td><td>${meter(r.we_feel, T)}</td><td class="num${out ? ' dim' : ''}">${pct(r.land_ratio_bp)} <span class="dim small">of yours</span></td>
@@ -182,7 +182,7 @@ export function mountWar(host, on) {
       const hs = [...(members.get(st(s)) || [])].sort((x, y) => y.land - x.land);
       const tl = hs.reduce((a, h) => a + h.land, 0), tm = hs.reduce((a, h) => a + h.might, 0);
       return `<section class="wr-side ${cls}"><h4>${title} <span class="dim">${st(s)}</span></h4>
-        <table class="tbl wr-sidetbl"><thead><tr><th>House</th><th class="num">Land</th><th class="num" title="Acres won or lost in battles between the two states in this war, as far as your news tells">In battle</th><th class="num">Might</th></tr></thead><tbody>
+        <table class="tbl wr-sidetbl fit"><thead><tr><th data-fx="last">House</th><th class="num">Land</th><th class="num" data-pri="2" title="Acres won or lost in battles between the two states in this war, as far as your news tells">In battle</th><th class="num" data-pri="3">Might</th></tr></thead><tbody>
         ${hs.map((h, i) => `<tr class="${[h.id === store.house?.id ? 'self' : '', i % 2 ? 'alt' : ''].filter(Boolean).join(' ')}"><th scope="row"><a href="#state" data-open-state="${st(s)}">${esc(h.name)}</a>${h.robot ? ' <span class="dim small">robot</span>' : ''}</th>
           <td class="num">${fmt(h.land)}</td><td class="num">${by.has(h.id) ? signed(by.get(h.id)) : '<span class="dim">–</span>'}</td><td class="num">${fmt(h.might)}</td></tr>`).join('')}</tbody>
         <tfoot><tr><th scope="row">${fmt(hs.length)} houses</th><td class="num">${fmt(tl)}</td><td></td><td class="num">${fmt(tm)}</td></tr></tfoot></table></section>`;

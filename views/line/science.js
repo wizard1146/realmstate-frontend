@@ -91,8 +91,8 @@ export function mountScience(host, on) {
       const ds = defs().filter((d) => d.category === k);
       if (!ds.length) return '';
       return `<section class="sc-grp"><h3 class="sub">${cap(k)} <span class="dim">${fmt(s.books[i])} books to invest</span></h3>
-        <table class="tbl lb-tbl sc-tbl"><colgroup><col class="c-name"><col class="c-does"><col class="c-inv"><col class="c-now"><col class="c-n"><col class="c-max"><col class="c-after"><col class="c-go"></colgroup>
-        <thead><tr><th>Science</th><th>What it does</th><th class="num">Invested</th><th>Bonus now</th><th class="num">Books</th><th></th><th>After</th><th></th></tr></thead><tbody>
+        <table class="tbl lb-tbl sc-tbl fit">
+        <thead><tr><th data-fx="last">Science</th><th data-pri="6" data-fx="flex">What it does</th><th class="num" data-pri="3">Invested</th><th data-pri="4" data-fx="clip">Bonus now</th><th class="num">Books</th><th></th><th data-pri="5" data-fx="clip">After</th><th></th></tr></thead><tbody>
         ${ds.map((d, j) => {
           const r = rowOf(d.science) || { invested: 0, bonus_bp: [] };
           const now = d.effects.map((e, x) => ({ stat: e.stat, bp: r.bonus_bp[x] || 0 }));

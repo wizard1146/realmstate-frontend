@@ -128,7 +128,7 @@ export function mountHall(host, on) {
   }
   function offers() {
     const o = store.offers;
-    const table = (rows, recv) => (rows.length ? `<table class="tbl hl-tbl"><thead><tr><th>Character</th><th>${recv ? 'From' : 'Owner'}</th><th class="num">Price</th>${recv ? '' : '<th class="num">Held</th>'}<th>Lapses</th><th><span class="vh">Answer</span></th></tr></thead><tbody>
+    const table = (rows, recv) => (rows.length ? `<table class="tbl hl-tbl fit"><thead><tr><th data-fx="last">Character</th><th data-pri="3" data-fx="clip">${recv ? 'From' : 'Owner'}</th><th class="num">Price</th>${recv ? '' : '<th class="num" data-pri="4">Held</th>'}<th data-pri="5">Lapses</th><th><span class="vh">Answer</span></th></tr></thead><tbody>
       ${rows.map((x) => `<tr><th scope="row">${esc(x.character?.name || '?')}</th><td>${esc(recv ? where(x.buyer) : where(x.character?.house))}</td><td class="num">${fmt(x.price)}</td>${recv ? '' : `<td class="num dim">${fmt(x.held)}</td>`}<td class="dim">${esc(when(x.expires_at))}</td>
         <td class="acts">${recv ? `<button type="button" class="btn mini primary" id="lh-acc-${x.offer}" data-accept="${x.offer}" aria-label="Accept ${fmt(x.price)} for ${esc(x.character?.name || '')}">Accept</button><button type="button" class="btn mini" id="lh-dec-${x.offer}" data-drop="${x.offer}" aria-label="Decline the offer for ${esc(x.character?.name || '')}">Decline</button>`
           : `<button type="button" class="btn mini" id="lh-wd-${x.offer}" data-drop="${x.offer}" aria-label="Withdraw your offer for ${esc(x.character?.name || '')}">Withdraw</button>`}</td></tr>`).join('')}</tbody></table>` : '<p class="dim">None.</p>');

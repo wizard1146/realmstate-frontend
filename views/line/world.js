@@ -39,7 +39,7 @@ export function mountWorld(host, on) {
       <div class="wd-shead"><p class="what" id="wd-swhat"></p>
         <span class="wd-views" role="group" aria-label="Show states as"><button type="button" class="btn" data-sview="list">List</button><button type="button" class="btn" data-sview="cards">Cards</button></span></div>
       <div class="wd-grid" id="wd-grid" hidden></div>
-      <div class="scrollx" id="wd-list"><table class="tbl wd-rank"><thead><tr><th class="num">#</th><th>State</th><th>Realm</th><th class="num">Houses</th>
+      <div class="scrollx" id="wd-list"><table class="tbl wd-rank fit"><thead><tr><th class="num">#</th><th data-fx="last">State</th><th data-pri="3" data-fx="clip">Realm</th><th class="num" data-pri="4">Houses</th>
         ${SORTS.map(([k, label]) => `<th class="num" data-sorth="${k}"><button type="button" class="wd-sort" data-sort="${k}">${label}</button></th>`).join('')}</tr></thead><tbody id="wd-rows"></tbody></table></div>
     </div>
   </div>`;
@@ -129,7 +129,11 @@ export function mountWorld(host, on) {
   }
   function ranking() {
     const list = allStates().filter((s) => s.houses && s.ranks).sort((a, b) => a.ranks[sort].rank - b.ranks[sort].rank || a.realm - b.realm || a.state - b.state);
-    host.querySelectorAll('[data-sorth]').forEach((th) => { th.setAttribute('aria-sort', th.dataset.sorth === sort ? 'descending' : 'none'); });
+    // The sorted column never goes for room on a narrow screen (fit.js); the other two may, renown first.
+    host.querySelectorAll('[data-sorth]').forEach((th) => {
+      th.setAttribute('aria-sort', th.dataset.sorth === sort ? 'descending' : 'none');
+      if (th.dataset.sorth === sort) delete th.dataset.pri; else th.dataset.pri = th.dataset.sorth === 'renown' ? 6 : 5;
+    });
     $('rows').innerHTML = list.map((s, k) => {
       const yours = s.realm === mine && s.state === myState;
       return `<tr class="${[yours ? 'self' : '', k % 2 ? 'alt' : ''].filter(Boolean).join(' ')}"><td class="num">${s.ranks[sort].rank}</td>

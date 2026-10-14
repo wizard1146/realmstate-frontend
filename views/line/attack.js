@@ -22,8 +22,8 @@ export function mountAttack(host, on) {
     <div class="atk-layout">
       <div class="atk-main">
         <h3 class="sub">Army</h3>
-        <table class="tbl lb-tbl atk-tbl"><colgroup><col class="c-name"><col class="c-pt"><col class="c-home"><col class="c-n"><col class="c-max"><col class="c-sum"></colgroup>
-          <thead><tr><th>Send</th><th class="num" title="Attack points each">Off</th><th class="num">At home</th><th class="num">Count</th><th></th><th class="num">Offense</th></tr></thead>
+        <table class="tbl lb-tbl atk-tbl fit">
+          <thead><tr><th data-fx="last">Send</th><th class="num" data-pri="4" title="Attack points each">Off</th><th class="num">At home</th><th class="num">Count</th><th></th><th class="num" data-pri="3">Offense</th></tr></thead>
           <tbody id="la-troops">${attackSlots(race).map((i) => `<tr data-slot="${i}"><th scope="row">${esc(race.units[i].name)}</th><td class="num pt">${unitPoints(race, i)[0]}</td><td class="num" data-home></td>
             <td class="num"><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-u="${i}" aria-label="${esc(race.units[i].name)} to send"></td>
             <td class="acts"><button type="button" class="btn mini" data-umax="${i}" aria-label="Every ${esc(race.units[i].name)} at home">MAX</button><button type="button" class="x" data-ux="${i}" aria-label="Clear ${esc(race.units[i].name)}">×</button></td><td class="num sum" data-sum></td></tr>`).join('')}</tbody>
@@ -78,7 +78,7 @@ export function mountAttack(host, on) {
     <dialog class="ldlg atk-pickdlg" id="la-dpick" aria-labelledby="la-dpick-h">
       <header><h2 id="la-dpick-h">Choose a target</h2><button type="button" class="x" data-close aria-label="Close (Esc)">×</button></header>
       <div class="body"><label class="vh" for="la-filter">Filter by name or address</label><input id="la-filter" placeholder="Filter by name or address" autocomplete="off">
-        <table class="tbl atk-picks"><thead><tr><th>House</th><th>Address</th><th>Race</th><th class="num">Land</th><th class="num">vs yours</th><th class="num">Might</th></tr></thead><tbody id="la-picks"></tbody></table>
+        <table class="tbl atk-picks fit"><thead><tr><th data-fx="last">House</th><th data-pri="2">Address</th><th data-pri="5">Race</th><th class="num">Land</th><th class="num" data-pri="3">vs yours</th><th class="num" data-pri="4">Might</th></tr></thead><tbody id="la-picks"></tbody></table>
         <p class="note">The largest houses by land. Select a row, or press Enter on it.</p></div></dialog>
   </div>`;
   const $ = (id) => host.querySelector(`#la-${id}`);

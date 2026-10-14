@@ -35,8 +35,8 @@ export function mountMilitary(host, on) {
         <span class="lb-btns"><button type="button" class="btn" id="lm-clear">Clear</button><button type="submit" form="lm-form" class="btn primary" id="lm-go">Train</button></span>
       </div>
       <form id="lm-form" novalidate>
-        <table class="tbl lb-tbl mil-tbl"><colgroup><col class="c-name"><col class="c-pt"><col class="c-pt"><col class="c-n3"><col class="c-n3"><col class="c-n3"><col class="c-n"><col class="c-max"><col class="c-each"><col class="c-cost"></colgroup>
-          <thead><tr><th>Unit</th><th class="num pt" title="Attack points each">Off</th><th class="num pt" title="Defence points each">Def</th><th class="num">Home</th><th class="num">Away</th><th class="num">Training</th><th class="num">Count</th><th></th><th class="num">Each</th><th class="num">Cost</th></tr></thead>
+        <table class="tbl lb-tbl mil-tbl fit">
+          <thead><tr><th data-fx="last">Unit</th><th class="num pt" data-pri="5" title="Attack points each">Off</th><th class="num pt" data-pri="5" title="Defence points each">Def</th><th class="num">Home</th><th class="num" data-pri="4">Away</th><th class="num" data-pri="3">Training</th><th class="num">Count</th><th></th><th class="num" data-pri="6" data-fx="clip">Each</th><th class="num" data-pri="2" data-fx="clip">Cost</th></tr></thead>
           <tbody id="lm-rows"></tbody></table>
       </form>
       <p class="note" id="lm-note"></p>
@@ -65,7 +65,7 @@ export function mountMilitary(host, on) {
 
     <div role="tabpanel" id="lm-shop" aria-labelledby="lm-tab-shop" data-panel="shop">
       <p class="what">Medics save troops in battle; upgrades make troops stronger; chariots add to an attack. Each is made at once or after the usual training time.</p>
-      <table class="tbl lb-tbl mil-shop"><thead><tr><th>Make</th><th>Each costs</th><th class="num">Count</th><th></th><th>Cost</th><th></th></tr></thead><tbody id="lm-jobs"></tbody></table>
+      <table class="tbl lb-tbl mil-shop fit"><thead><tr><th data-fx="last">Make</th><th data-pri="4" data-fx="flex">Each costs</th><th class="num">Count</th><th></th><th data-pri="3" data-fx="clip">Cost</th><th></th></tr></thead><tbody id="lm-jobs"></tbody></table>
       <p class="note" id="lm-hold"></p>
     </div>
   </div>`;

@@ -79,7 +79,7 @@ export function mountMarket(host, on) {
   function orders() {
     const list = store.orders || [], lead = isLeader(), life = store.rules?.params?.order_min_life_ms ?? 0;
     $('ordn').textContent = list.length ? `${fmt(list.length)}${lead ? ', yours and the treasury\'s' : ''}` : '';
-    $('orders').innerHTML = list.length ? `<table class="tbl mk-orders"><thead><tr><th>Side</th><th>Material</th><th class="num">Quantity</th><th class="num">Price</th><th class="num">Holding</th><th>For</th><th>Placed</th><th><span class="vh">Cancel</span></th></tr></thead><tbody>
+    $('orders').innerHTML = list.length ? `<table class="tbl mk-orders fit"><thead><tr><th>Side</th><th data-fx="last">Material</th><th class="num">Quantity</th><th class="num">Price</th><th class="num" data-pri="5">Holding</th><th data-pri="4">For</th><th data-pri="3">Placed</th><th><span class="vh">Cancel</span></th></tr></thead><tbody>
       ${list.map((o) => {
         const can = !o.treasury || lead, lockUntil = life ? o.placed_at + life : 0, locked = lockUntil > Date.now();
         return `<tr><td class="${o.side === 'buy' ? 'up' : 'down'}">${cap(o.side)}</td><td>${esc(cap(o.material))}</td><td class="num">${fmt(o.quantity)}</td><td class="num">${fmt(o.price)}</td>

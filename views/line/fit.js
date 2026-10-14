@@ -4,7 +4,8 @@
 // one (.fx-flex on its cells): it takes the room the others leave, down to its min-width, and ends in "…" past that,
 // its full text in a title. A name column (.fx-last) is the opposite: always whole, until every column that can go
 // has gone and the table still doesn't fit; only then does it end in "…" too. Other long text may be capped
-// (.fx-clip, a fixed most). line.css keeps the cells on one line. cards.js runs it as pages redraw and the window
+// (.fx-clip, a fixed most). A heading's data-fx="last", "flex" or "clip" gives its whole column that role, so a
+// table need only mark its headings. line.css keeps the cells on one line. cards.js runs it as pages redraw and the window
 // changes size; a fit table never becomes cards. Each table and its box are also watched, so a table fits itself
 // again when it changes size without a redraw: its tab opening (no width to measure while hidden), or the view's
 // stylesheet arriving after the first fit (until then nothing keeps a cell to one line).
@@ -33,6 +34,7 @@ export function fit(t) {
   if (!pris.length) return;
   const rows = [...t.rows].filter((r) => r.cells.length === pris.length);   // a spanning group row has no columns
   const show = (i, on) => rows.forEach((r) => r.cells[i].classList.toggle('fx-off', !on));
+  [...t.tHead.rows[0].cells].forEach((c, i) => { if (c.dataset.fx) rows.forEach((r) => r.cells[i].classList.add(`fx-${c.dataset.fx}`)); });
   pris.forEach((_, i) => show(i, true));
   t.classList.remove('fx-squeeze');
   const room = t.parentElement.clientWidth;

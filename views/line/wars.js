@@ -90,7 +90,7 @@ export function mountWars(host, on) {
         <span class="wr-bar" aria-hidden="true"><i style="width:${share(a1, b1).toFixed(1)}%"></i><b style="left:${share(a0, b0).toFixed(1)}%"></b></span>
         <span class="wr-delta">${signed(a1 - a0)} / ${signed(b1 - b0)}</span></td>`;
     };
-    $('now').innerHTML = wars.length ? `<div class="scrollx"><table class="tbl wr-tbl"><thead><tr><th>Side</th><th class="num">Points</th><th class="vs"></th><th>Side</th><th class="num">Points</th>${showLand ? '<th title="Each side\'s land now against when the war began; the gold mark is where it stood">Land since it began</th>' : ''}<th>Kind</th><th>Since</th><th>May end</th><th>Peace offered by</th><th></th></tr></thead><tbody>
+    $('now').innerHTML = wars.length ? `<div class="scrollx"><table class="tbl wr-tbl fit"><thead><tr><th data-fx="last">Side</th><th class="num" data-pri="2">Points</th><th class="vs"></th><th data-fx="last">Side</th><th class="num" data-pri="2">Points</th>${showLand ? '<th data-pri="5" title="Each side\'s land now against when the war began; the gold mark is where it stood">Land since it began</th>' : ''}<th data-pri="6">Kind</th><th data-pri="4">Since</th><th data-pri="3">May end</th><th data-pri="7" data-fx="clip">Peace offered by</th><th data-pri="2"></th></tr></thead><tbody>
       ${pageOf('now', wars).map((x, i) => {
         const yours = same(x.a, me) || same(x.b, me), pa = pointsOf(x.a), pb = pointsOf(x.b);
         const ahead = (p, q) => (p > q ? ' class="num lead"' : ' class="num"');
@@ -102,13 +102,13 @@ export function mountWars(host, on) {
     // Ceasefires: yours first, then the soonest to lapse.
     const yoursFirst = (x, y) => (same(y.a, me) || same(y.b, me)) - (same(x.a, me) || same(x.b, me));
     const cfs = [...(w.ceasefires || [])].sort((x, y) => yoursFirst(x, y) || x.until_tick - y.until_tick);
-    $('cf').innerHTML = cfs.length ? `<div class="scrollx"><table class="tbl wr-tbl"><thead><tr><th>Between</th><th class="vs"></th><th></th><th>From</th><th>Until</th><th></th></tr></thead><tbody>
+    $('cf').innerHTML = cfs.length ? `<div class="scrollx"><table class="tbl wr-tbl fit"><thead><tr><th data-fx="last">Between</th><th class="vs"></th><th data-fx="last"></th><th data-pri="3">From</th><th data-pri="2">Until</th><th data-pri="4"></th></tr></thead><tbody>
       ${pageOf('cf', cfs).map((x, i) => `<tr class="${[same(x.a, me) || same(x.b, me) ? 'self' : '', i % 2 ? 'alt' : ''].filter(Boolean).join(' ')}"><td>${who(x.a)}</td><td class="vs">and</td><td>${who(x.b)}</td>
         <td>tick ${fmt(x.started_tick)}</td><td>tick ${fmt(x.until_tick)} <span class="dim">(${fmt(Math.max(0, x.until_tick - now))} to go)</span></td><td>${x.after_war ? '<span class="dim" title="Made at the end of a war: it can\'t be broken">after a war</span>' : ''}</td></tr>`).join('')}</tbody></table></div>`
       : '<p class="dim">No ceasefires at present.</p>';
     // Ended: yours first, then the newest.
     const done = [...(w.history || [])].sort((x, y) => yoursFirst(x, y) || y.ended_tick - x.ended_tick);
-    $('done').innerHTML = done.length ? `<div class="scrollx"><table class="tbl wr-tbl"><thead><tr><th>Side</th><th class="vs"></th><th>Side</th><th>Kind</th><th>Fought</th><th>Ended by</th><th>Winner</th><th></th></tr></thead><tbody>
+    $('done').innerHTML = done.length ? `<div class="scrollx"><table class="tbl wr-tbl fit"><thead><tr><th data-fx="last">Side</th><th class="vs"></th><th data-fx="last">Side</th><th data-pri="6">Kind</th><th data-pri="4">Fought</th><th data-pri="5">Ended by</th><th data-pri="3" data-fx="clip">Winner</th><th data-pri="2"></th></tr></thead><tbody>
       ${pageOf('done', done).map((x, i) => `<tr class="${[same(x.a, me) || same(x.b, me) ? 'self' : '', i % 2 ? 'alt' : ''].filter(Boolean).join(' ')}"><td>${who(x.a)}</td><td class="vs">vs</td><td>${who(x.b)}</td><td>${kind(x.kind)}</td>
         <td>ticks ${fmt(x.started_tick)}–${fmt(x.ended_tick)} <span class="dim">(${fmt(x.ended_tick - x.started_tick)})</span></td><td>${esc(ENDS[x.end] || x.end || '–')}</td>
         <td>${x.winner ? who(x.winner) : '<span class="dim">none</span>'}</td><td>${trackBtn('ended', x)}</td></tr>`).join('')}</tbody></table></div>`
