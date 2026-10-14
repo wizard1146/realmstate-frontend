@@ -32,3 +32,6 @@
   (lorc/crossed-swords.svg, lorc/domino-mask.svg, lorc/pentagram-rose.svg), CC BY 3.0, background removed; the menu's
   marker beside Attack, Intrigue and Rites in place of the broken shield. Credited in Configuration (Images) and on
   the wiki's About page.
+- materials/resin.png, materials/timber.png: "dripping goo" by Lorc and "wood pile" by Delapouite, game-icons.net
+  (lorc/dripping-goo.svg, delapouite/wood-pile.svg), CC BY 3.0, background removed, drawn black on transparent at
+  512 px; the Market's resin and timber. Credited in Configuration (Images) and on the wiki's About page.
