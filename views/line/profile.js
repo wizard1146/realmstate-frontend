@@ -16,7 +16,7 @@ export function mountProfile(host, on) {
     const me = store.me || {}, h = store.house;
     // The game tells a connected site (this one) your account number, never your email: /me's email is null here.
     $('acct').innerHTML = rows([
-      ['Signed in with', me.email ? esc(me.email) : 'your Google account, through realmstate.net'],
+      ['Signed in with', me.email ? esc(me.email) : 'Google'],
       ['Account number', esc(me.account ?? '–')],
     ]);
     $('why').textContent = me.email ? '' : 'This site isn\'t told your email. Only the game keeps it.';
