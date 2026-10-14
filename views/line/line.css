@@ -1234,6 +1234,9 @@
   & .lrite > .ltabs { margin-bottom: 14px; }
   & .lrite [role=tabpanel][hidden] { display: none; }
   & .lrite .in-op.cant .in-figs b { color: var(--l-bad); }
+  & .lrite .in-op.live { border-color: var(--l-good); background: color-mix(in srgb, var(--l-good) 9%, var(--l-page)); }
+  & .lrite .in-op.live.on { box-shadow: inset 0 0 0 1px var(--l-good); }
+  & .lrite .rt-live { margin-left: 4px; font: 600 .78em var(--l-body-font); color: var(--l-good); white-space: nowrap; }
   & .lrite .in-figs .need { color: var(--l-bad); }
   & .lrite #lr-tw[hidden] { display: none; }
   & .lrite .rt-force { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
@@ -1274,6 +1277,13 @@
   & .lsci .sc-tool input[type=number] { width: 90px; }
   & .lsci .note { color: var(--l-muted); font-size: .85em; margin: 12px 0 18px; }
   & .lsci .sc-grp { margin-bottom: 20px; }
+  & .lsci .sc-graph { margin: 4px 0 22px; padding: 10px 14px 12px; border: 1px solid var(--l-rule); border-radius: 6px; background: var(--l-page); }
+  & .lsci .sc-graph .what { max-width: 70ch; margin: 0 0 6px; font-size: .88em; }
+  & .lsci .sc-half { stroke: var(--l-muted); stroke-dasharray: 3 3; }
+  & .lsci .sc-dot { fill: var(--l-gold); stroke: var(--l-page); stroke-width: 2; }
+  & .lsci .sc-dot.after { fill: var(--l-page); stroke: var(--l-good); }
+  & .lsci .sc-ring { fill: none; stroke: var(--l-ink); stroke-width: 2; }
+  & .lsci .sc-read { margin: 6px 0 0; min-height: 1.45em; font-size: .88em; color: var(--l-muted); }
   & .lpart.lsci table.sc-tbl { width: 100%; table-layout: fixed; margin-top: 6px; }
   & .lsci .sc-tbl col.c-name { width: 15%; } & .lsci .sc-tbl col.c-does { width: auto; } & .lsci .sc-tbl col.c-inv { width: 86px; } & .lsci .sc-tbl col.c-now { width: 16%; }
   & .lsci .sc-tbl col.c-n { width: 96px; } & .lsci .sc-tbl col.c-max { width: 62px; } & .lsci .sc-tbl col.c-after { width: 17%; } & .lsci .sc-tbl col.c-go { width: 80px; }

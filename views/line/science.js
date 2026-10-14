@@ -1,13 +1,18 @@
 // Straightline's Science: books and scientists at a glance; each category (economy, military, arcane) as a card with
 // its rank and the way to the next; paper and moving scientists in one place; then every science in its category's
-// table, each with its own Invest (a count, Max, the bonus now and after). Logic: core/science.js, actions.
+// table, each with its own Invest (a count, Max, the bonus now and after). Between them, the curve every science
+// follows, with your sciences on it (and where a typed count would take one). Logic: core/science.js, actions.
 import { store } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc } from '../../core/words.js';
-import { CATS, sci, defs, efficiency, bonusAt, rowOf, catOf, effText, ranks, rankName } from '../../core/science.js';
+import { CATS, sci, defs, efficiency, bonusAt, rowOf, catOf, effText, ranks, rankName, shareAt, halfBooks, hasCurve } from '../../core/science.js';
 
 const n0 = (v) => Math.max(0, Math.floor(Number(v) || 0));
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
+/** A tidy step for about `n` gridlines over a span: 1, 2 or 5 times a power of ten. */
+const niceStep = (span, n) => { const raw = span / n || 1, p = 10 ** Math.floor(Math.log10(raw)); return [1, 2, 5, 10].map((m) => m * p).find((s) => s >= raw); };
+/** An axis label: 2.6M, 45k, 900. */
+const short = (v) => (v >= 1e6 ? `${+(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `${+(v / 1e3).toFixed(1)}k` : fmt(v));
 
 export function mountScience(host, on) {
   host.innerHTML = `<div class="lpart lsci">
@@ -27,6 +32,8 @@ export function mountScience(host, on) {
         <button class="btn" id="ls2-mgo">Move</button></form>
     </div>
     <p class="note" id="ls2-ladder"></p>
+    <section class="sc-graph" id="ls2-curve" aria-labelledby="ls2-ch"><h3 class="sub" id="ls2-ch">The curve</h3>
+      <p class="what" id="ls2-cwhat"></p><div class="sc-chart" id="ls2-chart"></div><p class="sc-read" id="ls2-read" aria-live="polite"></p></section>
     <div id="ls2-list"></div>
   </div>`;
   const $ = (id) => host.querySelector(`#ls2-${id}`);
@@ -105,7 +112,77 @@ export function mountScience(host, on) {
       i.closest('tr').classList.toggle('on', n > 0);
       go.disabled = !n || !!why;
     }
+    curve();
   }
+
+  // ---------- the curve ----------
+  // Every science's bonus is its limit × the same share of the way along, so one curve serves them all: the share
+  // against books invested, at your science efficiency. Your sciences sit on it as dots; a typed count adds a hollow
+  // dot where it would take that science. Hover a dot, or focus the chart and use ← →, to read it.
+  let pts = [], geo = null, idx = -1;
+  function curve() {
+    const box = $('chart');
+    if (!hasCurve()) { $('curve').hidden = true; return; }
+    $('curve').hidden = false;
+    const s = sci(), eff = efficiency(), half = halfBooks(eff.mult);
+    pts = [];
+    for (const d of defs()) {
+      const r = rowOf(d.science), inv = r?.invested || 0, n = n0(host.querySelector(`input[data-sci="${CSS.escape(d.science)}"]`)?.value);
+      if (inv) pts.push({ d, inv, now: true });
+      if (n && n <= s.books[catOf(d)]) pts.push({ d, inv: inv + n, now: false, n });
+    }
+    pts.sort((a, b) => a.inv - b.inv || a.now - b.now);
+    $('cwhat').textContent = `Every science follows this curve: its bonus is its limit times how far along it is. Books bring less the more a science has; at your efficiency${eff.exact ? '' : ' (≈)'}, a science gives half its limit at ${fmt(Math.round(half))} books.`;
+    const W = Math.max(280, Math.min(1100, Math.round(box.clientWidth || 720))), H = W > 720 ? 270 : 220, L = 46, R = 14, T = 12, B = 30;
+    const top = Math.max(half, ...pts.map((p) => p.inv * 1.25)), xs = niceStep(top, W > 520 ? 6 : 3), xmax = Math.ceil(top / xs) * xs;
+    const x = (v) => L + (v / xmax) * (W - L - R), y = (f) => T + (1 - f) * (H - T - B);
+    const g = [];
+    for (let f = 0; f <= 1.0001; f += 0.25) g.push(`<line class="g-grid" x1="${L}" x2="${W - R}" y1="${y(f)}" y2="${y(f)}"/><text class="g-lab" x="${L - 6}" y="${y(f) + 4}" text-anchor="end">${f * 100}%</text>`);
+    for (let v = xs; v <= xmax; v += xs) g.push(`<line class="g-tickm" x1="${x(v)}" x2="${x(v)}" y1="${H - B}" y2="${H - B + 4}"/><text class="g-lab" x="${x(v)}" y="${H - B + 16}" text-anchor="middle">${short(v)}</text>`);
+    // Samples bunch near zero, where the curve is steepest.
+    const line = Array.from({ length: 97 }, (_, i) => { const v = xmax * (i / 96) ** 2; return `${i ? 'L' : 'M'}${x(v).toFixed(1)},${y(shareAt(v, eff.mult)).toFixed(1)}`; }).join('');
+    const halfMark = half <= xmax ? `<line class="sc-half" x1="${x(half)}" x2="${x(half)}" y1="${y(0.5)}" y2="${H - B}"/><text class="g-lab" x="${x(half) + 4}" y="${y(0.5) - 5}">half</text>` : '';
+    const dots = pts.map((p, i) => `<circle class="sc-dot${p.now ? '' : ' after'}" data-i="${i}" cx="${x(p.inv).toFixed(1)}" cy="${y(shareAt(p.inv, eff.mult)).toFixed(1)}" r="5"/>`).join('');
+    const hadFocus = box.contains(document.activeElement);
+    box.innerHTML = `<svg class="g-svg sc-svg" viewBox="0 0 ${W} ${H}" role="img" tabindex="0" aria-label="The science curve: share of a science's limit by books invested.${pts.length ? ' Use the left and right arrow keys to read each of your sciences.' : ''}">
+      ${g.join('')}<line class="g-axis" x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/><path class="g-line" d="${line}"/>${halfMark}${dots}
+      <circle class="sc-ring" r="9" visibility="hidden"/></svg>`;
+    geo = { x, y, mult: eff.mult, W };
+    if (hadFocus) box.querySelector('svg').focus();
+    if (idx >= pts.length) idx = -1;
+    if (idx >= 0) point(idx); else read();
+  }
+  function read() {
+    const now = pts.filter((p) => p.now);
+    if (!now.length) { $('read').textContent = `No books invested yet: your sciences appear on the curve once they have some. ${pts.length ? 'Hollow dots: where your typed counts would take them.' : 'Type a count below to see where it would land.'}`; return; }
+    const far = now.reduce((a, b) => (b.inv > a.inv ? b : a));
+    $('read').textContent = `${now.length} of your sciences on the curve (dots); furthest along, ${far.d.name} at ${Math.round(shareAt(far.inv, geo.mult) * 100)}% of its limit. Hollow dots: where a typed count would take one.`;
+  }
+  function point(i) {
+    const svg = $('chart').querySelector('svg');
+    if (!svg || !pts.length) return;
+    idx = Math.max(0, Math.min(pts.length - 1, i));
+    const p = pts[idx], f = shareAt(p.inv, geo.mult), ring = svg.querySelector('.sc-ring');
+    ring.setAttribute('cx', geo.x(p.inv)); ring.setAttribute('cy', geo.y(f)); ring.setAttribute('visibility', 'visible');
+    $('read').textContent = `${p.d.name}${p.now ? '' : `, after ${fmt(p.n)} more`}: ${fmt(p.inv)} books, ${effText(bonusAt(p.d, p.inv))} (${(f * 100).toFixed(1)}% of its limit).`;
+  }
+  on($('chart'), 'mousemove', (ev) => {
+    const svg = ev.target.closest('svg');
+    if (!svg || !geo || !pts.length) return;
+    const r = svg.getBoundingClientRect(), sx = ((ev.clientX - r.left) / r.width) * geo.W, sy = ((ev.clientY - r.top) / r.width) * geo.W;   // the chart keeps its aspect: one scale for both
+    let best = -1, bd = 24 * 24;
+    pts.forEach((p, i) => { const dx = geo.x(p.inv) - sx, dy = geo.y(shareAt(p.inv, geo.mult)) - sy, dd = dx * dx + dy * dy; if (dd < bd) { bd = dd; best = i; } });
+    if (best >= 0) point(best);
+  });
+  on($('chart'), 'mouseleave', () => { if (document.activeElement?.closest('#ls2-chart')) return; idx = -1; $('chart').querySelector('.sc-ring')?.setAttribute('visibility', 'hidden'); if (geo) read(); });
+  on($('chart'), 'keydown', (ev) => {
+    const m = { ArrowLeft: -1, ArrowRight: 1, Home: -Infinity, End: Infinity }[ev.key];
+    if (m === undefined || !pts.length) return;
+    ev.preventDefault();
+    point(idx < 0 ? (m < 0 ? pts.length - 1 : 0) : m === -Infinity ? 0 : m === Infinity ? pts.length - 1 : idx + m);
+  });
+  let sized = 0;
+  on(window, 'resize', () => { clearTimeout(sized); sized = setTimeout(() => { if (host.querySelector('.lsci')) curve(); }, 150); });
   on($('list'), 'input', after);
   on($('list'), 'click', async (ev) => {
     const mx = ev.target.closest('[data-smax]'), go = ev.target.closest('[data-invest]');

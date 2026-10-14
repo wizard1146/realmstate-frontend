@@ -106,6 +106,7 @@ export function mountRites(host, on) {
     if (!n) { $('rites').innerHTML = '<p class="dim">This server sends no rites.</p>'; return; }
     gi = Math.min(gi, n - 1);
     const [label, note, list] = groups[gi];
+    const live = inForce();
     $('rites').innerHTML = `<section class="in-car" aria-roledescription="carousel" aria-label="Rites">
       <div class="in-carh"><button type="button" class="btn in-arrow" data-step="-1" aria-label="Previous group: ${esc(groups[(gi + n - 1) % n][0])}">‹</button>
         <div class="in-gwrap"><h3 class="in-gname" aria-live="polite">${esc(label)}</h3>
@@ -114,8 +115,10 @@ export function mountRites(host, on) {
       <p class="in-gnote dim small">${esc(note)}</p>
       <div class="in-cards" role="group" aria-label="${esc(label)}, ${gi + 1} of ${n}">${list.map((r) => {
         const c = riteFor(r), short = riteShort(r), k = riteKind(r);
-        return `<button type="button" class="in-op${r.id === pick ? ' on' : ''}${short ? ' cant' : ''}" data-rite="${esc(r.id)}" aria-pressed="${r.id === pick}">
-          <span class="in-name">${esc(r.name)}</span><span class="in-does">${esc(riteDoes(r))}</span>
+        // A self rite already working on you: green, with the ticks it has left.
+        const left = k === 'self' ? Math.max(0, ...live.filter(([nm]) => nm === r.name).map(([, , t]) => t)) : 0;
+        return `<button type="button" class="in-op${r.id === pick ? ' on' : ''}${short ? ' cant' : ''}${left ? ' live' : ''}" data-rite="${esc(r.id)}" aria-pressed="${r.id === pick}">
+          <span class="in-name">${esc(r.name)}${left ? ` <span class="rt-live"><span aria-hidden="true">✓</span> In force (${fmt(left)} tick${left === 1 ? '' : 's'})</span>` : ''}</span><span class="in-does">${esc(riteDoes(r))}</span>
           <span class="in-figs"><span><b>${ap(c)}${fmt(c.aether)}</b> aether</span>${c.incense ? `<span><b>${fmt(c.incense)}</b> ${esc(mat)}</span>` : ''}${k === 'self' ? '' : `<span><b>${pct(r.chance_bp)}</b> odds</span>`}${r.needs ? `<span class="need">${r.needs === 'war' ? 'war only' : `${esc(r.needs)} or war`}</span>` : ''}</span></button>`;
       }).join('')}</div>
       </section>`;

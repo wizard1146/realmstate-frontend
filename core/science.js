@@ -24,6 +24,12 @@ export const sciRoot = (n) => (n > 0 ? Math.pow(n, 1 / 2.125) : 0);
 const halfRoot = () => sciRoot(store.rules?.params.science_half_at || 350000);
 /** Limit formula: an effect's bonus, basis points, at a root already raised by efficiency. */
 const curve = (limitBp, r) => (r > 0 ? Math.trunc((limitBp * r) / (r + halfRoot())) : 0);
+/** How far along the limit curve `invested` books are, 0 to 1 (the same for every effect: bonus = limit × share). */
+export const shareAt = (invested, mult = 1) => { const r = sciRoot(invested) * mult; return r > 0 ? r / (r + halfRoot()) : 0; };
+/** Books at which a science gives half its limit, at efficiency `mult`. */
+export const halfBooks = (mult = 1) => Math.pow(halfRoot() / mult, 2.125);
+/** True when the rules use the limit curve (an older server's sciences have per_root_bp and no limit). */
+export const hasCurve = () => defs().length > 0 && defs().every((d) => d.effects.every((e) => e.limit_bp != null));
 /** One effect's bonus at `invested` books with efficiency `mult`, basis points, by whichever formula the rules use. */
 export const effectBp = (e, invested, mult = 1) => (e.limit_bp != null ? curve(e.limit_bp, sciRoot(invested) * mult) : Math.trunc(rawBp(e.per_root_bp, invested) * mult));
 

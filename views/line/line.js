@@ -208,6 +208,7 @@ export function mount(root) {
     $('addr').textContent = addr(h);
     $('ident').textContent = `· ${raceName(h.race)}, ${persName(h.personality)}`;
     const items = [['Land', h.land + (h.incoming_land ? ` (+${fmt(h.incoming_land)})` : '')], ['Peasants', h.peasants], ['Gold', h.gold], ['Food', h.food],
+      ['Aether', h.aether || 0], ['Nerve', `${((h.nerve_bp || 0) / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}%`],
       ['Soldiers', h.units[0]], ['Might', h.might], ['Renown', h.renown]];
     // Protection, while it lasts: a marker at the end of the line (it used to be a box on every page).
     const prot = isProtected(h)
