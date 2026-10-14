@@ -1,7 +1,8 @@
 // Straightline's Rankings: houses (the top 100 by land) and states (the age's standings), as tabs. At a glance: your
 // place, your state's place, who leads. Houses: find by name or address, your state's marked; Attack or Spy picks
-// one as your target and opens that page. States: score and what makes it; each opens on the State page.
-import { store, setTarget } from '../../core/store.js';
+// one as your target and opens that page (shown on the row under the pointer, or with focus). States: by name, score
+// and what makes it; each opens on the State page. The column headings stay in view as the table scrolls (line.css).
+import { store, setTarget, raceName } from '../../core/store.js';
 import { fmt, esc, addr, empty } from '../../core/words.js';
 import { tabsHTML, panelAttrs, wireTabs } from './ltabs.js';
 
@@ -29,17 +30,18 @@ export function mountRanks(host, on) {
     $('glance').innerHTML = card('Your house', me >= 0 ? `#${me + 1}` : '–', me >= 0 ? `by land, of ${fmt(list.length)} ranked` : `not in the top ${fmt(list.length)}`)
       + card('Your state', sp >= 0 ? `#${sp + 1}` : '–', sp >= 0 ? `of ${fmt(st.length)} states` : 'not ranked yet')
       + card('Largest house', list[0] ? esc(list[0].name) : '–', list[0] ? `${fmt(list[0].land)} acres` : '')
-      + card('Leading state', st[0] ? `${st[0].state.realm}:${st[0].state.state}` : '–', st[0] ? `score ${(st[0].score / 100).toFixed(1)}` : '');
+      + card('Leading state', st[0] ? esc(st[0].name || `${st[0].state.realm}:${st[0].state.state}`) : '–', st[0] ? `${st[0].state.realm}:${st[0].state.state} · score ${(st[0].score / 100).toFixed(1)}` : '');
   }
   function houses() {
     const h = store.house, q = $('find').value.trim().toLowerCase(), tgt = store.target?.id;
     const ours = (x) => x.realm === h.realm && x.state === h.state;
     const rows = store.rankings.map((x, i) => ({ x, i })).filter(({ x }) => !q || x.name.toLowerCase().includes(q) || addr(x).startsWith(q.replace(/\s+/g, ':')));
     $('hn').textContent = q ? `${fmt(rows.length)} found` : `the top ${fmt(store.rankings.length)} by land`;
-    $('houses').innerHTML = store.rankings.length ? `<table class="tbl rk-tbl"><thead><tr><th class="num">#</th><th>House</th><th>Address</th><th>Race</th><th class="num">Land</th><th class="num">Might</th><th class="num">Renown</th><th><span class="vh">Target</span></th></tr></thead><tbody>
+    $('houses').innerHTML = store.rankings.length ? `<table class="tbl rk-tbl rk-houses"><colgroup><col class="c-n"><col class="c-name"><col class="c-race"><col class="c-fig"><col class="c-fig"><col class="c-fig"><col class="c-acts"></colgroup>
+      <thead><tr><th class="num">#</th><th>House</th><th>Race</th><th class="num">Land</th><th class="num">Might</th><th class="num">Renown</th><th><span class="vh">Target</span></th></tr></thead><tbody>
       ${rows.map(({ x, i }) => `<tr class="${x.id === h.id ? 'self' : ours(x) ? 'ours' : ''}${x.id === tgt ? ' tgt' : ''}"><td class="num dim">${i + 1}</td>
-        <th scope="row">${esc(x.name)}${x.protected ? ' <span class="rk-flag" title="Under protection: it can\'t be attacked yet">protected</span>' : ''}</th>
-        <td><a href="#state" data-open-state="${x.realm}:${x.state}">${addr(x)}</a></td><td>${esc(x.race)}</td>
+        <th scope="row">${esc(x.name)} <a class="rk-addr" href="#state" data-open-state="${x.realm}:${x.state}" aria-label="State ${x.realm}:${x.state}, house ${addr(x)}">${addr(x)}</a>${x.protected ? ' <span class="rk-flag" title="Under protection: it can\'t be attacked yet">protected</span>' : ''}</th>
+        <td>${esc(raceName(x.race))}</td>
         <td class="num">${fmt(x.land)}</td><td class="num">${fmt(x.might)}</td><td class="num">${fmt(x.renown)}</td>
         <td class="acts">${ours(x) ? '' : `<button type="button" class="btn mini" data-go="attack" data-h="${x.id}" aria-label="Attack ${esc(x.name)}">Attack</button><button type="button" class="btn mini" data-go="intrigue" data-h="${x.id}" aria-label="Send spies to ${esc(x.name)}">Spy</button>`}</td></tr>`).join('')}
       </tbody></table>${rows.length ? '' : '<p class="dim">No house by that name or address in the rankings.</p>'}`
@@ -48,9 +50,9 @@ export function mountRanks(host, on) {
   function states() {
     const h = store.house, a = store.age, st = standings();
     $('score').textContent = a ? `A state's score: ${a.scoring.land_bp / 100}% for its share of the world's land, ${a.scoring.might_bp / 100}% for its share of might, plus its war points.${a.ended ? ' The age has ended: the final standings.' : ''}` : '';
-    $('states').innerHTML = st.length ? `<table class="tbl rk-tbl"><thead><tr><th class="num">#</th><th>State</th><th class="num">Score</th><th class="num">Land</th><th class="num">Might</th><th class="num">Renown</th><th class="num">War points</th><th class="num">Houses</th></tr></thead><tbody>
+    $('states').innerHTML = st.length ? `<table class="tbl rk-tbl rk-states"><thead><tr><th class="num">#</th><th>State</th><th class="num">Score</th><th class="num">Land</th><th class="num">Might</th><th class="num">Renown</th><th class="num">War points</th><th class="num">Houses</th></tr></thead><tbody>
       ${st.map((x, i) => `<tr class="${x.state.realm === h.realm && x.state.state === h.state ? 'self' : ''}"><td class="num dim">${i + 1}</td>
-        <th scope="row"><a href="#state" data-open-state="${x.state.realm}:${x.state.state}">State ${x.state.realm}:${x.state.state}</a></th><td class="num"><b>${(x.score / 100).toFixed(1)}</b></td>
+        <th scope="row"><a href="#state" data-open-state="${x.state.realm}:${x.state.state}">${esc(x.name || `State ${x.state.realm}:${x.state.state}`)}</a> <span class="rk-addr">${x.state.realm}:${x.state.state}</span></th><td class="num"><b>${(x.score / 100).toFixed(1)}</b></td>
         <td class="num">${fmt(x.land)}</td><td class="num">${fmt(x.might)}</td><td class="num">${fmt(x.renown ?? 0)}</td><td class="num">${fmt(x.war_points ?? 0)}</td><td class="num">${fmt(x.houses)}</td></tr>`).join('')}
       </tbody></table>` : `<p class="dim">${esc(empty.standings)}</p>`;
   }

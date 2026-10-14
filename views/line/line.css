@@ -528,10 +528,10 @@
   & .lbuild .lb-tbl tbody tr.alt > * { background: color-mix(in srgb, var(--l-ink) 1.25%, transparent); }
   & .lbuild .lb-tbl tbody tr:not(.grp):hover > * { background: color-mix(in srgb, var(--l-gold) 12%, transparent); }
   /* A group's heading row: its name in the page's small capitals over a double rule, as section headings are. */
-  /* The groups: a small table each, as many columns as fit at 490px or more (two at most), as Throne's tables flow. */
-  & .line-main > .room:has(.lbuild) { max-width: none; width: auto; min-width: 0; }
-  & .lbuild .lb-groups { columns: 490px 2; column-gap: 30px; max-width: 1500px; }
-  & .lbuild .lb-grp { break-inside: avoid; margin-bottom: 20px; padding-top: 10px; }   /* padding, not the heading's margin: a column break drops margins */
+  /* The groups: a small table each, one under another at the page's width (side by side, a row's benefits wrapped
+     to three or four lines); the page stops at 1100px so the columns don't drift apart on a wide screen. */
+  & .line-main > .room:has(.lbuild) { max-width: 1100px; width: auto; min-width: 0; }
+  & .lbuild .lb-grp { margin-bottom: 20px; padding-top: 10px; }
   & .lbuild .lb-grp > h3.sub { margin-top: 0; }
   /* Phones: each section's heading stays at the top while you scroll through it, under the header, the tabs and
      the order bar (all sticky), and the next section's heading pushes it off (it sticks within its own section). */
@@ -541,13 +541,14 @@
   }
   & .lbuild .lb-grp > table.lb-tbl { margin-top: 0; width: 100%; min-width: 0; table-layout: fixed; }   /* full width, or the fixed column widths are ignored */
   /* The same column widths in every group, so they fit a column and line up group to group. */
-  & .lbuild .lb-grp .lb-tbl col.c-name { width: 21%; } & .lbuild .lb-grp .lb-tbl col.c-own { width: 58px; } & .lbuild .lb-grp .lb-tbl col.c-n { width: 76px; }
-  & .lbuild .lb-grp .lb-tbl col.c-max { width: 76px; } & .lbuild .lb-grp .lb-tbl col.c-cost { width: 84px; }
+  & .lbuild .lb-grp .lb-tbl col.c-name { width: 19%; } & .lbuild .lb-grp .lb-tbl col.c-own { width: 64px; } & .lbuild .lb-grp .lb-tbl col.c-n { width: 168px; }
+  & .lbuild .lb-grp .lb-tbl col.c-cost { width: 150px; }
   & .lbuild .lb-grp .lb-tbl col.c-pct { width: 54px; }
   & .lbuild .lb-tbl td.pct { color: var(--l-muted); }
   & .lbuild .lb-grp .lb-tbl th[scope=row] { white-space: normal; }
   & .lbuild .lb-grp .lb-tbl .does { max-width: none; }
-  & .lbuild .lb-grp .lb-tbl input[type=number] { width: 100%; }
+  & .lbuild .lb-grp .lb-tbl input[type=number] { width: 76px; }   /* the count, then MAX and × beside it in the same cell */
+  & .lbuild .lb-tbl td.acts { text-align: left; } & .lbuild .lb-tbl td.acts > button.btn { margin-left: 6px; }
   & .lbuild .lb-tbl thead th { font-size: .78em; }
   & .lb-tbl .does .needs { display: block; color: var(--l-gold); }
   & .lb-tbl .does .nil { color: var(--l-muted); }
@@ -1192,6 +1193,15 @@
   & dialog.wr-dlg header h2 { font-size: 1.5em; }
   & dialog.wr-dlg h2 .vs { color: var(--l-bad); font-size: .75em; font-variant-caps: all-small-caps; margin: 0 4px; }
   & dialog.wr-dlg .wr-legend { margin: 12px 0 10px; font-size: .9em; color: var(--l-muted); }
+  /* A short screen: one page at a time (wars.js), its charts filling the height that's left. */
+  & dialog.wr-dlg .wv-pager { margin: 0 0 12px; }
+  & dialog.wr-dlg:has(.wv.paged) { height: calc(100vh - 32px); }   /* the same height on every page, so ‹ › stay put */
+  & dialog.wr-dlg .wv.paged .wv-chart svg { height: clamp(120px, calc(100vh - 360px), 380px); }
+  & dialog.wr-dlg .wv-pager .in-gname { min-width: 17em; }   /* one width for every page's title, so ‹ › don't move */
+  @media (max-width: 560px) { & dialog.wr-dlg .wv-pager { gap: 6px; } & dialog.wr-dlg .wv-pager .in-gwrap { flex: 1; min-width: 0; } & dialog.wr-dlg .wv-pager .in-gname { min-width: 0; font-size: .92rem; letter-spacing: .08em; } & dialog.wr-dlg .wv-pager .in-arrow { flex: none; } }
+  & dialog.wr-dlg .wv [hidden] { display: none; }
+  & dialog.wr-dlg table.wv-strip { width: 100%; }
+  & dialog.wr-dlg .wv.paged table.wv-strip { font-size: 1.12em; }
   & dialog.wr-dlg .wr-legend b.a { color: var(--l-ink); } & dialog.wr-dlg .wr-legend b.b { color: var(--l-bad); }
 }
 
@@ -1461,15 +1471,15 @@
 :root[data-view="line"] {
   /* Intrigue's operations: one group at a time, ‹ NAME › above its cards, a dot for each group below. */
   & .lint .in-car { margin-top: 6px; }
-  & .lint .in-carh { display: flex; align-items: center; justify-content: center; gap: 14px; padding-bottom: 6px; border-bottom: 3px double var(--l-line); }
-  & .lint .in-gname { margin: 0; min-width: 9em; text-align: center; font: 600 1.05rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .14em; }
-  & .lint .in-arrow { min-width: 34px; font-size: 1.1rem; line-height: 1; padding: 4px 8px; }
+  & :is(.lint, .lwars) .in-carh { display: flex; align-items: center; justify-content: center; gap: 14px; padding-bottom: 6px; border-bottom: 3px double var(--l-line); }
+  & :is(.lint, .lwars) .in-gname { margin: 0; min-width: 9em; text-align: center; font: 600 1.05rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .14em; }
+  & :is(.lint, .lwars) .in-arrow { min-width: 34px; font-size: 1.1rem; line-height: 1; padding: 4px 8px; }
   & .lint .in-car .in-cards { margin-top: 10px; }
-  & .lint .in-gwrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-  & .lint .in-dots { display: flex; justify-content: center; gap: 9px; margin: 0; }
-  & .lint .in-dot { width: 10px; height: 10px; padding: 0; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--l-gold) 70%, var(--l-rule)); background: transparent; cursor: pointer; }
-  & .lint .in-dot.on { background: var(--l-gold); border-color: var(--l-gold); }
-  & .lint .in-dot:focus-visible { outline: 2px solid var(--l-gold); outline-offset: 2px; }
+  & :is(.lint, .lwars) .in-gwrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  & :is(.lint, .lwars) .in-dots { display: flex; justify-content: center; gap: 9px; margin: 0; }
+  & :is(.lint, .lwars) .in-dot { width: 10px; height: 10px; padding: 0; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--l-gold) 70%, var(--l-rule)); background: transparent; cursor: pointer; }
+  & :is(.lint, .lwars) .in-dot.on { background: var(--l-gold); border-color: var(--l-gold); }
+  & :is(.lint, .lwars) .in-dot:focus-visible { outline: 2px solid var(--l-gold); outline-offset: 2px; }
 }
 
 :root[data-view="line"] {
@@ -1560,7 +1570,17 @@
   & .lranks .rk-tbl tr.tgt th[scope=row]::after { content: ' · your target'; color: var(--l-bad); font-weight: 400; font-size: .85em; }
   & .lranks .rk-tbl td.acts { white-space: nowrap; text-align: right; }
   & .lranks .rk-tbl td.acts .btn + .btn { margin-left: 4px; }
+  /* Column headings stay in view under the page's heading while the table scrolls. */
+  & .lranks .rk-tbl thead th { position: sticky; top: 36px; z-index: 3; background: var(--l-page); box-shadow: inset 0 -1px 0 var(--l-line); }
+  & .lranks .rk-houses { table-layout: fixed; }
+  & .lranks .rk-houses col.c-n { width: 48px; } & .lranks .rk-houses col.c-race { width: 130px; }
+  & .lranks .rk-houses col.c-fig { width: 104px; } & .lranks .rk-houses col.c-acts { width: 128px; }
+  & .lranks .rk-tbl .rk-addr { margin-left: 6px; font-weight: 400; font-size: .88em; color: var(--l-muted); font-variant-numeric: tabular-nums; }
+  & .lranks .rk-tbl a.rk-addr:hover { color: var(--l-ink); }
+  /* Attack and Spy on the row under the pointer, or with focus in it; always there on a touch screen. */
+  @media (hover: hover) { & .lranks .rk-tbl tr:not(:hover, :focus-within) td.acts > * { opacity: 0; } }
   & .lranks .rk-flag { font-size: .75em; font-weight: 400; color: var(--l-muted); border: 1px solid var(--l-rule); border-radius: 3px; padding: 0 4px; margin-left: 4px; }
+  @media (max-width: 760px) { & .lbuild table.cards td.cost:empty { display: none; } }
   @media (max-width: 760px) { & :is(.lnews, .lranks, .lhall, .lmkt, .llead, .lwar) .st-glance { grid-template-columns: repeat(2, 1fr); } }
 }
 

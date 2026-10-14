@@ -137,7 +137,58 @@ export function mountWars(host, on) {
     const d = await warSeries(t.id, t.kind === 'war');
     if (showing !== k || !dlg.open) return;
     $('dlg-b').querySelector('.dim:last-child').outerHTML = warView(d, t.from, an, bn);
+    pg = 0;
+    fit();
   }
+
+  // ---------- the window on a short screen: pages, ‹ › and a dot each, when it all won't fit ----------
+  // Then and now first; then the charts as many to a page as the grid sets side by side (two, or one on a phone).
+  let pages = [], pg = 0;
+  function fit() {
+    const body = $('dlg-b'), wv = body.querySelector('.wv');
+    if (!wv) return;
+    wv.querySelector('.wv-pager')?.remove();
+    wv.classList.remove('paged');
+    wv.querySelectorAll('[data-pgd]').forEach((el) => { el.hidden = false; delete el.dataset.pgd; });
+    if (body.scrollHeight <= body.clientHeight + 2) { pages = []; return; }
+    const strip = wv.querySelector('.wv-strip'), grid = wv.querySelector('.wv-charts'), charts = [...grid.children];
+    const cols = Math.max(1, getComputedStyle(grid).gridTemplateColumns.split(' ').length);
+    pages = [['Then and now', [strip]]];
+    for (let i = 0; i < charts.length; i += cols) {
+      const set = charts.slice(i, i + cols);
+      pages.push([set.map((c) => c.querySelector('.wv-k')?.textContent || '').join(' and '), set]);
+    }
+    [strip, ...charts].forEach((el) => { el.dataset.pgd = ''; });
+    wv.classList.add('paged');
+    wv.insertAdjacentHTML('afterbegin', `<div class="in-carh wv-pager"><button type="button" class="btn in-arrow" data-wstep="-1" aria-label="Previous page">‹</button>
+      <div class="in-gwrap"><h3 class="in-gname" aria-live="polite"></h3><div class="in-dots" role="group" aria-label="Pages">${pages.map(([name], i) =>
+        `<button type="button" class="in-dot" data-wpg="${i}" aria-label="${esc(name)}" title="${esc(name)}"></button>`).join('')}</div></div>
+      <button type="button" class="btn in-arrow" data-wstep="1" aria-label="Next page">›</button></div>`);
+    show(Math.min(pg, pages.length - 1));
+  }
+  function show(i) {
+    const wv = $('dlg-b').querySelector('.wv.paged');
+    if (!wv) return;
+    pg = (i + pages.length) % pages.length;
+    const on = new Set(pages[pg][1]);
+    wv.querySelectorAll('[data-pgd]').forEach((el) => { el.hidden = !on.has(el); });
+    wv.querySelector('.wv-charts').hidden = pg === 0;
+    wv.querySelector('.in-gname').textContent = `${pages[pg][0]} · ${pg + 1} of ${pages.length}`;
+    wv.querySelectorAll('[data-wpg]').forEach((b, k) => { b.classList.toggle('on', k === pg); b.setAttribute('aria-current', String(k === pg)); });
+  }
+  on(dlg, 'click', (ev) => {
+    const st = ev.target.closest('[data-wstep]'), dt = ev.target.closest('[data-wpg]');
+    if (st) show(pg + Number(st.dataset.wstep));
+    if (dt) show(Number(dt.dataset.wpg));
+  });
+  // ← → turn the pages anywhere in the window.
+  on(dlg, 'keydown', (ev) => {
+    if (!pages.length || !['ArrowLeft', 'ArrowRight'].includes(ev.key) || ev.target.closest('input, select, textarea')) return;
+    ev.preventDefault();
+    show(pg + (ev.key === 'ArrowRight' ? 1 : -1));
+  });
+  let fitting = 0;
+  on(window, 'resize', () => { clearTimeout(fitting); fitting = setTimeout(() => { if (dlg.open) fit(); }, 150); });
   on(host, 'click', (ev) => { const b = ev.target.closest('[data-track]'); if (b) openTrack(b.dataset.track, b); });
   on(dlg, 'click', (ev) => { if (ev.target === dlg || ev.target.closest('[data-close]')) dlg.close(); });
   on(dlg, 'close', () => { showing = ''; if (opener?.isConnected) opener.focus(); else host.querySelector(`[data-track="${CSS.escape(opener?.dataset.track || '')}"]`)?.focus(); });

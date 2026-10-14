@@ -99,17 +99,16 @@ export function mountBuild(host, on) {
   }
   /** The rows, once (the buildings come from /rules); fillRows() keeps their figures current without touching the inputs. */
   function makeRows() {
-    // Grouped by purpose: a small table each, flowing into two columns where there's room (line.css).
+    // Grouped by purpose: a small table each, one under another at the full width (line.css), so a row stays on one line.
     const groups = groupsOf();
     tbody.innerHTML = groups.map(([g, ds]) => `<section class="lb-grp"><h3 class="sub">${esc(g)}</h3><table class="tbl lb-tbl">
-      <colgroup><col class="c-name"><col class="c-does"><col class="c-own"><col class="c-pct"><col class="c-n"><col class="c-max"><col class="c-cost"></colgroup>
-      <thead><tr><th>Building</th><th title="What it gives you now; point at a building's name for what the next 1% of your land in it would add">Benefits</th><th class="num">Owned</th><th class="num" title="Its share of your acres">Share</th><th class="num">Count</th><th></th><th class="num">Cost</th></tr></thead><tbody>` + ds.map((d, k) => {
+      <colgroup><col class="c-name"><col class="c-does"><col class="c-own"><col class="c-pct"><col class="c-n"><col class="c-cost"></colgroup>
+      <thead><tr><th>Building</th><th title="What it gives you now; point at a building's name for what the next 1% of your land in it would add">Benefits</th><th class="num">Owned</th><th class="num" title="Its share of your acres">Share</th><th>Count</th><th class="num">Cost</th></tr></thead><tbody>` + ds.map((d, k) => {
       const id = esc(d.building);
       return `<tr data-row="${id}"${k % 2 ? ' class="alt"' : ''}><th scope="row">${wikiName(d)}<span class="dim small" data-cap></span></th>
         <td class="does small" title="${esc(d.description)}" data-does></td>
         <td class="num" data-own></td><td class="num pct" data-pct></td>
-        <td class="num"><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-b="${id}" aria-label="${esc(d.name)} to build"></td>
-        <td class="acts"><button type="button" class="btn mini" data-max="${id}" aria-label="Most ${esc(d.name)} you can build with what the other rows leave">MAX</button><button type="button" class="x" data-x="${id}" aria-label="Clear ${esc(d.name)}" title="Clear this row">×</button></td>
+        <td class="num acts"><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-b="${id}" aria-label="${esc(d.name)} to build"><button type="button" class="btn mini" data-max="${id}" aria-label="Most ${esc(d.name)} you can build with what the other rows leave">MAX</button><button type="button" class="x" data-x="${id}" aria-label="Clear ${esc(d.name)}" title="Clear this row">×</button></td>
         <td class="num cost" data-cost="${id}"></td></tr>`;
     }).join('') + '</tbody></table></section>').join('');
   }
@@ -204,11 +203,10 @@ export function mountBuild(host, on) {
   const rz = $('rz-rows');
   function makeRazeRows() {
     rz.innerHTML = groupsOf().map(([g, ds]) => `<section class="lb-grp"><h3 class="sub">${esc(g)}</h3><table class="tbl lb-tbl rz-tbl">
-      <colgroup><col class="c-name"><col class="c-own"><col class="c-n"><col class="c-max"><col class="c-cost"></colgroup>
-      <thead><tr><th>Building</th><th class="num">Owned</th><th class="num">Raze</th><th></th><th class="num">Cost</th></tr></thead><tbody>`
+      <colgroup><col class="c-name"><col class="c-own"><col class="c-n"><col class="c-cost"></colgroup>
+      <thead><tr><th>Building</th><th class="num">Owned</th><th>Raze</th><th class="num">Cost</th></tr></thead><tbody>`
       + ds.map((d, k) => `<tr data-rz="${esc(d.building)}"${k % 2 ? ' class="alt"' : ''}><th scope="row">${wikiName(d)}</th><td class="num" data-own></td>
-        <td class="num"><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-r="${esc(d.building)}" aria-label="${esc(d.name)} to raze"></td>
-        <td class="acts"><button type="button" class="btn mini" data-rzmax="${esc(d.building)}" aria-label="All the ${esc(d.name)} you can raze with the gold the other rows leave">MAX</button><button type="button" class="x" data-x="${esc(d.building)}" aria-label="Clear ${esc(d.name)}" title="Clear this row">×</button></td>
+        <td class="num acts"><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-r="${esc(d.building)}" aria-label="${esc(d.name)} to raze"><button type="button" class="btn mini" data-rzmax="${esc(d.building)}" aria-label="All the ${esc(d.name)} you can raze with the gold the other rows leave">MAX</button><button type="button" class="x" data-x="${esc(d.building)}" aria-label="Clear ${esc(d.name)}" title="Clear this row">×</button></td>
         <td class="num cost" data-rzcost="${esc(d.building)}"></td></tr>`).join('') + '</tbody></table></section>').join('');
   }
   const rzInputs = () => [...rz.querySelectorAll('input[data-r]')];
