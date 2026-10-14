@@ -1360,7 +1360,16 @@
   & .lsci .sc-tbl tbody :is(td, th) { vertical-align: middle; font-size: 1em; }
   & .lsci .sc-tbl tbody th[scope=row] { font: 600 1em var(--l-body-font); font-variant-caps: normal; letter-spacing: 0; color: var(--l-ink); text-align: left; }
   & .lsci .sc-tbl td.does { color: var(--l-muted); font-size: .88em; }
-  & .lsci .sc-tbl input[type=number] { width: 100%; }
+  /* Every column but "What it does" (fit.js's flexible one) has a set width, so Economy, Military and Arcane line up:
+     that column takes what's left, the same in each table. Hiding for room stays fit.js's. */
+  & .lsci .sc-tbl.fit > * > tr > :is(th, td):nth-child(1) { width: 92px; min-width: 92px; max-width: 92px; }
+  & .lsci .sc-tbl.fit > * > tr > :is(th, td):nth-child(3) { width: 70px; min-width: 70px; max-width: 70px; }
+  & .lsci .sc-tbl.fit > * > tr > :is(th, td):nth-child(4) { width: 14em; min-width: 14em; max-width: 14em; }
+  & .lsci .sc-tbl.fit > * > tr > :is(th, td):nth-child(5) { width: 84px; min-width: 84px; max-width: 84px; }
+  & .lsci .sc-tbl.fit > * > tr > :is(th, td):nth-child(6) { width: 52px; min-width: 52px; max-width: 52px; }
+  & .lsci .sc-tbl.fit > * > tr > :is(th, td):nth-child(7) { width: 14em; min-width: 14em; max-width: 14em; }   /* 14em: fit.js's cap for a clipped column */
+  & .lsci .sc-tbl.fit > * > tr > :is(th, td):nth-child(8) { width: 72px; min-width: 72px; max-width: 72px; }
+  & .lsci .sc-tbl input[type=number] { width: 9ch; }   /* a set width: 100% of a column sized by its content shrank it to nothing */
   & .lsci .sc-tbl td.after { color: var(--l-good); font-size: .9em; }
   & .lsci .sc-tbl td.after.short { color: var(--l-bad); }
   & .lsci .sc-tbl tbody tr.alt > * { background: color-mix(in srgb, var(--l-ink) 1.25%, transparent); }

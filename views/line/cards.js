@@ -64,7 +64,9 @@ export function watchCards(hosts, on) {
   const mo = new MutationObserver(() => soon());
   // Its own changes (the measuring copy, labels) are not redraws: drop their records so they don't start it again.
   const run = () => { queued = false; hosts.forEach(cardify); mo.takeRecords(); };
-  function soon() { if (!queued) { queued = true; requestAnimationFrame(run); } }
+  // A short timer, not an animation frame: Chrome runs no frames in a hidden or covered window, so a page loaded there
+  // would never be laid out; timers still run (if slower), and the tables are right when the window comes forward.
+  function soon() { if (!queued) { queued = true; setTimeout(run, 16); } }
   for (const h of hosts) mo.observe(h, { childList: true, subtree: true });
   on(window, 'resize', soon);
   soon();

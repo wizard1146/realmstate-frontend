@@ -96,7 +96,7 @@ export function mountScience(host, on) {
         ${ds.map((d, j) => {
           const r = rowOf(d.science) || { invested: 0, bonus_bp: [] };
           const now = d.effects.map((e, x) => ({ stat: e.stat, bp: r.bonus_bp[x] || 0 }));
-          return `<tr data-row="${esc(d.science)}"${j % 2 ? ' class="alt"' : ''}><th scope="row">${esc(d.name)}</th><td class="does">${esc(d.description)}</td>
+          return `<tr data-row="${esc(d.science)}" title="${esc(d.name)}: ${esc(d.description)}"${j % 2 ? ' class="alt"' : ''}><th scope="row">${esc(d.name)}</th><td class="does" title="${esc(d.description)}">${esc(d.description)}</td>
             <td class="num${r.invested ? '' : ' dim'}">${fmt(r.invested)}</td><td class="${r.invested ? '' : 'dim'}">${esc(effText(now))}</td>
             <td class="num"><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-sci="${esc(d.science)}" value="${esc(keep[d.science] || '')}" aria-label="Books to invest in ${esc(d.name)}"></td>
             <td class="acts"><button type="button" class="btn mini" data-smax="${esc(d.science)}" aria-label="All your ${k} books">MAX</button></td>
