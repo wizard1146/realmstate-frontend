@@ -283,6 +283,7 @@ export function mount(root) {
   // News as it arrives: a small card bottom right, with a link to the News page (not while you're on it).
   const MAX_TOASTS = 3, TOAST_MS = 10000;
   let lastMsg = store.msg.text;
+  const fromNews = new Set();   // lines of news just arrived: not shown again as a message card
   /** A card in the stack: news (with its link to the News page) or a message from an order (store.msg). */
   function toast(n) { const [text, tone] = newsLine(n); card(text, tone, { news: true }); }
   function card(text, tone, { news = false, ms = TOAST_MS } = {}) {
@@ -362,10 +363,18 @@ export function mount(root) {
     if (c.has('worldnews') || c.has('worldmap') || c.has('feedpref')) drawFeed();
     if (c.has('feedpref') && feedOn()) { loadWorldNews({ force: true }); if (!world.realms.size) loadWorld(); }
     if (c.has('tick') && feedOn()) loadWorldNews();   // at most once a minute; live news fills in between
-    if (c.has('news') && current !== 'news') for (const d of c.get('news')) if (d.added && !newsSilent(d.added)) toast(d.added);
+    if (c.has('news')) {
+      for (const d of c.get('news')) {
+        if (!d.added || newsSilent(d.added)) continue;
+        fromNews.add(newsLine(d.added)[0]);
+        if (current !== 'news') toast(d.added);
+      }
+    }
     // Messages from orders ("Built 10 Homes", errors) come as cards too: Straightline has no message line
     // (it moved the page each time it changed). Errors stay until dismissed or replaced; the rest go after 5 s.
-    if (c.has('msg') && store.msg.text && store.msg.text !== lastMsg) card(store.msg.text, store.msg.tone, { ms: store.msg.tone === 'bad' ? 30000 : 5000 });
+    // News also reaches the message line (for views that have one); its card above is enough.
+    if (c.has('msg') && store.msg.text && store.msg.text !== lastMsg && !fromNews.has(store.msg.text)) card(store.msg.text, store.msg.tone, { ms: store.msg.tone === 'bad' ? 30000 : 5000 });
+    if (fromNews.size > 20) fromNews.clear();
     if (c.has('msg')) lastMsg = store.msg.text;
     if (c.has('house') || c.has('me') || c.has('rules')) renderTop();
     if (c.has('house') || c.has('state')) heading();
