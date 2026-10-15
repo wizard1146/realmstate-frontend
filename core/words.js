@@ -139,6 +139,7 @@ export function newsLine(n) {
     case 'vigil_ended': return [`The ${n.name} has ended.`, ''];
     case 'age_ended': return [`The age is over. ${n.winner ? `State ${st(n.winner)} won. ` : ''}Our state finished ${ord(n.state_rank)}, our house ${ord(n.land_rank)} by land.`, ''];
     case 'rite_resisted': return [`We resisted ${n.rite} from ${where(n.by)}.`, 'good'];
+    case 'autocast_held': return [`${n.name} didn't cast by itself: ${n.why}. It tries again each tick.`, 'bad'];
     case 'hex_suffered': return [`${n.reflected ? 'Our own hex turned back on us' : 'A hex struck us'} (${n.rite}): ${hexTook(n.taken, n.what)}${n.until_tick ? `, until tick ${n.until_tick}` : ''}.`, 'bad'];
     case 'operation_suffered': return [`Thieves struck us (${n.op}): ${/delayed|growth|unsettled|cut/.test(n.what) ? n.what : `${fmt(n.taken)} ${n.what}`}${n.blamed ? `. They wore the colours of ${st(n.blamed)}` : ''}.`, 'bad'];
     case 'land_arrived': return [`${fmt(n.acres)} explored acres arrived.`, 'good'];
@@ -256,6 +257,8 @@ export function describe(o, cmd) {
     case 'training': return `Training ${fmt(o.count)} ${uname(o.unit)} for ${fmt(o.gold)} gold, ${readySpread(o)} (${zoneLabel()}).`;
     case 'adept_cap_set': return o.per_acre_tenths == null ? 'No adept limit: your shrines gather adepts up to what they can hold.'
       : `Adept limit set to ${(o.per_acre_tenths / 10).toFixed(1)} an acre: your shrines stop gathering there.`;
+    case 'autocast_set': return `${names.rites[o.rite] || o.rite} now casts by itself ${o.every_ticks ? `every ${fmt(o.every_ticks)} tick${o.every_ticks === 1 ? '' : 's'}` : 'whenever it runs out'}${o.keep_aether ? `, keeping ${fmt(o.keep_aether)} aether` : ''}.`;
+    case 'autocast_cleared': return `${names.rites[o.rite] || o.rite} no longer casts by itself.`;
     case 'adepts_released': return `${fmt(o.count)} adepts went back to the fields as peasants.${o.per_acre_tenths == null ? '' : ` Adept limit now ${(o.per_acre_tenths / 10).toFixed(1)} an acre, so they aren't gathered back.`}`;
     case 'draft_set': return `Draft rate set to ${o.rate_bp / 100}%. Each tick, up to 1% of your peasants are drafted as soldiers until you reach it.`;
     case 'building': return `Building ${fmt(o.count)} ${bname(o.building)} for ${fmt(o.gold)} gold. Ready ${when(o.ready_at)}.`;

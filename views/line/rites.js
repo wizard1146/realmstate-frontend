@@ -1,7 +1,8 @@
 // Straightline's Rites: your aether, adepts and resin at a glance; three tabs. Cast: every rite as a card, one group
 // at a time (self rites, divinations, hexes) as on Intrigue, chosen by a click; the sheet casts it (a target for divinations and hexes, what
 // your state's relations allow there, what it costs). On you: rites in force on your house, your Spell Resilience and
-// your vengeance. Adepts: where your shrines stop gathering, and releasing some. Logic: core/rites.js, actions.
+// your vengeance. Auto-cast: self rites your house casts by itself, kept up or every so many ticks, above an aether
+// buffer. Adepts: where your shrines stop gathering, and releasing some. Logic: core/rites.js, actions.
 import { store, setTarget } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc, addr } from '../../core/words.js';
@@ -9,7 +10,7 @@ import { rites, riteById, riteKind, riteFor, ap, lengthText, needsText, unfriend
 
 const pct = (bp) => `${(bp / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}%`;
 const GROUPS = [['self', 'Self rites', 'always work if you have the aether'], ['divination', 'Divinations', 'intel on a house, shared with your state'], ['hex', 'Hexes', 'burn resin; harm a house']];
-const TABS = [['cast', 'Cast'], ['on', 'On you'], ['adepts', 'Adepts']];
+const TABS = [['cast', 'Cast'], ['on', 'On you'], ['auto', 'Auto-cast'], ['adepts', 'Adepts']];
 const KEY = 'realmstate.line.rites';
 
 export function mountRites(host, on) {
@@ -46,6 +47,11 @@ export function mountRites(host, on) {
     <div role="tabpanel" id="lr-on" aria-labelledby="lr-tab-on" data-panel="on">
       <section><h3 class="sub">In force on you</h3><div id="lr-force"></div></section>
       <section><h3 class="sub">Your defences</h3><div class="rt-def" id="lr-def"></div></section>
+    </div>
+
+    <div role="tabpanel" id="lr-auto" aria-labelledby="lr-tab-auto" data-panel="auto">
+      <p class="what">Your house can cast its self rites by itself, even while you're away. Each tick, right after rites run out, every auto-cast that is due casts, in the order you turned them on. Keep one up and it never lapses; or cast it every so many ticks to spend less. A buffer keeps aether back for hexes and divinations. If one can't cast, your news says why, once.</p>
+      <div class="rt-auto" id="lr-autos"></div>
     </div>
 
     <div role="tabpanel" id="lr-adepts" aria-labelledby="lr-tab-adepts" data-panel="adepts">
@@ -210,6 +216,61 @@ export function mountRites(host, on) {
         <p class="dim small">Every hex a state tries on you, landed or not, adds half its resilience to your vengeance on that state (up to ${pct(P.vengeance_max_bp || 0)}). Your hexes on its houses gain that much; casting one spends half.</p></div>`;
   }
 
+  // ---------- auto-cast ----------
+  // One card per self rite: on or off, how often (kept up, or every N ticks), the aether to keep; what that comes to.
+  const autoOf = (id) => (store.house.autocasts || []).find((a) => a.rite === id);
+  function autoForm(r) {
+    const a = autoOf(r.id), c = riteFor(r), every = a ? a.every_ticks : 0;
+    const order = a ? (store.house.autocasts || []).indexOf(a) + 1 : 0;
+    const state = !a ? '<span class="dim">Off</span>'
+      : a.held ? `<span class="short">Held: ${esc(a.held)}</span>`
+      : `<span class="up">On${(store.house.autocasts || []).length > 1 ? ` (casts ${ord(order)})` : ''}</span>${a.last_tick != null ? ` <span class="dim">· last cast tick ${fmt(a.last_tick)}</span>` : ''}`;
+    return `<section class="mil-card" data-auto="${esc(r.id)}"><h3 class="sub">${esc(r.name)}</h3>
+      <p class="what">${esc(riteDoes(r))}. Costs ${esc(riteCost(r))}.</p>
+      <p class="mil-now">${state}</p>
+      <form class="lform" novalidate>
+        <label for="lr-ae-${esc(r.id)}">How often</label>
+        <span class="field"><select id="lr-ae-${esc(r.id)}" data-k="mode"><option value="up"${every ? '' : ' selected'}>Keep it up</option><option value="every"${every ? ' selected' : ''}>Every N ticks</option></select>
+          <input type="number" min="1" step="1" inputmode="numeric" data-k="every" aria-label="Every how many ticks" value="${every || c.ticks || 1}"${every ? '' : ' hidden'}></span>
+        <label for="lr-ak-${esc(r.id)}">Keep at least</label>
+        <span class="field"><input id="lr-ak-${esc(r.id)}" type="number" min="0" step="1" inputmode="numeric" data-k="keep" placeholder="0" value="${a && a.keep_aether ? a.keep_aether : ''}"> aether</span>
+        <span class="acts"><button class="btn primary" data-k="save">${a ? 'Update' : 'Turn on'}</button>${a ? '<button type="button" class="btn" data-k="off">Turn off</button>' : ''}</span>
+      </form>
+      <p class="dim small" data-k="sum"></p></section>`;
+  }
+  const ord = (n) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`;
+  // What the form's choice comes to: the share of the time it's in force and the aether it spends a tick.
+  function autoSum(card) {
+    const r = riteById(card.dataset.auto), c = riteFor(r), f = (k) => card.querySelector(`[data-k="${k}"]`);
+    const up = f('mode').value === 'up', n = Math.max(1, Math.round(Number(f('every').value) || 1));
+    f('every').hidden = up;
+    const period = up ? Math.max(1, c.ticks) : n, share = Math.min(1, c.ticks / period);
+    f('sum').textContent = `In force ${Math.round(share * 100)}% of the time, for about ${fmt(Math.round(c.aether / period))} aether a tick at your land now.`
+      + (!up && n < c.ticks ? ` It lasts ${c.ticks} ticks, so casting every ${n} renews it early and wastes aether.` : '');
+  }
+  function autos() {
+    const list = rites().filter((r) => riteKind(r) === 'self');
+    // Don't redraw under someone typing.
+    if ($('autos').contains(document.activeElement) && document.activeElement.matches('input, select')) return;
+    $('autos').innerHTML = list.length ? list.map(autoForm).join('') : '<p class="dim">This age has no self rites.</p>';
+    $('autos').querySelectorAll('[data-auto]').forEach(autoSum);
+  }
+  on($('autos'), 'input', (ev) => { const card = ev.target.closest('[data-auto]'); if (card) autoSum(card); });
+  on($('autos'), 'change', (ev) => { const card = ev.target.closest('[data-auto]'); if (card) autoSum(card); });
+  on($('autos'), 'submit', async (ev) => {
+    ev.preventDefault();
+    const card = ev.target.closest('[data-auto]'), f = (k) => card.querySelector(`[data-k="${k}"]`);
+    const every = f('mode').value === 'up' ? 0 : f('every').value;
+    document.activeElement?.blur();
+    await act.setAutocast(card.dataset.auto, every, f('keep').value, { button: f('save') });
+  });
+  on($('autos'), 'click', async (ev) => {
+    const b = ev.target.closest('[data-k="off"]');
+    if (!b) return;
+    document.activeElement?.blur();
+    await act.clearAutocast(b.closest('[data-auto]').dataset.auto, { button: b });
+  });
+
   // ---------- adepts ----------
   function adepts() {
     const h = store.house, cap = h.adept_cap_tenths;
@@ -223,7 +284,7 @@ export function mountRites(host, on) {
   on($('relmax'), 'click', () => { $('rel').value = String(store.house.adepts || ''); $('rel').focus(); });
   on($('rf'), 'submit', async (ev) => { ev.preventDefault(); if (await act.releaseAdepts($('rel').value, { button: $('relgo') })) $('rel').value = ''; adepts(); });
 
-  function draw() { if (!store.house) return; glance(); cards(); sheet(); onYou(); adepts(); }
+  function draw() { if (!store.house) return; glance(); cards(); sheet(); onYou(); autos(); adepts(); }
   if (target) $('addr').value = addr(target);
   showTab(tab);
   draw();

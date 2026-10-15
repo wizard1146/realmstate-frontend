@@ -96,6 +96,13 @@ export const setDraft = (rateBp, opts = {}) => run({ type: 'set_draft', house: m
 /** Adepts an acre the shrines gather up to (one decimal place: 3.1), or null for no limit. */
 export const setAdeptCap = (perAcre, opts = {}) =>
   run({ type: 'set_adept_cap', house: me(), per_acre_tenths: perAcre == null || perAcre === '' ? null : Math.round(Number(perAcre) * 10) }, opts);
+/**
+ * Have a self rite cast by itself when due: everyTicks 0 keeps it up (cast whenever it isn't in force), N casts it
+ * every N ticks; it casts only if keepAether is left after paying. Setting one again changes it in place.
+ */
+export const setAutocast = (rite, everyTicks, keepAether, opts = {}) =>
+  run({ type: 'set_autocast', house: me(), rite, every_ticks: Math.max(0, Math.round(Number(everyTicks) || 0)), keep_aether: Math.max(0, Math.round(Number(keepAether) || 0)) }, opts);
+export const clearAutocast = (rite, opts = {}) => run({ type: 'clear_autocast', house: me(), rite }, opts);
 /** Send adepts back to the fields as peasants. */
 export const releaseAdepts = (count, opts = {}) => run({ type: 'release_adepts', house: me(), count: Number(count) }, opts);
 /**

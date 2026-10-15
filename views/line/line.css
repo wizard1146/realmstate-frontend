@@ -1296,6 +1296,15 @@
   & .lrite .rt-live { margin-left: 4px; font: 600 .78em var(--l-body-font); color: var(--l-good); white-space: nowrap; }
   & .lrite .in-figs .need { color: var(--l-bad); }
   & .lrite #lr-tw[hidden] { display: none; }
+  & .lrite .rt-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+  & .lrite .rt-auto .mil-card { margin: 0; }
+  & .lrite .rt-auto .up { color: var(--l-good); font-weight: 600; }
+  & .lrite .rt-auto .short { color: var(--l-bad); }
+  & .lrite .rt-auto [data-k=every][hidden] { display: none; }
+  & .lrite .rt-auto .lform { display: grid; grid-template-columns: auto 1fr; gap: 8px 10px; align-items: center; }
+  & .lrite .rt-auto .lform .acts { grid-column: 1 / -1; display: flex; gap: 8px; }
+  & .lrite .rt-auto .field { display: inline-flex; gap: 6px; align-items: center; }
+  & .lrite .rt-auto input[type=number] { width: 9ch; }
   & .lrite .rt-force { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
   & .lrite .rt-fcard, & .lrite .rt-dcard { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border: 1px solid var(--l-rule); border-radius: 6px; background: var(--l-page); }
   & .lrite .rt-def { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }

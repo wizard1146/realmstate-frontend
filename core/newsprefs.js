@@ -9,7 +9,7 @@ export const NEWS_GROUPS = [
   ['building', 'Buildings finished', 'buildings ready', ['buildings_done']],
   ['land', 'Land and armies home', 'acres arriving, armies returning', ['land_arrived', 'army_returned']],
   ['attacks', 'Attacks on you', 'attacks, second strikes, land retaken, fires', ['attacked', 'attack_report', 'second_strike', 'land_retaken', 'burned']],
-  ['shadows', 'Spies and magic', 'thieves caught, hexes, operations against you', ['spies_caught', 'framing_uncovered', 'rite_resisted', 'hex_suffered', 'operation_suffered', 'afflicted']],
+  ['shadows', 'Spies and magic', 'thieves caught, hexes, operations against you, auto-casts held', ['autocast_held', 'spies_caught', 'framing_uncovered', 'rite_resisted', 'hex_suffered', 'operation_suffered', 'afflicted']],
   ['market', 'Market and auctions', 'orders filled, outbid, offers, characters', ['order_filled', 'outbid', 'auction_unsold', 'trade_failed', 'offer_received', 'offer_declined', 'character_sold', 'character_bought', 'character_auctioned']],
   ['science', 'Science and the Colloquium', 'research chosen, tiers reached, academics leaving', ['research_chosen', 'project_tier', 'academic_left']],
   ['state', 'Your state', 'leaders, taxes, treasury, aid, vigils', ['leader_chosen', 'leader_removed', 'treasury_share', 'granted', 'tax_changed', 'state_renamed', 'aid_sent', 'aid_arrived', 'vigil_opened', 'vigil_begun', 'vigil_ended']],
