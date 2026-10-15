@@ -252,7 +252,8 @@ export function mountRites(host, on) {
     const list = rites().filter((r) => riteKind(r) === 'self');
     // Don't redraw under someone typing.
     if ($('autos').contains(document.activeElement) && document.activeElement.matches('input, select')) return;
-    $('autos').innerHTML = list.length ? list.map(autoForm).join('') : '<p class="dim">This age has no self rites.</p>';
+    $('autos').innerHTML = !('autocasts' in store.house) ? '<p class="dim">This server doesn\'t auto-cast rites yet.</p>'
+      : list.length ? list.map(autoForm).join('') : '<p class="dim">This age has no self rites.</p>';
     $('autos').querySelectorAll('[data-auto]').forEach(autoSum);
   }
   on($('autos'), 'input', (ev) => { const card = ev.target.closest('[data-auto]'); if (card) autoSum(card); });
