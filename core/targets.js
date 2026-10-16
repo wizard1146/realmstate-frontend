@@ -9,6 +9,7 @@ import { rites, riteKind, riteById } from './rites.js';
 export const targets = {
   list: null,      // the targets, most recent first (null until loaded)
   window: 0,       // the window, in ticks
+  since: 0,        // the tick the window starts at
   loaded: false,
   missing: false,  // the server has no /state/targets yet
 };
@@ -22,7 +23,7 @@ export async function loadTargets(id) {
   try {
     const t = await api(`/state/targets${id != null ? `?target=${Number(id)}` : ''}`);
     if (id != null) return t.targets[0] || null;
-    Object.assign(targets, { list: t.targets, window: t.window_ticks, loaded: true, missing: false });
+    Object.assign(targets, { list: t.targets, window: t.window_ticks, since: t.since_tick ?? Math.max(0, t.tick - t.window_ticks), loaded: true, missing: false });
   } catch (e) {
     if (e.status !== 404) throw e;
     Object.assign(targets, { list: [], loaded: true, missing: true });
@@ -80,4 +81,39 @@ export function lastHexText(h) {
   if (!h) return '';
   const how = !h.success ? 'resisted' : h.reflected ? 'turned back' : 'landed';
   return `${h.rite} by ${h.by.name}, tick ${h.tick}: ${how}`;
+}
+
+// ---------- ages and summaries ----------
+/** Intel kinds shown as an age on every target, in order, with a one-letter mark. Other kinds show when present. */
+export const INTEL_KINDS = [['survey', 'S'], ['muster', 'M'], ['dossier', 'D'], ['ledgers', 'L']];
+/** Ticks since something on tick `t` (null when there's no tick: an old server). */
+export const ageOf = (t) => (Number.isFinite(t) ? Math.max(0, store.tick - t) : null);
+/** How fresh an age is: fresh (0–3 ticks), older (4–11) or stale (12+). */
+export const freshness = (age) => (age == null ? 'none' : age <= 3 ? 'fresh' : age <= 11 ? 'older' : 'stale');
+/** The newest intel on a target, any kind: its age in ticks, or null. */
+export function newestIntelAge(row) {
+  const ages = Object.values(row.intel || {}).map((i) => ageOf(i.tick)).filter((a) => a != null);
+  return ages.length ? Math.min(...ages) : null;
+}
+/** Counts over the targets: how many, watched hexes ending soon and missing, houses whose newest intel is stale. */
+export function summary(list = targets.list || []) {
+  let ending = 0, missing = 0, stale = 0;
+  for (const r of list) {
+    const h = hexState(r);
+    ending += h.on.filter((x) => x.warn).length;
+    missing += h.missing.length;
+    const age = newestIntelAge(r);
+    if (age != null && age >= 12) stale++;
+  }
+  return { count: list.length, ending, missing, stale };
+}
+/** Sorted so what needs you comes first: a watched hex about to end, then most missing, then the most recent. */
+export function byNeed(list = targets.list || []) {
+  const score = (r) => { const h = hexState(r); return [h.on.some((x) => x.warn) ? 0 : 1, -h.missing.length]; };
+  return list.map((r, i) => [score(r), i, r]).sort((a, b) => a[0][0] - b[0][0] || a[0][1] - b[0][1] || a[1] - b[1]).map((x) => x[2]);
+}
+/** One hex on one target: {left, warn} in force, {missing: true} if not, for rite `id`. */
+export function hexOn(row, id) {
+  const x = hexState(row).on.find((h) => h.id === id);
+  return x ? { left: x.left, warn: x.left <= watch.warn_ticks, by: x.by } : { missing: true };
 }

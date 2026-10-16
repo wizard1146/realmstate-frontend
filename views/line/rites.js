@@ -1,13 +1,14 @@
 // Straightline's Rites: your aether, adepts and resin at a glance; three tabs. Cast: every rite as a card, one group
 // at a time (self rites, divinations, hexes) as on Intrigue, chosen by a click; the sheet casts it (a target for divinations and hexes, what
 // your state's relations allow there, what it costs). On you: rites in force on your house, your Spell Resilience and
-// your vengeance. Auto-cast: self rites your house casts by itself, kept up or every so many ticks, above an aether
+// your vengeance. Your state's recent targets show on Cast as a strip under the rites or a quick-pick in the sheet
+// (a switch, remembered), each with your state's hexes on it; Aim here makes it the target. Auto-cast: self rites your house casts by itself, kept up or every so many ticks, above an aether
 // buffer. Adepts: where your shrines stop gathering, and releasing some. Logic: core/rites.js, actions.
 import { store, setTarget } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc, addr } from '../../core/words.js';
 import { rites, riteById, riteKind, riteFor, ap, lengthText, needsText, unfriendlyExtra, riteDoes, riteCost, riteOn, riteShort, inForce, resilienceText, vengeanceList, stName } from '../../core/rites.js';
-import { watch, loadWatch, loadTargets, takeCast } from '../../core/targets.js';
+import { targets, watch, loadWatch, loadTargets, takeCast, hexOn, byNeed } from '../../core/targets.js';
 import { chipsHTML } from './targets.js';
 
 const pct = (bp) => `${(bp / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}%`;
@@ -17,17 +18,20 @@ const KEY = 'realmstate.line.rites';
 
 export function mountRites(host, on) {
   const P = store.rules.params, mat = P.rite_material;
-  let tab = 'cast', pick = rites()[0]?.id;
-  try { const s = JSON.parse(localStorage.getItem(KEY)) || {}; if (TABS.some(([t]) => t === s.tab)) tab = s.tab; if (riteById(s.pick)) pick = s.pick; } catch { /* storage off */ }
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ tab, pick })); } catch { /* storage off */ } };
+  // recent: where your state's recent targets show on the Cast tab: a strip under the rites, or a quick-pick in the sheet.
+  let tab = 'cast', pick = rites()[0]?.id, recent = 'strip';
+  try { const s = JSON.parse(localStorage.getItem(KEY)) || {}; if (TABS.some(([t]) => t === s.tab)) tab = s.tab; if (riteById(s.pick)) pick = s.pick; if (['strip', 'pick'].includes(s.recent)) recent = s.recent; } catch { /* storage off */ }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ tab, pick, recent })); } catch { /* storage off */ } };
   host.innerHTML = `<div class="lpart lbuild lint lrite">
     <dl class="st-glance in-glance" id="lr-glance"></dl>
     <div class="ltabs" role="tablist" aria-label="Rites">${TABS.map(([t, label]) =>
       `<button type="button" role="tab" id="lr-tab-${t}" aria-controls="lr-${t}" data-tab="${t}">${label}</button>`).join('')}</div>
 
     <div role="tabpanel" id="lr-cast" aria-labelledby="lr-tab-cast" data-panel="cast">
+      <div class="rt-rhead" id="lr-rsw" hidden><span class="dim small">Your state's recent targets:</span>
+        <div class="tg-segs" role="group" aria-label="Where your recent targets show"><button type="button" data-recent="strip">Under the rites</button><button type="button" data-recent="pick">In the sheet</button></div></div>
       <div class="atk-layout">
-        <div class="atk-main"><div id="lr-rites"></div></div>
+        <div class="atk-main"><div id="lr-rites"></div><section class="rt-recent" id="lr-recent" aria-label="Your state's recent targets" hidden></section></div>
         <aside class="atk-sheet" aria-label="The rite">
           <h3 class="sub">Rite</h3>
           <div class="in-chosen" id="lr-chosen" aria-live="polite"></div>
@@ -39,6 +43,7 @@ export function mountRites(host, on) {
               <button class="btn">Look up</button>
             </form>
             <div class="atk-card" id="lr-card" aria-live="polite"></div>
+            <div class="rt-qpw" id="lr-qp" hidden></div>
             <div class="tg-hx" id="lr-hx" aria-live="polite" hidden></div>
           </div>
           <p class="doing" id="lr-doing" aria-live="polite" hidden></p>
@@ -132,7 +137,7 @@ export function mountRites(host, on) {
         const left = k === 'self' ? Math.max(0, ...live.filter(([nm]) => nm === r.name).map(([, , t]) => t)) : 0;
         return `<button type="button" class="in-op${r.id === pick ? ' on' : ''}${short ? ' cant' : ''}${left ? ' live' : ''}" data-rite="${esc(r.id)}" aria-pressed="${r.id === pick}">
           <span class="in-name">${esc(r.name)}${left ? ` <span class="rt-live"><span aria-hidden="true">✓</span> In force (${fmt(left)} tick${left === 1 ? '' : 's'})</span>` : ''}</span><span class="in-does">${esc(riteDoes(r))}</span>
-          <span class="in-figs"><span><b>${ap(c)}${fmt(c.aether)}</b> aether</span>${c.incense ? `<span><b>${fmt(c.incense)}</b> ${esc(mat)}</span>` : ''}${k === 'self' ? '' : `<span><b>${pct(r.chance_bp)}</b> odds</span>`}${r.needs ? `<span class="need">${r.needs === 'war' ? 'war only' : `${esc(r.needs)} or war`}</span>` : ''}</span></button>`;
+          <span class="in-figs"><span><b>${ap(c)}${fmt(c.aether)}</b> aether</span>${c.incense ? `<span><b>${fmt(c.incense)}</b> ${esc(mat)}</span>` : ''}${k === 'self' ? '' : `<span><b>${pct(r.chance_bp)}</b> odds</span>`}${r.needs ? `<span class="need">${r.needs === 'war' ? 'war only' : `${esc(r.needs)} or war`}</span>` : ''}</span>${k === 'hex' ? tally(r) : ''}</button>`;
       }).join('')}</div>
       </section>`;
     if (focus) host.querySelector(focus)?.focus();
@@ -188,34 +193,76 @@ export function mountRites(host, on) {
     if (h.aether < cost) why.push(`it needs ${ap(c)}${fmt(cost)} aether; you have ${fmt(h.aether)}`);
     if (c.incense && (h.materials[mat] || 0) < c.incense) why.push(`it needs ${fmt(c.incense)} ${mat}; you have ${fmt(h.materials[mat] || 0)}`);
     hexChips(k === 'hex' ? target : null);
+    recentTargets();
     const doing = $('doing');
     doing.hidden = false;
     doing.textContent = why.length ? `Can't yet: ${why.join('; ')}.` : self ? `Cast ${r.name} on your own house for ${fmt(cost)} aether.` : `Cast ${r.name} on ${target.name} (${addr(target)}) for ${fmt(cost)} aether.`;
     doing.classList.toggle('short', why.length > 0);
     $('go').disabled = why.length > 0;
   }
-  // ---------- the target's hexes: yours in force (ticks left) and the ones you watch that are missing ----------
-  let hxFor = null, hxRow = null;
-  async function hexChips(t, fresh = false) {
+  // ---------- your state's recent targets (GET /state/targets, read on opening and each tick) ----------
+  const rowFor = (t) => t && (targets.list || []).find((x) => x.house.id === t.id);
+  /** The target's hexes: yours in force (ticks left) and the ones you watch that are missing. */
+  function hexChips(t) {
     const box = $('hx');
     if (!t) { box.hidden = true; return; }
-    if (fresh || hxFor !== t.id) {
-      hxFor = t.id; hxRow = null;
-      try { hxRow = await loadTargets(t.id); } catch { hxRow = null; }
-      if (hxFor !== t.id) return;   // the target changed while we asked
-    }
-    const html = chipsHTML(hxRow || { house: t, hexes_in_force: [] });
+    const html = chipsHTML(rowFor(t) || { house: t, hexes_in_force: [] });
     box.hidden = !html;
     box.innerHTML = html ? `<span class="dim small">Your state's hexes on them:</span> ${html}` : '';
   }
-  on($('hx'), 'click', (ev) => {
-    const b = ev.target.closest('[data-cast]');
-    if (!b || !riteById(b.dataset.cast)) return;
-    pick = b.dataset.cast; save();
-    showGroup(Math.max(0, groupsOf().findIndex(([, , l]) => l.some((r) => r.id === pick))));
-    sheet();
-    $('go').focus();
+  /** On a hex's card in quick-pick: how many of your recent targets it's on, and whether one is about to end. */
+  function tally(r) {
+    const list = targets.list || [];
+    if (recent !== 'pick' || !list.length) return '';
+    const on = list.map((row) => hexOn(row, r.id)).filter((x) => !x.missing);
+    const ending = on.filter((x) => x.warn).sort((a, b) => a.left - b.left)[0];
+    return `<span class="rt-tally${ending ? ' warn' : on.length ? '' : ' none'}">on ${fmt(on.length)} of ${fmt(list.length)}${ending ? ` · one ends ${ending.left <= 1 ? 'next tick' : `in ${fmt(ending.left)}`}` : ''}</span>`;
+  }
+  /** One target's status for the chosen rite, for the quick-pick: [order, class, words]. */
+  function statusFor(row, r) {
+    if (riteKind(r) !== 'hex') return [2, '', ''];
+    const x = hexOn(row, r.id);
+    if (x.missing) return [1, 'miss', 'missing'];
+    return x.warn ? [0, 'warn', x.left <= 1 ? '1 tick left' : `${fmt(x.left)} ticks left`] : [3, 'ok', `${fmt(x.left)} ticks left`];
+  }
+  const aimed = (h) => target && target.id === h.id;
+  function recentTargets() {
+    const ok = targets.loaded && !targets.missing;
+    $('rsw').hidden = !ok;
+    host.querySelectorAll('[data-recent]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.recent === recent)));
+    const r = riteById(pick), self = !r || riteKind(r) === 'self';
+    const list = byNeed(targets.list || []).slice(0, 6);
+    const more = (targets.list || []).length > list.length ? ` (${fmt(targets.list.length)})` : '';
+    // Under the rites: each target with its hexes, and Aim here.
+    $('recent').hidden = !ok || recent !== 'strip';
+    if (!$('recent').hidden) {
+      $('recent').innerHTML = `<div class="rt-rhead"><h3 class="sub">Your state's recent targets</h3><a href="#targets" class="small">All targets${more} ›</a></div>
+        ${list.length ? list.map((row) => { const h = row.house; return `<div class="rt-trow${aimed(h) ? ' on' : ''}"><span><b>${esc(h.name)}</b> <span class="addr">${addr(h)}</span></span><span>${chipsHTML(row) || '<span class="dim small">none of yours</span>'}</span>${aimed(h) ? '<span class="dim small">aimed</span>' : `<button type="button" class="btn mini" data-aim="${h.id}">Aim here</button>`}</div>`; }).join('')
+          : '<p class="dim small">None lately: houses your state hexes, attacks or spies on show here.</p>'}`;
+    }
+    // In the sheet: the targets for this rite, what needs it first.
+    $('qp').hidden = !ok || recent !== 'pick' || self || !list.length;
+    if (!$('qp').hidden) {
+      const rows = list.map((row) => [statusFor(row, r), row]).sort((a, b) => a[0][0] - b[0][0]);
+      $('qp').innerHTML = `<p class="dim small" style="margin:6px 0 0">Your recent targets${riteKind(r) === 'hex' ? `, where ${esc(r.name)} is needed first` : ''}:</p>
+        <div class="rt-qp" role="group" aria-label="Recent targets">${rows.map(([[, cls, words], row]) => { const h = row.house;
+          return `<button type="button" data-aim="${h.id}" aria-pressed="${aimed(h)}"><span><b>${esc(h.name)}</b> <span class="addr">${addr(h)}</span></span>${words ? `<span class="rt-st ${cls}">${esc(words)}</span>` : ''}</button>`; }).join('')}</div>`;
+    }
+  }
+  on(host.querySelector('#lr-cast'), 'click', (ev) => {
+    const sw = ev.target.closest('[data-recent]'), aim = ev.target.closest('[data-aim]'), b = ev.target.closest('[data-cast]');
+    if (sw) { recent = sw.dataset.recent; save(); cards(); recentTargets(); return; }
+    if (aim) { const row = (targets.list || []).find((x) => String(x.house.id) === aim.dataset.aim); if (row) setTarget(row.house); return; }
+    if (b && riteById(b.dataset.cast)) {
+      if (b.dataset.id && b.dataset.id !== String(target?.id)) { const row = (targets.list || []).find((x) => String(x.house.id) === b.dataset.id); if (row) setTarget(row.house); }
+      pick = b.dataset.cast; save();
+      showGroup(Math.max(0, groupsOf().findIndex(([, , l]) => l.some((x) => x.id === pick))));
+      sheet();
+      $('go').focus();
+    }
   });
+  let reading = 0;
+  const reload = () => { clearTimeout(reading); reading = setTimeout(() => loadTargets().catch(() => {}), 300); };
 
   async function lookUp(text) {
     try { target = await act.resolveAddress(text); setTarget(target); $('addr').value = addr(target); } catch (e) { $('card').innerHTML = `<p class="short">${esc(e.message)}</p>`; return; }
@@ -318,6 +365,7 @@ export function mountRites(host, on) {
 
   function draw() { if (!store.house) return; glance(); cards(); sheet(); onYou(); autos(); adepts(); }
   if (!watch.loaded) loadWatch().catch(() => {});
+  loadTargets().catch(() => {});
   if (target) $('addr').value = addr(target);
   showTab(tab);
   draw();
@@ -325,12 +373,11 @@ export function mountRites(host, on) {
     update(c) {
       if (!c || c.has('house') || c.has('rules') || c.has('relations')) draw();
       if (c?.has('target') && store.target && store.target.id !== target?.id) { target = { ...store.target }; $('addr').value = addr(target); sheet(); }
-      // A hex of yours cast, or the watch list changed: the chips again (a tick counts them down).
-      const k = riteKind(riteById(pick) || {});
-      if (c?.has('news') && c.get('news').some((d) => d?.added?.type === 'hex_cast')) hexChips(k === 'hex' ? target : null, true);
-      else if (c?.has('watch') || c?.has('tick')) hexChips(k === 'hex' ? target : null, c.has('tick'));
+      // Your recent targets: read again each tick and when a hex of yours is cast; redrawn when they or the watch list change.
+      if (c?.has('tick') || (c?.has('news') && c.get('news').some((d) => ['hex_cast', 'attack_report'].includes(d?.added?.type)))) reload();
+      if (c?.has('targets') || c?.has('watch') || c?.has('tick') || c?.has('target')) { cards(); hexChips(riteKind(riteById(pick) || {}) === 'hex' ? target : null); recentTargets(); }
     },
     tick() {},
-    destroy() { host.replaceChildren(); },
+    destroy() { clearTimeout(reading); host.replaceChildren(); },
   };
 }

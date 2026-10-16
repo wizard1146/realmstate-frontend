@@ -175,8 +175,8 @@
     border-bottom: 3px double var(--l-line); display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; }
   & .line-page-h h1 { margin: 0; font: 600 1.4rem/1.2 var(--l-head-font); letter-spacing: .02em; }
   & .line-page-h .line-what { margin: 0; color: var(--l-muted); }
-  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"], [data-page="world"], [data-page="wars"], [data-page="intrigue"], [data-page="rites"], [data-page="science"], [data-page="academics"], [data-page="generals"], [data-page="heirs"], [data-page="colloquium"], [data-page="truths"], [data-page="work"], [data-page="wonders"], [data-page="news"], [data-page="ranks"], [data-page="hall"], [data-page="market"], [data-page="leadership"], [data-page="war"]) .line-page-h { justify-content: center; }
-  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"], [data-page="world"], [data-page="wars"], [data-page="intrigue"], [data-page="rites"], [data-page="science"], [data-page="academics"], [data-page="generals"], [data-page="heirs"], [data-page="colloquium"], [data-page="truths"], [data-page="work"], [data-page="wonders"], [data-page="news"], [data-page="ranks"], [data-page="hall"], [data-page="market"], [data-page="leadership"], [data-page="war"]) .line-what { display: none; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"], [data-page="targets"], [data-page="world"], [data-page="wars"], [data-page="intrigue"], [data-page="rites"], [data-page="science"], [data-page="academics"], [data-page="generals"], [data-page="heirs"], [data-page="colloquium"], [data-page="truths"], [data-page="work"], [data-page="wonders"], [data-page="news"], [data-page="ranks"], [data-page="hall"], [data-page="market"], [data-page="leadership"], [data-page="war"]) .line-page-h { justify-content: center; }
+  & .line-main:is([data-page="throne"], [data-page="resources"], [data-page="land"], [data-page="build"], [data-page="state"], [data-page="military"], [data-page="attack"], [data-page="targets"], [data-page="world"], [data-page="wars"], [data-page="intrigue"], [data-page="rites"], [data-page="science"], [data-page="academics"], [data-page="generals"], [data-page="heirs"], [data-page="colloquium"], [data-page="truths"], [data-page="work"], [data-page="wonders"], [data-page="news"], [data-page="ranks"], [data-page="hall"], [data-page="market"], [data-page="leadership"], [data-page="war"]) .line-what { display: none; }
   & .line-main:is([data-page="throne"], [data-page="state"]) .line-page-h h1 { display: flex; flex-direction: column; align-items: center; text-align: center; }
   /* State: the state's name, grand, with its address and realm small beneath. */
   & .line-page-h h1 .h-state { font-size: 1.3rem; letter-spacing: .04em; line-height: 1.1; padding: 6px 0 2px; }
@@ -1294,23 +1294,116 @@
   & .lrite .in-op.live { border-color: var(--l-good); background: color-mix(in srgb, var(--l-good) 9%, var(--l-page)); }
   & .lrite .in-op.live.on { box-shadow: inset 0 0 0 1px var(--l-good); }
   & .lrite .rt-live { margin-left: 4px; font: 600 .78em var(--l-body-font); color: var(--l-good); white-space: nowrap; }
-  /* Targets: your state's recent targets; hex chips (also under the target on Rites' Cast sheet). */
+  /* Targets: your state's recent targets, as a matrix or a timeline; hex chips (also on Rites). */
+  & .line-main > .room:has(.ltargets) { max-width: none; width: auto; min-width: 0; }
   & .tg-chip { display: inline-block; margin: 1px 0; padding: 1px 8px; border: 1px solid var(--l-line); border-radius: 999px; background: var(--l-page); color: var(--l-ink); font: .82em/1.6 var(--l-body-font); white-space: nowrap; }
   & button.tg-chip { cursor: pointer; }
   & button.tg-chip:hover { border-color: var(--l-gold); }
   & .tg-chip.warn { border-color: var(--l-bad); color: var(--l-bad); }
   & .tg-chip.miss { border-style: dashed; border-color: var(--l-bad); color: var(--l-bad); background: color-mix(in srgb, var(--l-bad) 6%, var(--l-page)); }
-  & .lrite .tg-hx { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-  & .ltargets .tg-tbl td, & .ltargets .tg-tbl th { vertical-align: top; }
-  & .ltargets .tg-tbl .tg-hx { max-width: 18em; white-space: normal; }
-  & .ltargets .tg-name { font-weight: 600; }
-  & .ltargets .tg-acts { white-space: nowrap; text-align: right; }
+  & .tg-age { display: inline-block; min-width: 2.6em; margin: 1px 0; padding: 0 6px; border: 0; border-radius: 999px; font: 600 .78em/1.7 var(--l-body-font); text-align: center; white-space: nowrap; }
+  & button.tg-age { cursor: pointer; }
+  & .tg-age.fresh { background: color-mix(in srgb, var(--l-good) 16%, var(--l-page)); color: var(--l-good); }
+  & .tg-age.older { background: color-mix(in srgb, var(--l-gold) 20%, var(--l-page)); color: color-mix(in srgb, var(--l-gold) 70%, var(--l-ink)); }
+  & .tg-age.stale { background: color-mix(in srgb, var(--l-muted) 14%, var(--l-page)); color: var(--l-muted); }
+  & .tg-age.none { background: none; color: color-mix(in srgb, var(--l-muted) 60%, var(--l-page)); }
+  & .ltargets .good, & .lrite .good { color: var(--l-good); }
+  & .ltargets .bad, & .lrite .bad { color: var(--l-bad); }
+  & .ltargets .tg-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 10px 16px; margin-bottom: 12px; }
+  & .ltargets .tg-head .what { margin: 0; flex: 1 1 340px; }
+  & .ltargets .tg-ctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  & .tg-segs { display: inline-flex; border: 1px solid var(--l-frame); border-radius: 8px; overflow: hidden; }
+  & .tg-segs button { font: 600 .85rem var(--l-body-font); padding: 6px 14px; border: 0; background: var(--l-page); color: var(--l-ink); cursor: pointer; min-height: 34px; }
+  & .tg-segs button + button { border-left: 1px solid var(--l-frame); }
+  & .tg-segs button[aria-pressed="true"] { background: var(--l-nav); color: var(--l-nav-ink); }
   & .ltargets .tg-watch { margin-bottom: 14px; }
-  & .ltargets .tg-watch summary { cursor: pointer; font-weight: 600; }
   & .ltargets .tg-hexes { border: 0; margin: 8px 0; padding: 0; }
   & .ltargets .tg-hexes > div { display: flex; flex-wrap: wrap; gap: 4px 14px; }
-  & .ltargets .tg-hexes label { white-space: nowrap; }
+  & .ltargets .tg-hexes label { white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+  & .ltargets .tg-sum { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin: 0 0 16px; border: 1px solid var(--l-rule); border-radius: 6px; }
+  & .ltargets .tg-sum > div { padding: 8px 10px; text-align: center; }
+  & .ltargets .tg-sum > div + div { border-left: 1px solid var(--l-rule); }
+  & .ltargets .tg-sum dt { font: 600 .78rem var(--l-head-font); font-variant-caps: all-small-caps; letter-spacing: .08em; color: var(--l-muted); }
+  & .ltargets .tg-sum dd { margin: 2px 0 0; font: 1.35rem var(--l-head-font); font-variant-numeric: lining-nums tabular-nums; }
+  & .ltargets .tg-sum > div.bad dd { color: var(--l-bad); }
+  & .ltargets .tg-hint { margin: 0 0 8px; }
+  & .ltargets .tg-link { border: 0; padding: 0; background: none; color: var(--l-blue); font: inherit; text-decoration: underline; cursor: pointer; }
+  & .ltargets .tg-tbl { width: 100%; }
+  & .ltargets .tg-tbl td, & .ltargets .tg-tbl th { vertical-align: middle; white-space: nowrap; }
+  & .ltargets .tg-tbl tr.open > td { background: color-mix(in srgb, var(--l-blue) 6%, var(--l-page)); }
+  & .ltargets .tg-name { display: inline-flex; align-items: center; gap: 6px; border: 0; padding: 4px 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; min-height: 32px; }
+  & .ltargets .tg-name .caret { width: 1em; color: var(--l-gold); }
+  & .ltargets .tg-ages { white-space: nowrap; }
+  & .ltargets .tg-acts { text-align: right; }
+  & .ltargets .tg-tbl td.tg-last { white-space: normal; min-width: 11em; max-width: 18em; }
+  & .ltargets .tg-bar { position: relative; display: block; width: 64px; height: 22px; border-radius: 4px; background: var(--l-rule); overflow: hidden; }
+  & .ltargets .tg-bar i { position: absolute; inset: 0 auto 0 0; background: color-mix(in srgb, var(--l-good) 45%, var(--l-page)); }
+  & .ltargets .tg-bar.warn i { background: color-mix(in srgb, var(--l-bad) 45%, var(--l-page)); }
+  & .ltargets .tg-bar span { position: relative; display: block; text-align: center; font: 700 .78rem/22px var(--l-body-font); }
+  & .ltargets .tg-miss { width: 64px; height: 22px; padding: 0; border: 1px dashed var(--l-bad); border-radius: 4px; background: color-mix(in srgb, var(--l-bad) 6%, var(--l-page)); color: var(--l-bad); font: 600 .78rem var(--l-body-font); cursor: pointer; }
+  & .ltargets .tg-det > td { background: color-mix(in srgb, var(--l-blue) 6%, var(--l-page)); white-space: normal; padding: 4px 12px 16px 34px; }
+  & .ltargets .tg-detin { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 24px; }
+  & .ltargets .tg-ax, & .ltargets .tg-hxr { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 8px; align-items: center; }
+  & .ltargets .tg-ax { font-size: .72rem; color: var(--l-muted); }
+  & .ltargets .tg-ax > div { display: flex; justify-content: space-between; }
+  & .ltargets .tg-ax .now { color: var(--l-gold); font-weight: 700; }
+  & .ltargets .tg-hxr { font-size: .85rem; }
+  & .ltargets .tg-tl { position: relative; height: 24px; margin: 3px 0; border-radius: 4px; background: var(--l-page); }
+  & .ltargets .tg-b { position: absolute; top: 3px; bottom: 3px; border-radius: 3px; padding-left: 6px; overflow: hidden; white-space: nowrap; font: 700 .72rem/18px var(--l-body-font); background: color-mix(in srgb, var(--l-good) 45%, var(--l-page)); }
+  & .ltargets .tg-b.warn { background: color-mix(in srgb, var(--l-bad) 45%, var(--l-page)); }
+  & .ltargets .tg-mb { position: absolute; inset: 3px; padding: 0 6px; border: 1px dashed var(--l-bad); border-radius: 3px; background: color-mix(in srgb, var(--l-bad) 6%, var(--l-page)); color: var(--l-bad); font: 600 .72rem var(--l-body-font); text-align: left; cursor: pointer; }
+  & .ltargets .tg-now { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--l-gold); }
+  & .ltargets .tg-log { list-style: none; margin: 0; padding: 0; font-size: .85rem; }
+  & .ltargets .tg-log li { display: flex; gap: 10px; padding: 2px 0; }
+  & .ltargets .tg-log .t { width: 3em; flex: none; color: var(--l-muted); font-variant-numeric: tabular-nums; }
+  & .ltargets .tg-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin-bottom: 8px; font-size: .85rem; color: var(--l-muted); }
+  & .ltargets .tg-legend .tg-mk { position: static; display: inline-block; margin: 0 4px 0 0; vertical-align: middle; }
+  & .ltargets .sw { display: inline-block; width: 22px; height: 10px; margin-right: 4px; border-radius: 2px; vertical-align: middle; }
+  & .ltargets .sw.ok { background: color-mix(in srgb, var(--l-good) 45%, var(--l-page)); }
+  & .ltargets .sw.warn { background: color-mix(in srgb, var(--l-bad) 45%, var(--l-page)); }
+  & .ltargets .sw.past { background: color-mix(in srgb, var(--l-good) 20%, var(--l-page)); }
+  & .ltargets .tg-tlwrap { min-width: 820px; }
+  & .ltargets .tg-lg { display: grid; grid-template-columns: 160px minmax(0, 1fr) 160px; column-gap: 16px; }
+  & .ltargets .tg-axis { position: relative; height: 24px; border-bottom: 1px solid var(--l-line); font-size: .72rem; color: var(--l-muted); }
+  & .ltargets .tg-axis span { position: absolute; bottom: 3px; transform: translateX(-50%); white-space: nowrap; }
+  & .ltargets .tg-axis .now { color: var(--l-gold); font-weight: 700; bottom: auto; top: -2px; }
+  & .ltargets .tg-lane { align-items: center; padding: 10px 0; border-bottom: 1px solid var(--l-rule); }
+  & .ltargets .tg-track { position: relative; border-radius: 4px; background: linear-gradient(90deg, var(--l-rule) 0 var(--now), transparent var(--now)); }
+  & .ltargets .tg-hx { position: relative; height: 18px; margin: 3px 0; }
+  & .ltargets .tg-hb { position: absolute; top: 0; bottom: 0; border-radius: 3px; padding-left: 6px; overflow: hidden; white-space: nowrap; font: 700 .7rem/18px var(--l-body-font); background: color-mix(in srgb, var(--l-good) 45%, var(--l-page)); }
+  & .ltargets .tg-hb.warn { background: color-mix(in srgb, var(--l-bad) 45%, var(--l-page)); }
+  & .ltargets .tg-hb.past { background: color-mix(in srgb, var(--l-good) 20%, var(--l-page)); color: var(--l-muted); }
+  & .ltargets .tg-ev { position: relative; height: 22px; margin-top: 2px; }
+  & .ltargets .tg-mk { position: absolute; top: 2px; width: 18px; height: 18px; margin-left: -9px; border-radius: 4px; font: 700 .68rem/18px var(--l-body-font); text-align: center; color: #fff; }
+  & .ltargets .tg-mk.att-w { background: var(--l-good); }
+  & .ltargets .tg-mk.att-l { background: var(--l-bad); }
+  & .ltargets .tg-mk.spy { background: var(--l-blue); color: var(--l-blue-ink); }
+  & .ltargets .tg-mk.hexl { background: var(--l-gold); color: var(--l-page); }
+  & .ltargets .tg-mk.res { background: var(--l-page); border: 1.5px solid var(--l-bad); color: var(--l-bad); line-height: 15px; }
+  & .ltargets .tg-nowl { position: absolute; top: 0; bottom: 0; left: var(--now); width: 2px; background: var(--l-gold); }
+  & .ltargets .tg-need { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
   & .ltargets .tg-dlg { max-width: min(36rem, calc(100vw - 32px)); border: 1px solid var(--l-line); border-radius: 8px; background: var(--l-page); color: var(--l-ink); }
+  @media (max-width: 720px) {
+    & .ltargets .tg-sum { grid-template-columns: repeat(2, 1fr); }
+    & .ltargets .tg-detin { grid-template-columns: 1fr; }
+  }
+  /* Rites: your state's recent targets, as a strip under the cards or a quick-pick in the sheet. */
+  & .lrite .tg-hx { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  & .lrite .rt-recent { margin-top: 18px; padding-top: 10px; border-top: 2px solid var(--l-gold); }
+  & .lrite .rt-rhead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
+  & .lrite .rt-trow { display: grid; grid-template-columns: minmax(8em, 11em) minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--l-rule); }
+  & .lrite .rt-trow.on { background: color-mix(in srgb, var(--l-blue) 9%, var(--l-page)); border-radius: 4px; }
+  & .lrite .rt-qp { display: flex; flex-direction: column; margin: 6px 0 8px; border: 1px solid var(--l-line); border-radius: 6px; overflow: hidden; background: var(--l-page); }
+  & .lrite .rt-qp button { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; min-height: 40px; padding: 6px 10px; border: 0; border-bottom: 1px solid var(--l-rule); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  & .lrite .rt-qp button:last-child { border-bottom: 0; }
+  & .lrite .rt-qp button[aria-pressed="true"] { background: color-mix(in srgb, var(--l-blue) 10%, var(--l-page)); box-shadow: inset 3px 0 0 var(--l-blue); }
+  & .lrite .rt-st { font: 600 .75rem/1.7 var(--l-body-font); padding: 0 8px; border-radius: 999px; white-space: nowrap; }
+  & .lrite .rt-st.miss { border: 1px dashed var(--l-bad); color: var(--l-bad); background: color-mix(in srgb, var(--l-bad) 6%, var(--l-page)); }
+  & .lrite .rt-st.warn { background: color-mix(in srgb, var(--l-bad) 16%, var(--l-page)); color: var(--l-bad); }
+  & .lrite .rt-st.ok { background: color-mix(in srgb, var(--l-good) 16%, var(--l-page)); color: var(--l-good); }
+  & .lrite .rt-tally { font: 600 .75rem var(--l-body-font); color: var(--l-good); }
+  & .lrite .rt-tally.warn { color: var(--l-bad); }
+  & .lrite .rt-tally.none { color: var(--l-muted); font-weight: 400; }
   & .lrite .in-figs .need { color: var(--l-bad); }
   & .lrite #lr-tw[hidden] { display: none; }
   & .lrite .rt-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
