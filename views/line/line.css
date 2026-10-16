@@ -1294,6 +1294,23 @@
   & .lrite .in-op.live { border-color: var(--l-good); background: color-mix(in srgb, var(--l-good) 9%, var(--l-page)); }
   & .lrite .in-op.live.on { box-shadow: inset 0 0 0 1px var(--l-good); }
   & .lrite .rt-live { margin-left: 4px; font: 600 .78em var(--l-body-font); color: var(--l-good); white-space: nowrap; }
+  /* Targets: your state's recent targets; hex chips (also under the target on Rites' Cast sheet). */
+  & .tg-chip { display: inline-block; margin: 1px 0; padding: 1px 8px; border: 1px solid var(--l-line); border-radius: 999px; background: var(--l-page); color: var(--l-ink); font: .82em/1.6 var(--l-body-font); white-space: nowrap; }
+  & button.tg-chip { cursor: pointer; }
+  & button.tg-chip:hover { border-color: var(--l-gold); }
+  & .tg-chip.warn { border-color: var(--l-bad); color: var(--l-bad); }
+  & .tg-chip.miss { border-style: dashed; border-color: var(--l-bad); color: var(--l-bad); background: color-mix(in srgb, var(--l-bad) 6%, var(--l-page)); }
+  & .lrite .tg-hx { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  & .ltargets .tg-tbl td, & .ltargets .tg-tbl th { vertical-align: top; }
+  & .ltargets .tg-tbl .tg-hx { max-width: 18em; white-space: normal; }
+  & .ltargets .tg-name { font-weight: 600; }
+  & .ltargets .tg-acts { white-space: nowrap; text-align: right; }
+  & .ltargets .tg-watch { margin-bottom: 14px; }
+  & .ltargets .tg-watch summary { cursor: pointer; font-weight: 600; }
+  & .ltargets .tg-hexes { border: 0; margin: 8px 0; padding: 0; }
+  & .ltargets .tg-hexes > div { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  & .ltargets .tg-hexes label { white-space: nowrap; }
+  & .ltargets .tg-dlg { max-width: min(36rem, calc(100vw - 32px)); border: 1px solid var(--l-line); border-radius: 8px; background: var(--l-page); color: var(--l-ink); }
   & .lrite .in-figs .need { color: var(--l-bad); }
   & .lrite #lr-tw[hidden] { display: none; }
   & .lrite .rt-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }

@@ -9,6 +9,7 @@ import { mountLook, clear as clearLook } from './looklab.js';
 import { mountThrone } from './throne.js';
 import { mountMilitary } from './military.js';
 import { mountAttack } from './attack.js';
+import { mountTargets } from './targets.js';
 import { mountResources } from './resources.js';
 import { mountLand } from './land.js';
 import { mountBuild } from './build.js';
@@ -43,7 +44,7 @@ import { world, loadWorld } from '../../core/world.js';
 const FEED_PAGE = { War: 'wars', Peace: 'wars', Truth: 'truths', Dragon: 'world', Market: 'market' };
 
 // Straightline's own page parts (not War Room panels): mount(host, on) -> { update(c), tick(), destroy() }.
-const PARTS = { throne: mountThrone, military: mountMilitary, attack: mountAttack, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState, wars: mountWars, intrigue: mountIntrigue, rites: mountRites, science: mountScience, academics: mountAcademics, generals: mountGenerals, heirs: mountHeirs, colloquium: mountColloquium, truths: mountTruths, work: mountWork, wonders: mountWonders, news: mountNews, ranks: mountRanks, hall: mountHall, market: mountMarket, leadership: mountLeadership, war: mountWar };
+const PARTS = { throne: mountThrone, military: mountMilitary, attack: mountAttack, targets: mountTargets, resources: mountResources, land: mountLand, build: mountBuild, config: mountConfig, profile: mountProfile, world: mountWorld, state: mountState, wars: mountWars, intrigue: mountIntrigue, rites: mountRites, science: mountScience, academics: mountAcademics, generals: mountGenerals, heirs: mountHeirs, colloquium: mountColloquium, truths: mountTruths, work: mountWork, wonders: mountWonders, news: mountNews, ranks: mountRanks, hall: mountHall, market: mountMarket, leadership: mountLeadership, war: mountWar };
 
 const KEY = 'realmstate.line.page';
 
@@ -64,6 +65,7 @@ const MENU = [
   ['Military', [
     ['military', 'Military', null, null, 'train troops; draft and release; medics, upgrades, chariots', { part: 'military' }],
     ['attack', 'Attack', null, null, 'send an army against another house', { part: 'attack' }],
+    ['targets', 'Targets', null, null, 'houses your state hexed, attacked or spied on lately, and your hexes on them', { part: 'targets' }],
     ['generals', 'Generals', null, null, 'raise and command generals; your heirs', { part: 'generals' }],
   ]],
   ['Shadows & Magic', [

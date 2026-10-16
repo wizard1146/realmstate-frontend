@@ -7,6 +7,8 @@ import { store, setTarget } from '../../core/store.js';
 import * as act from '../../core/actions.js';
 import { fmt, esc, addr } from '../../core/words.js';
 import { rites, riteById, riteKind, riteFor, ap, lengthText, needsText, unfriendlyExtra, riteDoes, riteCost, riteOn, riteShort, inForce, resilienceText, vengeanceList, stName } from '../../core/rites.js';
+import { watch, loadWatch, loadTargets, takeCast } from '../../core/targets.js';
+import { chipsHTML } from './targets.js';
 
 const pct = (bp) => `${(bp / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}%`;
 const GROUPS = [['self', 'Self rites', 'always work if you have the aether'], ['divination', 'Divinations', 'intel on a house, shared with your state'], ['hex', 'Hexes', 'burn resin; harm a house']];
@@ -37,6 +39,7 @@ export function mountRites(host, on) {
               <button class="btn">Look up</button>
             </form>
             <div class="atk-card" id="lr-card" aria-live="polite"></div>
+            <div class="tg-hx" id="lr-hx" aria-live="polite" hidden></div>
           </div>
           <p class="doing" id="lr-doing" aria-live="polite" hidden></p>
           <div class="atk-go"><button type="button" class="btn primary" id="lr-go">Cast</button></div>
@@ -72,6 +75,9 @@ export function mountRites(host, on) {
   </div>`;
   const $ = (id) => host.querySelector(`#lr-${id}`);
   let target = store.target || null;
+  // Opened from Targets (Cast…, or a missing hex): the Cast tab, on that hex.
+  const asked = takeCast();
+  if (asked) { tab = 'cast'; if (riteById(asked.rite)) pick = asked.rite; save(); }
 
   // ---------- tabs ----------
   const bar = host.querySelector('.ltabs');
@@ -107,6 +113,7 @@ export function mountRites(host, on) {
   const groupsOf = () => GROUPS.map(([k, label, note]) => [label, note, rites().filter((r) => riteKind(r) === k)]).filter(([, , l]) => l.length);
   let gi = Math.max(0, groupsOf().findIndex(([, , l]) => l.some((r) => r.id === pick)));
   try { const v = localStorage.getItem(`${KEY}.group`); if (v != null && Number(v) >= 0 && Number(v) < groupsOf().length) gi = Number(v); } catch { /* storage off */ }
+  if (asked?.rite) gi = Math.max(0, groupsOf().findIndex(([, , l]) => l.some((r) => r.id === pick)));
   function cards(focus) {
     const groups = groupsOf(), n = groups.length;
     if (!n) { $('rites').innerHTML = '<p class="dim">This server sends no rites.</p>'; return; }
@@ -180,12 +187,36 @@ export function mountRites(host, on) {
     }
     if (h.aether < cost) why.push(`it needs ${ap(c)}${fmt(cost)} aether; you have ${fmt(h.aether)}`);
     if (c.incense && (h.materials[mat] || 0) < c.incense) why.push(`it needs ${fmt(c.incense)} ${mat}; you have ${fmt(h.materials[mat] || 0)}`);
+    hexChips(k === 'hex' ? target : null);
     const doing = $('doing');
     doing.hidden = false;
     doing.textContent = why.length ? `Can't yet: ${why.join('; ')}.` : self ? `Cast ${r.name} on your own house for ${fmt(cost)} aether.` : `Cast ${r.name} on ${target.name} (${addr(target)}) for ${fmt(cost)} aether.`;
     doing.classList.toggle('short', why.length > 0);
     $('go').disabled = why.length > 0;
   }
+  // ---------- the target's hexes: yours in force (ticks left) and the ones you watch that are missing ----------
+  let hxFor = null, hxRow = null;
+  async function hexChips(t, fresh = false) {
+    const box = $('hx');
+    if (!t) { box.hidden = true; return; }
+    if (fresh || hxFor !== t.id) {
+      hxFor = t.id; hxRow = null;
+      try { hxRow = await loadTargets(t.id); } catch { hxRow = null; }
+      if (hxFor !== t.id) return;   // the target changed while we asked
+    }
+    const html = chipsHTML(hxRow || { house: t, hexes_in_force: [] });
+    box.hidden = !html;
+    box.innerHTML = html ? `<span class="dim small">Your state's hexes on them:</span> ${html}` : '';
+  }
+  on($('hx'), 'click', (ev) => {
+    const b = ev.target.closest('[data-cast]');
+    if (!b || !riteById(b.dataset.cast)) return;
+    pick = b.dataset.cast; save();
+    showGroup(Math.max(0, groupsOf().findIndex(([, , l]) => l.some((r) => r.id === pick))));
+    sheet();
+    $('go').focus();
+  });
+
   async function lookUp(text) {
     try { target = await act.resolveAddress(text); setTarget(target); $('addr').value = addr(target); } catch (e) { $('card').innerHTML = `<p class="short">${esc(e.message)}</p>`; return; }
     sheet();
@@ -286,6 +317,7 @@ export function mountRites(host, on) {
   on($('rf'), 'submit', async (ev) => { ev.preventDefault(); if (await act.releaseAdepts($('rel').value, { button: $('relgo') })) $('rel').value = ''; adepts(); });
 
   function draw() { if (!store.house) return; glance(); cards(); sheet(); onYou(); autos(); adepts(); }
+  if (!watch.loaded) loadWatch().catch(() => {});
   if (target) $('addr').value = addr(target);
   showTab(tab);
   draw();
@@ -293,6 +325,10 @@ export function mountRites(host, on) {
     update(c) {
       if (!c || c.has('house') || c.has('rules') || c.has('relations')) draw();
       if (c?.has('target') && store.target && store.target.id !== target?.id) { target = { ...store.target }; $('addr').value = addr(target); sheet(); }
+      // A hex of yours cast, or the watch list changed: the chips again (a tick counts them down).
+      const k = riteKind(riteById(pick) || {});
+      if (c?.has('news') && c.get('news').some((d) => d?.added?.type === 'hex_cast')) hexChips(k === 'hex' ? target : null, true);
+      else if (c?.has('watch') || c?.has('tick')) hexChips(k === 'hex' ? target : null, c.has('tick'));
     },
     tick() {},
     destroy() { host.replaceChildren(); },

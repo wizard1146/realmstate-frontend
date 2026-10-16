@@ -140,6 +140,7 @@ export function newsLine(n) {
     case 'age_ended': return [`The age is over. ${n.winner ? `State ${st(n.winner)} won. ` : ''}Our state finished ${ord(n.state_rank)}, our house ${ord(n.land_rank)} by land.`, ''];
     case 'rite_resisted': return [`We resisted ${n.rite} from ${where(n.by)}.`, 'good'];
     case 'autocast_held': return [`${n.name} didn't cast by itself: ${n.why}. It tries again each tick.`, 'bad'];
+    case 'hex_cast': return [`We cast ${n.rite} on ${where(n.target)}: ${!n.success ? 'it was resisted' : n.reflected ? `it turned back on us: ${hexTook(n.taken, n.what)}` : hexTook(n.taken, n.what)}${n.success && !n.reflected && n.until_tick ? `, until tick ${n.until_tick}` : ''}.`, n.success && !n.reflected ? 'good' : 'bad'];
     case 'hex_suffered': return [`${n.reflected ? 'Our own hex turned back on us' : 'A hex struck us'} (${n.rite}): ${hexTook(n.taken, n.what)}${n.until_tick ? `, until tick ${n.until_tick}` : ''}.`, 'bad'];
     case 'operation_suffered': return [`Thieves struck us (${n.op}): ${/delayed|growth|unsettled|cut/.test(n.what) ? n.what : `${fmt(n.taken)} ${n.what}`}${n.blamed ? `. They wore the colours of ${st(n.blamed)}` : ''}.`, 'bad'];
     case 'land_arrived': return [`${fmt(n.acres)} explored acres arrived.`, 'good'];
@@ -236,6 +237,7 @@ export function mateNewsLine(n, name) {
     case 'afflicted': return [`${n.by ? where(n.by) : 'A veiled army'} afflicted ${name} with ${n.name} until tick ${n.until_tick}.`, 'bad'];
     case 'burned': return [`${n.name} burned ${name}: ${fmt(n.peasants || 0)} peasants and ${fmt(sum(n.units))} troops at home died this tick (it burns until tick ${n.until_tick}).`, 'bad'];
     case 'rite_resisted': return [`${name} resisted ${n.rite} from ${where(n.by)}.`, 'good'];
+    case 'hex_cast': return [`${name} cast ${n.rite} on ${where(n.target)}: ${!n.success ? 'it was resisted' : n.reflected ? `it turned back on them: ${hexTook(n.taken, n.what)}` : hexTook(n.taken, n.what)}${n.success && !n.reflected && n.until_tick ? `, until tick ${n.until_tick}` : ''}.`, n.success && !n.reflected ? 'good' : 'bad'];
     case 'hex_suffered': return [`${n.reflected ? `${name}'s own hex turned back on them` : `A hex struck ${name}`} (${n.rite}): ${hexTook(n.taken, n.what)}${n.until_tick ? `, until tick ${n.until_tick}` : ''}.`, 'bad'];
     case 'dragon_raid': return n.driven_off ? [`${dragonWho(n)} fell on ${name}, and its defenders drove it off. +${fmt(n.renown)} renown.`, 'good']
       : [`${dragonWho(n)} fell on ${name}. ${dragonToll(n)}`, 'bad'];
